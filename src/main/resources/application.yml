@@ -28,3 +28,8 @@ logging:
 
 server:
   port: 8080
+
+security:
+  login:
+    max-attempts: 5
+    lock-duration-ms: 900000

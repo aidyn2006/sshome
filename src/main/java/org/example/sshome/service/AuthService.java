@@ -51,6 +51,7 @@ public class AuthService {
         String email = request.getEmail().toLowerCase();
         if (loginAttemptService.isBlocked(email)) {
             long waitMs = loginAttemptService.remainingLockMillis(email);
+            log.warn("Authentication blocked for {} from {} (lock remaining {} ms)", email, sourceIp, waitMs);
             throw new AccountLockedException("Account locked. Retry in " + (waitMs / 1000) + " seconds");
         }
 

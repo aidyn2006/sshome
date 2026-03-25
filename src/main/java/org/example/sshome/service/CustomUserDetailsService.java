@@ -1,7 +1,6 @@
 package org.example.sshome.service;
 
 import lombok.RequiredArgsConstructor;
-import org.example.sshome.entity.User;
 import org.example.sshome.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
