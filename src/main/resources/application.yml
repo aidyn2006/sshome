@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: SSHome
+  datasource:
+    url: jdbc:h2:mem:sshome;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ''
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+jwt:
+  secret: 2fa7cfe1d74a4c5c9a6c7a9f0e9e7c8d2c4e8a6f7b9c1d3e5f7a9b1c3d5e7f9
+  expiration: 3600000 # 1 hour in ms
+
+logging:
+  level:
+    org.example.sshome: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n"
+
+server:
+  port: 8080

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /Users/aidyn/IdeaProjects/SSHome/flutter_ui/assets/shaders && mkdir -p /Users/aidyn/IdeaProjects/SSHome/flutter_ui/lib/components && mkdir -p /Users/aidyn/IdeaProjects/SSHome/flutter_ui/lib/screens)",
+      "Bash(flutter --version 2>&1 | head -5)",
+      "Bash(flutter --version 2>&1)",
+      "Bash(cd /Users/aidyn/IdeaProjects/SSHome/flutter_ui && flutter create . --project-name flutter_ui 2>&1)",
+      "Bash(flutter devices:*)",
+      "Bash(flutter run:*)",
+      "Bash(pkill -f \"flutter run\" 2>/dev/null; pkill -f \"flutter_ui\" 2>/dev/null; sleep 2; echo \"killed\")"
+    ]
+  }
+}
