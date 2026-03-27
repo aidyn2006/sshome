@@ -1,35 +1,208 @@
 spring:
   application:
     name: SSHome
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # ─── JPA ────────────────────────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: validate       # Flyway manages schema; Hibernate only validates
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+    open-in-view: false
+
+  # ─── Cache ──────────────────────────────────────────────────────────
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=60s
+
+  # ─── Redis (optional, for distributed cache/rate-limit) ─────────────
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  # ─── WebSocket ───────────────────────────────────────────────────────
+  websocket:
+    allowed-origins: "*"
+
+  # ─── Jackson ─────────────────────────────────────────────────────────
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+# ─── JWT ──────────────────────────────────────────────────────────────
+jwt:
+  secret: ${JWT_SECRET:2fa7cfe1d74a4c5c9a6c7a9f0e9e7c8d2c4e8a6f7b9c1d3e5f7a9b1c3d5e7f9}
+  expiration: ${JWT_EXPIRATION:3600000}       # 1 hour
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:2592000000}  # 30 days
+
+# ─── Security ─────────────────────────────────────────────────────────
+security:
+  login:
+    max-attempts: 5
+    lock-duration-ms: 900000
+  rate-limit:
+    api:
+      capacity: 100
+      refill-tokens: 100
+      refill-duration-seconds: 60
+    auth:
+      capacity: 10
+      refill-tokens: 10
+      refill-duration-seconds: 60
+
+# ─── Encryption ───────────────────────────────────────────────────────
+encryption:
+  aes-key: ${AES_KEY:sshome-aes-256-key-must-be-32bytes!}   # 32 bytes for AES-256
+  hmac-secret: ${HMAC_SECRET:sshome-hmac-secret-key-for-signing}
+
+# ─── AI Chat ──────────────────────────────────────────────────────────
+ai:
+  provider: ${AI_PROVIDER:openai}             # openai | anthropic
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    model: gpt-4o-mini
+    max-tokens: 1024
+    temperature: 0.7
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: claude-haiku-4-5-20251001
+    max-tokens: 1024
+
+# ─── Report ───────────────────────────────────────────────────────────
+report:
+  storage-path: ${REPORT_STORAGE_PATH:/tmp/sshome/reports}
+
+# ─── Monitoring / Scheduler ───────────────────────────────────────────
+monitoring:
+  sensor-simulation:
+    enabled: ${SENSOR_SIMULATION_ENABLED:true}
+    interval-ms: 5000
+
+# ─── Actuator ─────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    redis:
+      enabled: false   # Don't fail health if Redis is down
+
+# ─── Logging ──────────────────────────────────────────────────────────
+logging:
+  level:
+    org.example.sshome: INFO
+    org.springframework.security: WARN
+    org.springframework.web.socket: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE:logs/sshome.log}
+
+# ─── Server ───────────────────────────────────────────────────────────
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+  compression:
+    enabled: true
+    mime-types: application/json,text/plain,text/html
+    min-response-size: 2048
+
+# ─── SpringDoc / Swagger ──────────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui
+    operationsSorter: alpha
+
+---
+# ══════════════════════════════════════════════════════════════════════
+# PROFILE: dev  (H2 in-memory, sensor simulation ON)
+# ══════════════════════════════════════════════════════════════════════
+spring:
+  config:
+    activate:
+      on-profile: dev
   datasource:
-    url: jdbc:h2:mem:sshome;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:sshome;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=VALUE
     driver-class-name: org.h2.Driver
     username: sa
     password: ''
   jpa:
     hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        format_sql: true
-    show-sql: false
+      ddl-auto: create-drop
+  flyway:
+    enabled: false       # Flyway only for prod; dev uses ddl-auto
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
 
-jwt:
-  secret: 2fa7cfe1d74a4c5c9a6c7a9f0e9e7c8d2c4e8a6f7b9c1d3e5f7a9b1c3d5e7f9
-  expiration: 3600000 # 1 hour in ms
+monitoring:
+  sensor-simulation:
+    enabled: true
+
+---
+# ══════════════════════════════════════════════════════════════════════
+# PROFILE: prod  (PostgreSQL, Redis, strict security)
+# ══════════════════════════════════════════════════════════════════════
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/sshome}
+    driver-class-name: org.postgresql.Driver
+    username: ${DATABASE_USERNAME:sshome}
+    password: ${DATABASE_PASSWORD:secret}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  cache:
+    type: redis
+
+monitoring:
+  sensor-simulation:
+    enabled: false
 
 logging:
   level:
     org.example.sshome: INFO
-    org.springframework.security: INFO
-    org.hibernate.SQL: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n"
-
-server:
-  port: 8080
-
-security:
-  login:
-    max-attempts: 5
-    lock-duration-ms: 900000
+    org.springframework.security: WARN

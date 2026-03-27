@@ -10,7 +10,14 @@
       "Bash(pkill -f \"flutter run\" 2>/dev/null; pkill -f \"flutter_ui\" 2>/dev/null; sleep 2; echo \"killed\")",
       "Bash(cd /Users/aidyn/IdeaProjects/SSHome/flutter_ui && flutter analyze --no-pub 2>&1 | head -80)",
       "Bash(flutter analyze:*)",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Bash(timeout 120 mvn compile 2>&1 | tail -20)",
+      "Bash(mvn compile:*)",
+      "Bash(find ~/.m2/repository/org/springframework/boot -name \"*.lastUpdated\" 2>/dev/null | grep \"4.0.4\" | sed 's|.*boot/||' | sed 's|/.*||' | sort -u)",
+      "Bash(rm ~/.m2/repository/org/springframework/boot/spring-boot-starter-cache/4.0.4/spring-boot-starter-cache-4.0.4.pom.lastUpdated\nrm ~/.m2/repository/org/springframework/boot/spring-boot-starter-websocket/4.0.4/spring-boot-starter-websocket-4.0.4.pom.lastUpdated)",
+      "Bash(mvn dependency:resolve -Dartifact=org.springframework.boot:spring-boot-starter-websocket:4.0.4 2>&1 | tail -15)",
+      "Bash(curl -s --connect-timeout 10 https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-websocket/4.0.4/spring-boot-starter-websocket-4.0.4.pom -o ~/.m2/repository/org/springframework/boot/spring-boot-starter-websocket/4.0.4/spring-boot-starter-websocket-4.0.4.pom 2>&1; echo \"exit: $?\")",
+      "Bash(curl -s --connect-timeout 10 https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-cache/4.0.4/spring-boot-starter-cache-4.0.4.pom -o ~/.m2/repository/org/springframework/boot/spring-boot-starter-cache/4.0.4/spring-boot-starter-cache-4.0.4.pom 2>&1; echo \"exit: $?\"\nls -la ~/.m2/repository/org/springframework/boot/spring-boot-starter-websocket/4.0.4/\nls -la ~/.m2/repository/org/springframework/boot/spring-boot-starter-cache/4.0.4/)"
     ]
   }
 }

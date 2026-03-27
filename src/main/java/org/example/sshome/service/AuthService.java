@@ -38,7 +38,8 @@ public class AuthService {
         User user = User.builder()
                 .email(email)
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.USER)
+                .role(Role.VIEWER)
+                .active(true)
                 .build();
         userRepository.save(user);
         log.info("User registered: {}", email);
@@ -70,5 +71,10 @@ public class AuthService {
             log.warn("Authentication failed for {} from {}", email, sourceIp);
             throw ex;
         }
+    }
+
+    public User loadUserByEmail(String email) {
+        return userRepository.findByEmail(email.toLowerCase())
+                .orElseThrow(() -> new org.example.sshome.exception.ResourceNotFoundException("User", "email", email));
     }
 }

@@ -1,6 +1,8 @@
 package org.example.sshome.entity;
 
 public enum Role {
-    USER,
-    ADMIN
+    VIEWER,
+    OPERATOR,
+    ADMIN,
+    SUPERADMIN
 }
