@@ -41,6 +41,9 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
+                // IoT device endpoints — authenticated by X-Device-Token in service layer
+                .requestMatchers("/devices/*/commands/pending").permitAll()
+                .requestMatchers("/devices/*/commands/*/executed").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session ->

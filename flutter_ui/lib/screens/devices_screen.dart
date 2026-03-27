@@ -175,6 +175,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
           typeIcon: _typeIcons[_devices[i].type] ?? Icons.devices_other_outlined,
           typeColor: _typeColors[_devices[i].type] ?? const Color(0xFFfbbf24),
           onDelete: () => _delete(_devices[i].id),
+          onTap: () => Navigator.pushNamed(context, '/device-detail',
+              arguments: _devices[i]),
         ),
       ),
     );
@@ -188,17 +190,21 @@ class _DeviceCard extends StatelessWidget {
   final IconData typeIcon;
   final Color typeColor;
   final VoidCallback onDelete;
+  final VoidCallback onTap;
 
   const _DeviceCard({
     required this.device,
     required this.typeIcon,
     required this.typeColor,
     required this.onDelete,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -277,6 +283,7 @@ class _DeviceCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/demo_screen.dart';
+import 'screens/device_detail_screen.dart';
 import 'screens/devices_screen.dart';
 
 void main() {
@@ -25,6 +26,14 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (_) => const DemoScreen(),
         '/devices': (_) => const DevicesScreen(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/device-detail') {
+          return MaterialPageRoute(
+            builder: (_) => DeviceDetailScreen(device: settings.arguments as dynamic),
+          );
+        }
+        return null;
       },
     );
   }
