@@ -26,7 +26,7 @@ public class AlertController {
 
     private final AlertService alertService;
 
-    // ─── GET /api/alerts ──────────────────────────────────────────────────
+    // --- /api/alerts --------------------------------------------------
     @GetMapping
     @Operation(summary = "List alerts with optional status/severity/device filter")
     public ResponseEntity<Map<String, Object>> list(
@@ -47,14 +47,14 @@ public class AlertController {
         return ResponseEntity.ok(body);
     }
 
-    // ─── GET /api/alerts/{id} ─────────────────────────────────────────────
+    // --- GET /api/alerts/{id} ---------------------------------------------
     @GetMapping("/{id}")
     @Operation(summary = "Get alert by ID")
     public ResponseEntity<Map<String, Object>> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(toDto(alertService.findById(id)));
     }
 
-    // ─── POST /api/alerts/{id}/acknowledge ───────────────────────────────
+    // --- POST /api/alerts/{id}/acknowledge -------------------------------
     @PostMapping("/{id}/acknowledge")
     @PreAuthorize("hasAnyRole('OPERATOR','ADMIN','SUPERADMIN')")
     @Operation(summary = "Acknowledge an active alert")
@@ -66,7 +66,7 @@ public class AlertController {
         return ResponseEntity.ok(toDto(alertService.acknowledge(id, actor, http.getRemoteAddr())));
     }
 
-    // ─── POST /api/alerts/{id}/resolve ────────────────────────────────────
+    // --- POST /api/alerts/{id}/resolve ------------------------------------
     @PostMapping("/{id}/resolve")
     @PreAuthorize("hasAnyRole('OPERATOR','ADMIN','SUPERADMIN')")
     @Operation(summary = "Resolve an alert")
@@ -78,7 +78,7 @@ public class AlertController {
         return ResponseEntity.ok(toDto(alertService.resolve(id, actor, http.getRemoteAddr())));
     }
 
-    // ─── POST /api/alerts/acknowledge-all ────────────────────────────────
+    // --- POST /api/alerts/acknowledge-all --------------------------------
     @PostMapping("/acknowledge-all")
     @PreAuthorize("hasAnyRole('OPERATOR','ADMIN','SUPERADMIN')")
     @Operation(summary = "Acknowledge all active alerts")
@@ -90,14 +90,14 @@ public class AlertController {
         return ResponseEntity.ok(Map.of("acknowledged", count));
     }
 
-    // ─── GET /api/alerts/stats ────────────────────────────────────────────
+    // --- GET /api/alerts/stats --------------------------------------------
     @GetMapping("/stats")
     @Operation(summary = "Get alert count statistics by severity and status")
     public ResponseEntity<Map<String, Object>> stats() {
         return ResponseEntity.ok(alertService.getStats());
     }
 
-    // ─── Mapper ──────────────────────────────────────────────────────────
+    // --- Mapper ----------------------------------------------------------
     private Map<String, Object> toDto(Alert a) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id",         a.getId());

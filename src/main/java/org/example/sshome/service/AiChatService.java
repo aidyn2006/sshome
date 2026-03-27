@@ -40,7 +40,7 @@ public class AiChatService {
         .codecs(c -> c.defaultCodecs().maxInMemorySize(2 * 1024 * 1024))
         .build();
 
-    // ─── Public API ──────────────────────────────────────────────────────
+    // --- Public API ------------------------------------------------------
 
     public String chat(String userMessage, User actor, String ip) {
         String systemPrompt = buildSystemPrompt();
@@ -64,14 +64,14 @@ public class AiChatService {
         return reply;
     }
 
-    // ─── System Prompt ───────────────────────────────────────────────────
+    // --- System Prompt ---------------------------------------------------
 
     private String buildSystemPrompt() {
         Map<String, Object> kpi = overviewService.getKpi();
         Map<String, Object> summary = deviceService.getSummary();
 
         return """
-            You are SSHome Assistant — an AI for the SSHome IoT monitoring platform.
+            You are SSHome Assistant - an AI for the SSHome IoT monitoring platform.
 
             ## Current System State
             - Total devices: %s | Online: %s | Offline: %s
@@ -99,7 +99,7 @@ public class AiChatService {
             );
     }
 
-    // ─── OpenAI ──────────────────────────────────────────────────────────
+    // --- OpenAI ----------------------------------------------------------
 
     private String callOpenAi(String systemPrompt, String userMessage) {
         if (openaiKey == null || openaiKey.isBlank()) {
@@ -143,7 +143,7 @@ public class AiChatService {
         return (String) message.get("content");
     }
 
-    // ─── Anthropic ────────────────────────────────────────────────────────
+    // --- Anthropic --------------------------------------------------------
 
     private String callAnthropic(String systemPrompt, String userMessage) {
         if (anthropicKey == null || anthropicKey.isBlank()) {
@@ -185,7 +185,7 @@ public class AiChatService {
         return (String) first.get("text");
     }
 
-    // ─── Fallback ─────────────────────────────────────────────────────────
+    // --- Fallback ---------------------------------------------------------
 
     private String fallbackResponse(String question) {
         Map<String, Object> kpi = overviewService.getKpi();

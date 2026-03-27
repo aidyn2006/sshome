@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -21,7 +23,7 @@ public class OverviewService {
     private final AlertRepository        alertRepository;
     private final SensorReadingRepository readingRepository;
 
-    // ─── KPI ─────────────────────────────────────────────────────────────
+    // --- KPI -------------------------------------------------------------
 
     @Cacheable(value = "kpi", key = "'overview'")
     public Map<String, Object> getKpi() {
@@ -50,7 +52,7 @@ public class OverviewService {
         );
     }
 
-    // ─── Activity Chart Data ─────────────────────────────────────────────
+    // --- Activity Chart Data ---------------------------------------------
 
     /**
      * Returns 24 hourly data points for the activity chart.
@@ -71,17 +73,17 @@ public class OverviewService {
             cursor = cursor.plus(1, ChronoUnit.HOURS);
         }
 
-        // Fill from DB
+        // Fill from DB - handle both PostgreSQL (Timestamp) and H2 (LocalDateTime) result types
         readingRepository.countPerHourSince(since).forEach(row -> {
-            if (row[0] instanceof java.sql.Timestamp ts) {
-                long epochHour = ts.toInstant().getEpochSecond() / 3600;
+            Long epochHour = toEpochHour(row[0]);
+            if (epochHour != null) {
                 readingsByHour.merge(epochHour, ((Number) row[1]).longValue(), Long::sum);
             }
         });
 
         alertRepository.countPerHourSince(since).forEach(row -> {
-            if (row[0] instanceof java.sql.Timestamp ts) {
-                long epochHour = ts.toInstant().getEpochSecond() / 3600;
+            Long epochHour = toEpochHour(row[0]);
+            if (epochHour != null) {
                 alertsByHour.merge(epochHour, ((Number) row[1]).longValue(), Long::sum);
             }
         });
@@ -100,7 +102,16 @@ public class OverviewService {
         return points;
     }
 
-    // ─── Recent Alerts ────────────────────────────────────────────────────
+    // --- Timestamp helper - handles H2 (LocalDateTime) and PostgreSQL (Timestamp) --
+
+    private Long toEpochHour(Object obj) {
+        if (obj instanceof java.sql.Timestamp ts) return ts.toInstant().getEpochSecond() / 3600;
+        if (obj instanceof LocalDateTime ldt)    return ldt.toEpochSecond(ZoneOffset.UTC) / 3600;
+        if (obj instanceof Instant inst)         return inst.getEpochSecond() / 3600;
+        return null;
+    }
+
+    // --- Recent Alerts ----------------------------------------------------
 
     public List<Map<String, Object>> getRecentAlerts(int limit) {
         return alertRepository.findTop10ByOrderByCreatedAtDesc().stream()

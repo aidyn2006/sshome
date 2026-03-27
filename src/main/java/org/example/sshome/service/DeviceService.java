@@ -28,7 +28,7 @@ public class DeviceService {
     private final AuditService           auditService;
     private final EncryptionService      encryptionService;
 
-    // ─── CRUD ────────────────────────────────────────────────────────────
+    // --- CRUD ------------------------------------------------------------
 
     public Page<Device> findAll(Device.DeviceStatus status, Device.DeviceType type,
                                 String search, Pageable pageable) {
@@ -101,7 +101,7 @@ public class DeviceService {
         log.info("Device deleted: {} by {}", device.getDeviceId(), actor.getEmail());
     }
 
-    // ─── Status ──────────────────────────────────────────────────────────
+    // --- Status ----------------------------------------------------------
 
     @Transactional
     @CacheEvict(value = {"device-summary", "kpi"}, allEntries = true)
@@ -123,7 +123,7 @@ public class DeviceService {
         });
     }
 
-    // ─── Sensor readings ─────────────────────────────────────────────────
+    // --- Sensor readings -------------------------------------------------
 
     @Transactional
     public SensorReading ingestReading(String deviceId, String channel, double value, String unit) {
@@ -148,7 +148,7 @@ public class DeviceService {
             deviceId, channel, Pageable.ofSize(limit));
     }
 
-    // ─── Summary ─────────────────────────────────────────────────────────
+    // --- Summary ---------------------------------------------------------
 
     @Cacheable("device-summary")
     public Map<String, Object> getSummary() {
@@ -167,7 +167,7 @@ public class DeviceService {
         );
     }
 
-    // ─── Stale device detection ───────────────────────────────────────────
+    // --- Stale device detection -------------------------------------------
 
     /** Marks devices offline if not seen in the last N minutes (called by scheduler) */
     @Transactional

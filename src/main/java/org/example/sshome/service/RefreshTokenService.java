@@ -42,11 +42,11 @@ public class RefreshTokenService {
             .orElseThrow(() -> new TokenException("Refresh token not found"));
 
         if (!token.isValid()) {
-            // Token was revoked or expired — revoke all tokens for this user (suspicious activity)
+            // Token was revoked or expired - revoke all tokens for this user (suspicious activity)
             if (token.isRevoked()) {
                 log.warn("Revoked refresh token used by user={} ip={}",
                     token.getUser().getEmail(), token.getIpAddress());
-                repo.revokeAllByUserId(token.getUser().getId());
+                repo.revokeAllByUserId(token.getUser().getId(), Instant.now());
             }
             throw new TokenException(token.isRevoked() ? "Token revoked" : "Token expired");
         }
@@ -63,7 +63,7 @@ public class RefreshTokenService {
 
     @Transactional
     public void revokeAllForUser(User user) {
-        int revoked = repo.revokeAllByUserId(user.getId());
+        int revoked = repo.revokeAllByUserId(user.getId(), Instant.now());
         log.info("Revoked {} refresh tokens for user={}", revoked, user.getEmail());
     }
 

@@ -49,16 +49,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // ─── CSRF: disabled (stateless JWT API) ─────────────────────
+            // --- CSRF: disabled (stateless JWT API) ---------------------
             .csrf(AbstractHttpConfigurer::disable)
 
-            // ─── CORS ────────────────────────────────────────────────────
+            // --- CORS ----------------------------------------------------
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-            // ─── Sessions: stateless ─────────────────────────────────────
+            // --- Sessions: stateless -------------------------------------
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // ─── Security Headers ─────────────────────────────────────────
+            // --- Security Headers -----------------------------------------
             .headers(headers -> headers
                 .frameOptions(frame -> frame.sameOrigin())          // H2 console
                 .xssProtection(xss -> xss.disable())               // Let browser handle
@@ -68,7 +68,7 @@ public class SecurityConfig {
                     .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
             )
 
-            // ─── Authorization ────────────────────────────────────────────
+            // --- Authorization --------------------------------------------
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_PATHS).permitAll()
                 // SSE endpoints are authenticated via token query param
@@ -77,6 +77,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/devices/**").hasAnyRole("VIEWER","OPERATOR","ADMIN","SUPERADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/alerts/**").hasAnyRole("VIEWER","OPERATOR","ADMIN","SUPERADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/overview/**").hasAnyRole("VIEWER","OPERATOR","ADMIN","SUPERADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/alert-rules/**").hasAnyRole("VIEWER","OPERATOR","ADMIN","SUPERADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/edge-nodes/**").hasAnyRole("VIEWER","OPERATOR","ADMIN","SUPERADMIN")
                 // Mutations require OPERATOR or above
                 .requestMatchers(HttpMethod.POST, "/api/devices/**").hasAnyRole("OPERATOR","ADMIN","SUPERADMIN")
                 .requestMatchers(HttpMethod.PUT,  "/api/devices/**").hasAnyRole("OPERATOR","ADMIN","SUPERADMIN")
@@ -87,7 +89,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
 
-            // ─── Filters ──────────────────────────────────────────────────
+            // --- Filters --------------------------------------------------
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(rateLimitFilter,   UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter,     UsernamePasswordAuthenticationFilter.class);
@@ -112,7 +114,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }

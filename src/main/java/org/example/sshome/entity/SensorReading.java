@@ -42,7 +42,7 @@ public class SensorReading {
     @Builder.Default
     private Instant readAt = Instant.now();
 
-    // ─── Aggregation helpers (not stored) ──────────────────────────────
+    // --- Aggregation helpers (not stored) ------------------------------
     public static SensorReading of(Device device, String channel, double value, String unit) {
         return SensorReading.builder()
             .device(device)

@@ -17,7 +17,12 @@
       "Bash(rm ~/.m2/repository/org/springframework/boot/spring-boot-starter-cache/4.0.4/spring-boot-starter-cache-4.0.4.pom.lastUpdated\nrm ~/.m2/repository/org/springframework/boot/spring-boot-starter-websocket/4.0.4/spring-boot-starter-websocket-4.0.4.pom.lastUpdated)",
       "Bash(mvn dependency:resolve -Dartifact=org.springframework.boot:spring-boot-starter-websocket:4.0.4 2>&1 | tail -15)",
       "Bash(curl -s --connect-timeout 10 https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-websocket/4.0.4/spring-boot-starter-websocket-4.0.4.pom -o ~/.m2/repository/org/springframework/boot/spring-boot-starter-websocket/4.0.4/spring-boot-starter-websocket-4.0.4.pom 2>&1; echo \"exit: $?\")",
-      "Bash(curl -s --connect-timeout 10 https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-cache/4.0.4/spring-boot-starter-cache-4.0.4.pom -o ~/.m2/repository/org/springframework/boot/spring-boot-starter-cache/4.0.4/spring-boot-starter-cache-4.0.4.pom 2>&1; echo \"exit: $?\"\nls -la ~/.m2/repository/org/springframework/boot/spring-boot-starter-websocket/4.0.4/\nls -la ~/.m2/repository/org/springframework/boot/spring-boot-starter-cache/4.0.4/)"
+      "Bash(curl -s --connect-timeout 10 https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-cache/4.0.4/spring-boot-starter-cache-4.0.4.pom -o ~/.m2/repository/org/springframework/boot/spring-boot-starter-cache/4.0.4/spring-boot-starter-cache-4.0.4.pom 2>&1; echo \"exit: $?\"\nls -la ~/.m2/repository/org/springframework/boot/spring-boot-starter-websocket/4.0.4/\nls -la ~/.m2/repository/org/springframework/boot/spring-boot-starter-cache/4.0.4/)",
+      "Bash(tree -L 3 /Users/aidyn/IdeaProjects/SSHome -I 'target|.idea|.git|node_modules|build|flutter_ui|components' --dirsfirst 2>/dev/null || find /Users/aidyn/IdeaProjects/SSHome -maxdepth 3 -not -path '*/target/*' -not -path '*/.idea/*' -not -path '*/.git/*' -not -path '*/flutter_ui/*' -not -path '*/components/*' | sort)",
+      "Bash(./mvnw compile:*)",
+      "Bash(java -version 2>&1 && ./mvnw --version 2>&1)",
+      "Bash(/usr/libexec/java_home -V 2>&1)",
+      "Bash(JAVA_HOME=/Users/aidyn/Library/Java/JavaVirtualMachines/ms-21.0.9/Contents/Home ./mvnw compile 2>&1 | grep -E \"ERROR|BUILD|error:\" | head -60)"
     ]
   }
 }

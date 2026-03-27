@@ -53,12 +53,12 @@ public class AuthController {
         AuthResponse accessToken = authService.login(request, ip);
 
         // Issue refresh token
-        User user = authService.loadUserByEmail(request.email());
+        User user = authService.loadUserByEmail(request.getEmail());
         RefreshToken refreshToken = refreshTokenService.create(user, ip, http.getHeader("User-Agent"));
         auditService.logLogin(user, ip);
 
         return ResponseEntity.ok(Map.of(
-            "accessToken",  accessToken.token(),
+            "accessToken",  accessToken.getToken(),
             "refreshToken", refreshToken.getToken(),
             "tokenType",    "Bearer",
             "expiresIn",    3600

@@ -30,7 +30,7 @@ public class MonitoringService {
 
     private final Random rand = new Random();
 
-    // ─── Sensor ingestion ─────────────────────────────────────────────────
+    // --- Sensor ingestion -------------------------------------------------
 
     @Transactional
     public void ingest(String deviceId, String channel, double value, String unit) {
@@ -48,7 +48,7 @@ public class MonitoringService {
         log.debug("Ingested: device={} channel={} value={}{}", deviceId, channel, value, unit);
     }
 
-    // ─── Sensor simulation (dev profile) ─────────────────────────────────
+    // --- Sensor simulation (dev profile) ---------------------------------
 
     /**
      * Simulates realistic sensor data for development/demo.
@@ -103,7 +103,7 @@ public class MonitoringService {
         return Math.max(min, Math.min(max, val));
     }
 
-    // ─── Stale device check ───────────────────────────────────────────────
+    // --- Stale device check -----------------------------------------------
 
     /** Marks devices offline if they haven't reported in 10 minutes */
     @Scheduled(fixedDelay = 60_000)

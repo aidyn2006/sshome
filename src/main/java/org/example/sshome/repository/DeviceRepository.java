@@ -44,7 +44,7 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
         Pageable pageable
     );
 
-    // ─── Aggregation queries ──────────────────────────────────────────
+    // --- Aggregation queries ------------------------------------------
     long countByStatus(Device.DeviceStatus status);
 
     @Query("SELECT COUNT(d) FROM Device d WHERE d.status = 'ONLINE'")

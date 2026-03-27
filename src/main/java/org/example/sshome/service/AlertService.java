@@ -24,7 +24,7 @@ public class AlertService {
     private final AlertRepository alertRepository;
     private final AuditService    auditService;
 
-    // ─── Queries ──────────────────────────────────────────────────────────
+    // --- Queries ----------------------------------------------------------
 
     public Page<Alert> findAll(Alert.Status status, Alert.Severity severity,
                                UUID deviceId, Pageable pageable) {
@@ -36,7 +36,7 @@ public class AlertService {
             .orElseThrow(() -> new ResourceNotFoundException("Alert", id));
     }
 
-    // ─── State transitions ────────────────────────────────────────────────
+    // --- State transitions ------------------------------------------------
 
     @Transactional
     public Alert acknowledge(UUID id, User user, String ip) {
@@ -82,7 +82,7 @@ public class AlertService {
         return count;
     }
 
-    // ─── Stats ───────────────────────────────────────────────────────────
+    // --- Stats -----------------------------------------------------------
 
     public Map<String, Object> getStats() {
         return Map.of(

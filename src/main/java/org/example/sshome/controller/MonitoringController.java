@@ -26,7 +26,7 @@ public class MonitoringController {
     private final MonitoringService monitoringService;
     private final SensorDataPublisher publisher;
 
-    // ─── SSE Stream ────────────────────────────────────────────────────────
+    // --- SSE Stream --------------------------------------------------------
 
     /**
      * Server-Sent Events stream for all sensor readings.
@@ -35,9 +35,9 @@ public class MonitoringController {
      * <pre>GET /monitoring/stream  (Authorization: Bearer {token})</pre>
      *
      * <p>Events emitted:
-     * - <code>reading</code>  — new sensor reading
-     * - <code>alert</code>    — new alert triggered
-     * - <code>status</code>   — device status change
+     * - <code>reading</code>  - new sensor reading
+     * - <code>alert</code>    - new alert triggered
+     * - <code>status</code>   - device status change
      */
     @GetMapping(value = "/monitoring/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @SecurityRequirement(name = "bearerAuth")
@@ -62,7 +62,7 @@ public class MonitoringController {
         return publisher.subscribeDevice(deviceId, timeout);
     }
 
-    // ─── REST ingestion (for devices without STOMP) ────────────────────────
+    // --- REST ingestion (for devices without STOMP) ------------------------
 
     /**
      * POST /monitoring/ingest
@@ -84,7 +84,7 @@ public class MonitoringController {
         ));
     }
 
-    // ─── WebSocket STOMP Handler ───────────────────────────────────────────
+    // --- WebSocket STOMP Handler -------------------------------------------
 
     /**
      * Device clients can send readings via STOMP.
@@ -97,18 +97,18 @@ public class MonitoringController {
         monitoringService.ingest(req.deviceId(), req.channel(), req.value(), req.unit());
     }
 
-    // ─── Device heartbeat ─────────────────────────────────────────────────
+    // --- Device heartbeat -------------------------------------------------
 
     @PostMapping("/monitoring/heartbeat/{deviceId}")
     @ResponseBody
-    @Operation(summary = "Device heartbeat — keeps device status as ONLINE")
+    @Operation(summary = "Device heartbeat - keeps device status as ONLINE")
     public ResponseEntity<Void> heartbeat(@PathVariable String deviceId) {
         // Delegate to service which updates lastSeenAt
         monitoringService.ingest(deviceId, "_heartbeat", 1.0, null);
         return ResponseEntity.accepted().build();
     }
 
-    // ─── Request record ───────────────────────────────────────────────────
+    // --- Request record ---------------------------------------------------
     record IngestRequest(
         @jakarta.validation.constraints.NotBlank String deviceId,
         @jakarta.validation.constraints.NotBlank String channel,

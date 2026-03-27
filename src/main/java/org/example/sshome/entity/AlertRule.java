@@ -67,7 +67,7 @@ public class AlertRule {
     @PreUpdate
     protected void onUpdate() { updatedAt = Instant.now(); }
 
-    // ─── Rule evaluation ──────────────────────────────────────────────
+    // --- Rule evaluation ----------------------------------------------
     public boolean evaluate(double value) {
         return switch (operator.toUpperCase()) {
             case "GT"  -> value > threshold;

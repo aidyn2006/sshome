@@ -49,16 +49,16 @@ public class Device {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // ─── Encryption metadata ─────────────────────────────────────────────
+    // --- Encryption metadata ---------------------------------------------
     @Column(name = "data_encrypted", nullable = false)
     @Builder.Default
     private boolean dataEncrypted = false;
 
-    /** RSA-encrypted AES key — stored in Base64 */
+    /** RSA-encrypted AES key - stored in Base64 */
     @Column(name = "encrypted_key_b64", columnDefinition = "TEXT")
     private String encryptedKeyB64;
 
-    // ─── Relationships ───────────────────────────────────────────────────
+    // --- Relationships ---------------------------------------------------
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "edge_node_id")
     private EdgeNode edgeNode;
@@ -75,7 +75,7 @@ public class Device {
     @Builder.Default
     private List<Alert> alerts = new ArrayList<>();
 
-    // ─── Timestamps ──────────────────────────────────────────────────────
+    // --- Timestamps ------------------------------------------------------
     @Column(name = "last_seen_at")
     private Instant lastSeenAt;
 
@@ -96,7 +96,7 @@ public class Device {
         updatedAt = Instant.now();
     }
 
-    // ─── Enums ───────────────────────────────────────────────────────────
+    // --- Enums -----------------------------------------------------------
     public enum DeviceType {
         TEMPERATURE, HUMIDITY, CAMERA, MOTION, LOCK,
         GATEWAY, SMOKE, ENERGY, FLOOD, AIR_QUALITY, THERMOSTAT, OTHER

@@ -34,7 +34,7 @@ public class DeviceController {
 
     private final DeviceService deviceService;
 
-    // ─── GET /api/devices ─────────────────────────────────────────────────
+    // --- GET /api/devices -------------------------------------------------
     @GetMapping
     @Operation(summary = "List all devices with optional filters")
     public ResponseEntity<Map<String, Object>> list(
@@ -56,7 +56,7 @@ public class DeviceController {
         return ResponseEntity.ok(body);
     }
 
-    // ─── GET /api/devices/{id} ────────────────────────────────────────────
+    // --- GET /api/devices/{id} --------------------------------------------
     @GetMapping("/{id}")
     @Operation(summary = "Get device details by ID")
     public ResponseEntity<Map<String, Object>> getById(@PathVariable UUID id) {
@@ -64,7 +64,7 @@ public class DeviceController {
         return ResponseEntity.ok(toDetail(device));
     }
 
-    // ─── POST /api/devices ────────────────────────────────────────────────
+    // --- POST /api/devices ------------------------------------------------
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('OPERATOR','ADMIN','SUPERADMIN')")
@@ -88,7 +88,7 @@ public class DeviceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDetail(created));
     }
 
-    // ─── PUT /api/devices/{id} ────────────────────────────────────────────
+    // --- PUT /api/devices/{id} --------------------------------------------
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('OPERATOR','ADMIN','SUPERADMIN')")
     @Operation(summary = "Update device metadata")
@@ -110,7 +110,7 @@ public class DeviceController {
         return ResponseEntity.ok(toDetail(updated));
     }
 
-    // ─── DELETE /api/devices/{id} ─────────────────────────────────────────
+    // --- DELETE /api/devices/{id} -----------------------------------------
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
@@ -123,7 +123,7 @@ public class DeviceController {
         deviceService.delete(id, actor, http.getRemoteAddr());
     }
 
-    // ─── POST /api/devices/{deviceId}/readings ────────────────────────────
+    // --- POST /api/devices/{deviceId}/readings ----------------------------
     @PostMapping("/{deviceId}/readings")
     @ResponseStatus(HttpStatus.ACCEPTED)
     @Operation(summary = "Ingest a sensor reading for a device")
@@ -141,7 +141,7 @@ public class DeviceController {
         ));
     }
 
-    // ─── GET /api/devices/{id}/readings ──────────────────────────────────
+    // --- GET /api/devices/{id}/readings ----------------------------------
     @GetMapping("/{id}/readings")
     @Operation(summary = "Get historical sensor readings")
     public ResponseEntity<List<Map<String, Object>>> getReadings(
@@ -162,14 +162,14 @@ public class DeviceController {
         return ResponseEntity.ok(result);
     }
 
-    // ─── GET /api/devices/summary ─────────────────────────────────────────
+    // --- GET /api/devices/summary -----------------------------------------
     @GetMapping("/summary")
     @Operation(summary = "Get device count summary")
     public ResponseEntity<Map<String, Object>> summary() {
         return ResponseEntity.ok(deviceService.getSummary());
     }
 
-    // ─── Mappers ─────────────────────────────────────────────────────────
+    // --- Mappers ---------------------------------------------------------
     private Map<String, Object> toSummary(Device d) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id",         d.getId());
@@ -193,7 +193,7 @@ public class DeviceController {
         return m;
     }
 
-    // ─── Request records ──────────────────────────────────────────────────
+    // --- Request records --------------------------------------------------
     record DeviceRequest(
         String deviceId,
         @jakarta.validation.constraints.NotBlank String name,

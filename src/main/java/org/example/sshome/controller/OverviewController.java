@@ -20,14 +20,14 @@ public class OverviewController {
 
     private final OverviewService overviewService;
 
-    /** GET /api/overview/kpi — main dashboard KPIs */
+    /** GET /api/overview/kpi - main dashboard KPIs */
     @GetMapping("/kpi")
     @Operation(summary = "Get dashboard KPIs: device counts, alert counts, system status")
     public ResponseEntity<Map<String, Object>> kpi() {
         return ResponseEntity.ok(overviewService.getKpi());
     }
 
-    /** GET /api/overview/activity?hours=24 — activity chart data */
+    /** GET /api/overview/activity?hours=24 - activity chart data */
     @GetMapping("/activity")
     @Operation(summary = "Get hourly activity data points for chart")
     public ResponseEntity<List<Map<String, Object>>> activity(
@@ -36,7 +36,7 @@ public class OverviewController {
         return ResponseEntity.ok(overviewService.getActivityPoints(Math.min(hours, 168)));
     }
 
-    /** GET /api/overview/alerts?limit=10 — latest alerts for dashboard */
+    /** GET /api/overview/alerts?limit=10 - latest alerts for dashboard */
     @GetMapping("/alerts")
     @Operation(summary = "Get recent alerts for overview widget")
     public ResponseEntity<List<Map<String, Object>>> recentAlerts(

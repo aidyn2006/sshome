@@ -26,7 +26,7 @@ public class AuditService {
 
     /**
      * Records an audit event asynchronously in a separate transaction.
-     * Never throws — failures are logged but don't affect the caller.
+     * Never throws - failures are logged but don't affect the caller.
      */
     @Async("auditExecutor")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -45,13 +45,27 @@ public class AuditService {
     @Async("auditExecutor")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logLogin(User user, String ip) {
-        log(AuditLog.Action.LOGIN, "USER", user.getId().toString(), user, ip,
-            Map.of("email", user.getEmail(), "role", user.getRole().name()));
+        // Inline save - cannot call @Async method from same class (proxy bypassed)
+        try {
+            AuditLog entry = AuditLog.of(AuditLog.Action.LOGIN, "USER",
+                user.getId().toString(), user, ip,
+                Map.of("email", user.getEmail(), "role", user.getRole().name()));
+            auditLogRepository.save(entry);
+        } catch (Exception e) {
+            log.error("Failed to write login audit log for user={}", user.getEmail(), e);
+        }
     }
 
     @Async("auditExecutor")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logLogout(User user, String ip) {
-        log(AuditLog.Action.LOGOUT, "USER", user.getId().toString(), user, ip, null);
+        // Inline save - cannot call @Async method from same class (proxy bypassed)
+        try {
+            AuditLog entry = AuditLog.of(AuditLog.Action.LOGOUT, "USER",
+                user.getId().toString(), user, ip, null);
+            auditLogRepository.save(entry);
+        } catch (Exception e) {
+            log.error("Failed to write logout audit log for user={}", user.getEmail(), e);
+        }
     }
 }

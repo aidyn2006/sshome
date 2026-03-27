@@ -10,6 +10,8 @@ import org.example.sshome.entity.User;
 import org.example.sshome.exception.AccountLockedException;
 import org.example.sshome.repository.UserRepository;
 import org.example.sshome.security.JwtService;
+
+import java.time.Instant;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -48,6 +50,7 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest request, String sourceIp) {
         String email = request.getEmail().toLowerCase();
         if (loginAttemptService.isBlocked(email)) {
@@ -62,6 +65,10 @@ public class AuthService {
             );
             User user = (User) authentication.getPrincipal();
             loginAttemptService.recordSuccess(email);
+            // Track last login time and IP
+            user.setLastLoginAt(Instant.now());
+            user.setLastLoginIp(sourceIp);
+            userRepository.save(user);
             log.info("Authentication success for {} from {}", email, sourceIp);
             return AuthResponse.builder()
                     .token(jwtService.generateToken(user))

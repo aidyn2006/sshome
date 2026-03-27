@@ -10,6 +10,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -26,12 +27,12 @@ public class SensorDataPublisher {
 
     private final SimpMessagingTemplate messagingTemplate;
 
-    // ─── SSE Emitter Registry ─────────────────────────────────────────────
+    // --- SSE Emitter Registry ---------------------------------------------
     /** key = deviceId or "ALL" for global subscribers */
     private final ConcurrentHashMap<String, CopyOnWriteArrayList<SseEmitter>>
         sseEmitters = new ConcurrentHashMap<>();
 
-    // ─── SSE Registration ─────────────────────────────────────────────────
+    // --- SSE Registration -------------------------------------------------
 
     public SseEmitter subscribeDevice(String deviceId, long timeoutMs) {
         SseEmitter emitter = new SseEmitter(timeoutMs);
@@ -55,7 +56,7 @@ public class SensorDataPublisher {
         return emitter;
     }
 
-    // ─── Publishing ───────────────────────────────────────────────────────
+    // --- Publishing -------------------------------------------------------
 
     /**
      * Publishes a new sensor reading via both WebSocket (STOMP) and SSE.
@@ -114,7 +115,7 @@ public class SensorDataPublisher {
         broadcast("ALL", "status", payload);
     }
 
-    // ─── Internal SSE broadcast ───────────────────────────────────────────
+    // --- Internal SSE broadcast -------------------------------------------
 
     private void broadcast(String key, String eventType, Map<String, Object> data) {
         CopyOnWriteArrayList<SseEmitter> list = sseEmitters.get(key);

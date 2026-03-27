@@ -73,5 +73,7 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, UU
     """)
     List<SensorReading> findByTimeRange(@Param("from") Instant from, @Param("to") Instant to);
 
-    void deleteByDeviceIdAndReadAtBefore(UUID deviceId, Instant before);
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM SensorReading r WHERE r.device.id = :deviceId AND r.readAt < :before")
+    void deleteByDevice_IdAndReadAtBefore(@Param("deviceId") UUID deviceId, @Param("before") Instant before);
 }

@@ -45,7 +45,7 @@ public class Alert {
 
     /** JSON snapshot of device state at alert creation */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "device_snapshot", columnDefinition = "jsonb")
+    @Column(name = "device_snapshot")
     private Map<String, Object> deviceSnapshot;
 
     @Column(name = "sensor_value")
@@ -65,7 +65,7 @@ public class Alert {
     @Builder.Default
     private Instant createdAt = Instant.now();
 
-    // ─── Business methods ─────────────────────────────────────────────
+    // --- Business methods ---------------------------------------------
     public void acknowledge(User user) {
         this.status = Status.ACKNOWLEDGED;
         this.acknowledgedBy = user;
@@ -77,7 +77,7 @@ public class Alert {
         this.resolvedAt = Instant.now();
     }
 
-    // ─── Enums ───────────────────────────────────────────────────────
+    // --- Enums -------------------------------------------------------
     public enum Severity {
         CRITICAL, WARNING, INFO;
 

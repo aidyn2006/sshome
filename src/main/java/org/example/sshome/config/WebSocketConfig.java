@@ -22,13 +22,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      *   ws://host/ws-native       (raw WebSocket)
      *
      * <p>Topics:
-     *   /topic/monitoring/{deviceId}  — real-time sensor readings per device
-     *   /topic/monitoring/all         — all sensor readings
-     *   /topic/alerts                 — new alert events
-     *   /topic/devices/status         — device status changes
+     *   /topic/monitoring/{deviceId}  - real-time sensor readings per device
+     *   /topic/monitoring/all         - all sensor readings
+     *   /topic/alerts                 - new alert events
+     *   /topic/devices/status         - device status changes
      *
      * <p>Client sends to:
-     *   /app/sensor/ingest            — push sensor reading (device clients)
+     *   /app/sensor/ingest            - push sensor reading (device clients)
      */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {

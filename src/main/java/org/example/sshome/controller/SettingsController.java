@@ -35,7 +35,7 @@ public class SettingsController {
     private final UserRepository    userRepository;
     private final PasswordEncoder   passwordEncoder;
 
-    // ─── User Management ──────────────────────────────────────────────────
+    // --- User Management --------------------------------------------------
 
     @GetMapping("/users")
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
@@ -122,7 +122,7 @@ public class SettingsController {
         return ResponseEntity.noContent().build();
     }
 
-    // ─── Profile (self-service) ────────────────────────────────────────────
+    // --- Profile (self-service) --------------------------------------------
 
     @GetMapping("/profile")
     @Operation(summary = "Get current user's profile")
@@ -145,7 +145,7 @@ public class SettingsController {
         return ResponseEntity.ok(UserResponse.from(actor));
     }
 
-    // ─── System Info ──────────────────────────────────────────────────────
+    // --- System Info ------------------------------------------------------
 
     @GetMapping("/system")
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
@@ -159,7 +159,7 @@ public class SettingsController {
         ));
     }
 
-    // ─── DTOs ─────────────────────────────────────────────────────────────
+    // --- DTOs -------------------------------------------------------------
 
     record UserResponse(
         UUID    id,

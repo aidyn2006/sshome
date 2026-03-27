@@ -48,7 +48,7 @@ public class EncryptionService {
         this.hmacKey = new SecretKeySpec(hmacBytes, "HmacSHA256");
     }
 
-    // ─── AES-256-GCM Encryption ──────────────────────────────────────────
+    // --- AES-256-GCM Encryption ------------------------------------------
 
     /**
      * Encrypts plaintext with AES-256-GCM.
@@ -99,7 +99,7 @@ public class EncryptionService {
         }
     }
 
-    // ─── HMAC-SHA256 Signing ─────────────────────────────────────────────
+    // --- HMAC-SHA256 Signing ---------------------------------------------
 
     /**
      * Computes HMAC-SHA256 over data and returns Base64.
@@ -122,7 +122,7 @@ public class EncryptionService {
         return MessageDigestUtils.constantTimeEquals(actual, expectedBase64);
     }
 
-    // ─── AES Key Generation (for per-device key) ─────────────────────────
+    // --- AES Key Generation (for per-device key) -------------------------
 
     /** Generates a fresh 256-bit AES key, returns it as Base64 string. */
     public String generateAesKeyBase64() {
@@ -135,7 +135,7 @@ public class EncryptionService {
         }
     }
 
-    // ─── Utilities ───────────────────────────────────────────────────────
+    // --- Utilities -------------------------------------------------------
 
     private static byte[] padTo32Bytes(byte[] input) {
         byte[] result = new byte[32];
@@ -143,7 +143,7 @@ public class EncryptionService {
         return result;
     }
 
-    // ─── Inner helper ────────────────────────────────────────────────────
+    // --- Inner helper ----------------------------------------------------
 
     private static final class MessageDigestUtils {
         static boolean constantTimeEquals(String a, String b) {

@@ -1,6 +1,11 @@
 package org.example.sshome.service;
 
-import com.lowagie.text.*;
+import com.lowagie.text.Chunk;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +40,7 @@ public class ReportService {
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
         .withZone(ZoneId.systemDefault());
 
-    // ─── PDF Generation ───────────────────────────────────────────────────
+    // --- PDF Generation ---------------------------------------------------
 
     public byte[] generatePdf(String type, Instant from, Instant to) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -43,14 +48,14 @@ public class ReportService {
             PdfWriter.getInstance(doc, baos);
             doc.open();
 
-            // ── Header ────────────────────────────────────────────────────
-            Font titleFont = new Font(Font.HELVETICA, 18, Font.BOLD);
-            Font headerFont = new Font(Font.HELVETICA, 12, Font.BOLD);
-            Font normalFont = new Font(Font.HELVETICA, 10, Font.NORMAL);
-            Font smallFont  = new Font(Font.HELVETICA, 9, Font.ITALIC);
+            // -- Header ----------------------------------------------------
+            com.lowagie.text.Font titleFont  = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 18, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font headerFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 12, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font normalFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 10, com.lowagie.text.Font.NORMAL);
+            com.lowagie.text.Font smallFont  = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 9, com.lowagie.text.Font.ITALIC);
 
-            doc.add(new Paragraph("SSHome — " + reportTitle(type), titleFont));
-            doc.add(new Paragraph("Period: " + FMT.format(from) + " → " + FMT.format(to), smallFont));
+            doc.add(new Paragraph("SSHome - " + reportTitle(type), titleFont));
+            doc.add(new Paragraph("Period: " + FMT.format(from) + " -> " + FMT.format(to), smallFont));
             doc.add(new Paragraph("Generated: " + FMT.format(Instant.now()), smallFont));
             doc.add(Chunk.NEWLINE);
 
@@ -70,7 +75,8 @@ public class ReportService {
         }
     }
 
-    private void buildUptimeSection(Document doc, Font hdr, Font normal, Instant from, Instant to) throws DocumentException {
+    private void buildUptimeSection(Document doc, com.lowagie.text.Font hdr, com.lowagie.text.Font normal,
+                                    Instant from, Instant to) throws DocumentException {
         doc.add(new Paragraph("Device Uptime Summary", hdr));
         doc.add(Chunk.NEWLINE);
 
@@ -91,13 +97,14 @@ public class ReportService {
         for (Device d : devices) {
             addTableCell(table, normal, d.getName());
             addTableCell(table, normal, d.getType().name());
-            addTableCell(table, normal, d.getLocation() != null ? d.getLocation() : "—");
+            addTableCell(table, normal, d.getLocation() != null ? d.getLocation() : "-");
             addTableCell(table, normal, d.getStatus().name());
         }
         doc.add(table);
     }
 
-    private void buildAlertsSection(Document doc, Font hdr, Font normal, Instant from, Instant to) throws DocumentException {
+    private void buildAlertsSection(Document doc, com.lowagie.text.Font hdr, com.lowagie.text.Font normal,
+                                    Instant from, Instant to) throws DocumentException {
         doc.add(new Paragraph("Alert Summary", hdr));
         doc.add(Chunk.NEWLINE);
 
@@ -116,13 +123,14 @@ public class ReportService {
         for (Alert a : alerts.stream().limit(100).toList()) {
             addTableCell(table, normal, FMT.format(a.getCreatedAt()));
             addTableCell(table, normal, a.getSeverity().name());
-            addTableCell(table, normal, a.getDevice() != null ? a.getDevice().getName() : "—");
+            addTableCell(table, normal, a.getDevice() != null ? a.getDevice().getName() : "-");
             addTableCell(table, normal, truncate(a.getMessage(), 80));
         }
         doc.add(table);
     }
 
-    private void buildSensorsSection(Document doc, Font hdr, Font normal, Instant from, Instant to) throws DocumentException {
+    private void buildSensorsSection(Document doc, com.lowagie.text.Font hdr, com.lowagie.text.Font normal,
+                                     Instant from, Instant to) throws DocumentException {
         doc.add(new Paragraph("Sensor Analytics", hdr));
         doc.add(Chunk.NEWLINE);
         doc.add(new Paragraph("Min/Max/Avg values per channel across all devices.", normal));
@@ -131,7 +139,8 @@ public class ReportService {
         doc.add(new Paragraph("See Excel export for detailed per-device data.", normal));
     }
 
-    private void buildActivitySection(Document doc, Font hdr, Font normal, Instant from, Instant to) throws DocumentException {
+    private void buildActivitySection(Document doc, com.lowagie.text.Font hdr, com.lowagie.text.Font normal,
+                                      Instant from, Instant to) throws DocumentException {
         doc.add(new Paragraph("User Activity Report", hdr));
         doc.add(Chunk.NEWLINE);
         List<Object[]> rows = auditLogRepository.countPerUserSince(from);
@@ -145,7 +154,7 @@ public class ReportService {
         doc.add(table);
     }
 
-    // ─── Excel Generation ─────────────────────────────────────────────────
+    // --- Excel Generation -------------------------------------------------
 
     public byte[] generateExcel(String type, Instant from, Instant to) {
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -236,7 +245,7 @@ public class ReportService {
         }
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────
+    // --- Helpers ---------------------------------------------------------
 
     private String reportTitle(String type) {
         return switch (type.toUpperCase()) {
@@ -249,7 +258,7 @@ public class ReportService {
         };
     }
 
-    private void addTableHeader(com.lowagie.text.pdf.PdfPTable table, Font f, String... headers) {
+    private void addTableHeader(com.lowagie.text.pdf.PdfPTable table, com.lowagie.text.Font f, String... headers) {
         for (String h : headers) {
             com.lowagie.text.pdf.PdfPCell cell = new com.lowagie.text.pdf.PdfPCell(new Phrase(h, f));
             cell.setBackgroundColor(java.awt.Color.LIGHT_GRAY);
@@ -258,7 +267,7 @@ public class ReportService {
         }
     }
 
-    private void addTableCell(com.lowagie.text.pdf.PdfPTable table, Font f, String value) {
+    private void addTableCell(com.lowagie.text.pdf.PdfPTable table, com.lowagie.text.Font f, String value) {
         com.lowagie.text.pdf.PdfPCell cell = new com.lowagie.text.pdf.PdfPCell(new Phrase(value, f));
         cell.setPadding(4);
         table.addCell(cell);
@@ -277,8 +286,3 @@ public class ReportService {
         return s.length() <= max ? s : s.substring(0, max) + "…";
     }
 }
-
-// ─── AlertRepository missing method — add to repo ─────────────────────────────
-// Add to AlertRepository:
-// @Query("SELECT a FROM Alert a WHERE a.createdAt BETWEEN :from AND :to ORDER BY a.createdAt DESC")
-// List<Alert> findByTimeRange(@Param("from") Instant from, @Param("to") Instant to);

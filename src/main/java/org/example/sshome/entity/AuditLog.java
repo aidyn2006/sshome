@@ -44,7 +44,7 @@ public class AuditLog {
     private String userAgent;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
+    @Column
     private Map<String, Object> details;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -55,7 +55,7 @@ public class AuditLog {
         CREATE, READ, UPDATE, DELETE, LOGIN, LOGOUT, EXPORT, AI_QUERY
     }
 
-    // ─── Factory ─────────────────────────────────────────────────────
+    // --- Factory -----------------------------------------------------
     public static AuditLog of(Action action, String entityType, String entityId,
                               User user, String ip, Map<String, Object> details) {
         return AuditLog.builder()

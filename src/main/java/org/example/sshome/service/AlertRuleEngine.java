@@ -49,7 +49,7 @@ public class AlertRuleEngine {
             .toList();
     }
 
-    // ─── Cooldown check ──────────────────────────────────────────────────
+    // --- Cooldown check --------------------------------------------------
     private boolean isCoolingDown(Device device, AlertRule rule) {
         Instant cooldownSince = Instant.now().minus(rule.getCooldownMinutes(), ChronoUnit.MINUTES);
         List<Alert> recent = alertRepository.findRecentByDeviceAndChannel(
@@ -57,7 +57,7 @@ public class AlertRuleEngine {
         return !recent.isEmpty();
     }
 
-    // ─── Alert creation ──────────────────────────────────────────────────
+    // --- Alert creation --------------------------------------------------
     private Alert createAlert(SensorReading reading, AlertRule rule) {
         Device device = reading.getDevice();
 

@@ -41,9 +41,9 @@ public class JwtRateLimitFilter extends OncePerRequestFilter {
     @Value("${security.rate-limit.auth.capacity:10}")
     private int authCapacity;
     @Value("${security.rate-limit.auth.refill-tokens:10}")
-    private int authRefillSeconds;
+    private int authRefillTokens;
 
-    // IP → Bucket mapping (in production, back with Redis via Bucket4j Redis extension)
+    // IP -> Bucket mapping (in production, back with Redis via Bucket4j Redis extension)
     private final ConcurrentHashMap<String, Bucket> apiBuckets  = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Bucket> authBuckets = new ConcurrentHashMap<>();
 
