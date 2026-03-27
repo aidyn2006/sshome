@@ -7,6 +7,12 @@ import '../models/chat_message.dart';
 import '../navigation/dock_items.dart';
 import '../services/ai_chat_service.dart';
 import 'tabs/overview_tab.dart';
+import 'tabs/devices_tab.dart';
+import 'tabs/monitoring_tab.dart';
+import 'tabs/alerts_tab.dart';
+import 'tabs/settings_tab.dart';
+import 'tabs/reports_tab.dart';
+import 'tabs/edge_nodes_tab.dart';
 
 class DashboardScreen extends StatefulWidget {
   final int initialIndex;
@@ -100,23 +106,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     switch (tab.id) {
       case 'overview':
         return const OverviewTab();
+      case 'devices':
+        return const DevicesTab();
+      case 'monitoring':
+        return const MonitoringTab();
       case 'ai':
         return const _AiPromptBox();
+      case 'alerts':
+        return const AlertsTab();
+      case 'settings':
+        return const SettingsTab();
+      case 'reports':
+        return const ReportsTab();
+      case 'edge':
+        return const EdgeNodesTab();
       default:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Content for ${tab.label}',
-              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Hook this up to real dashboards, charts, device lists or alerts.',
-              style: TextStyle(color: Colors.white70),
-            ),
-          ],
-        );
+        return const SizedBox.shrink();
     }
   }
 }
