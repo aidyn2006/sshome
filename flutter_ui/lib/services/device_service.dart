@@ -1,40 +1,47 @@
 import '../api/api_client.dart';
 import '../models/device.dart';
+import '../models/device_create_request.dart';
 import '../models/device_summary.dart';
 
 class DeviceService {
-  final ApiClient _apiClient;
+  final ApiClient _api;
 
-  DeviceService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+  DeviceService({ApiClient? apiClient}) : _api = apiClient ?? ApiClient();
 
   Future<List<Device>> getDevices() async {
-    final response = await _apiClient.get<List<dynamic>>('/devices');
+    final response = await _api.get<List<dynamic>>('/devices');
     final data = response.data ?? [];
-    return data.map((e) => Device.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    return data
+        .map((e) => Device.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
-  Future<Device> toggleDevice(String id) async {
-    final response = await _apiClient.post<Map<String, dynamic>>('/devices/$id/toggle');
-    return Device.fromJson(response.data ?? {'id': id});
+  Future<Device> getDevice(String id) async {
+    final response = await _api.get<Map<String, dynamic>>('/devices/$id');
+    return Device.fromJson(response.data!);
+  }
+
+  Future<Device> createDevice(DeviceCreateRequest request) async {
+    final response = await _api.post<Map<String, dynamic>>(
+      '/devices',
+      data: request.toJson(),
+    );
+    return Device.fromJson(response.data!);
+  }
+
+  Future<void> deleteDevice(String id) async {
+    await _api.delete('/devices/$id');
   }
 
   Future<DeviceSummary> getSummary() async {
-    try {
-      final response = await _apiClient.get<Map<String, dynamic>>('/devices/summary');
-      return DeviceSummary.fromJson(response.data ?? {});
-    } catch (_) {
-      // fallback: вычислить по списку устройств
-      final devices = await getDevices();
-      final total = devices.length;
-      final online = devices.where((d) => d.isOn).length;
-      final offline = total - online;
-      return DeviceSummary(
-        total: total,
-        online: online,
-        offline: offline,
-        maintenance: 0,
-        topNames: devices.take(4).map((e) => e.name).toList(),
-      );
-    }
+    final devices = await getDevices();
+    final online = devices.where((d) => d.isOnline).length;
+    return DeviceSummary(
+      total: devices.length,
+      online: online,
+      offline: devices.length - online,
+      maintenance: 0,
+      topNames: devices.take(4).map((e) => e.name).toList(),
+    );
   }
 }

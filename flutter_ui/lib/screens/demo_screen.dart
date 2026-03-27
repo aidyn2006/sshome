@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../components/web_gl_shader.dart';
+import '../models/auth_models.dart';
+import '../services/auth_service.dart';
 
 class DemoScreen extends StatelessWidget {
   const DemoScreen({super.key});
@@ -14,10 +16,7 @@ class DemoScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Фоновый шейдер (аналог <WebGLShader/>)
           const WebGLShaderWidget(),
-
-          // Темный градиентный оверлей для глубины
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -31,8 +30,6 @@ class DemoScreen extends StatelessWidget {
               ),
             ),
           ),
-
-          // Контентная область поверх шейдера
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -111,10 +108,10 @@ class _OnboardingContent extends StatelessWidget {
   }
 }
 
-Future<void> _openAuthDialog(BuildContext context, {required bool isLogin}) async {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+// ─── Auth Dialog ─────────────────────────────────────────────────────────────
 
+Future<void> _openAuthDialog(BuildContext context,
+    {required bool isLogin}) async {
   await showGeneralDialog(
     context: context,
     barrierDismissible: true,
@@ -129,74 +126,7 @@ Future<void> _openAuthDialog(BuildContext context, {required bool isLogin}) asyn
             borderRadius: BorderRadius.circular(24),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Container(
-                width: 360,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white.withOpacity(0.18)),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            isLogin ? 'Login' : 'Register',
-                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            icon: const Icon(Icons.close, color: Colors.white70),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: _glassInputDecoration('Email'),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: passwordController,
-                        obscureText: true,
-                        decoration: _glassInputDecoration('Password'),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF22d3ee),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                          ),
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            Navigator.pushReplacementNamed(context, '/dashboard');
-                          },
-                          child: Text(isLogin ? 'Continue to Dashboard' : 'Create Account'),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Credentials are not persisted in this demo. Wire your API here.',
-                        style: TextStyle(color: Colors.white54, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              child: _AuthDialog(isLogin: isLogin, parentContext: context),
             ),
           ),
         ),
@@ -206,30 +136,372 @@ Future<void> _openAuthDialog(BuildContext context, {required bool isLogin}) asyn
   );
 }
 
-InputDecoration _glassInputDecoration(String hint) {
-  return InputDecoration(
-    filled: true,
-    fillColor: Colors.white.withOpacity(0.08),
-    hintText: hint,
-    hintStyle: const TextStyle(color: Colors.white70),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: Colors.white.withOpacity(0.25)),
-    ),
-  );
+class _AuthDialog extends StatefulWidget {
+  final bool isLogin;
+  final BuildContext parentContext;
+
+  const _AuthDialog({required this.isLogin, required this.parentContext});
+
+  @override
+  State<_AuthDialog> createState() => _AuthDialogState();
 }
+
+class _AuthDialogState extends State<_AuthDialog> {
+  final _authService = AuthService();
+  final _formKey = GlobalKey<FormState>();
+
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _firstNameCtrl = TextEditingController();
+  final _lastNameCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+
+  bool _loading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _firstNameCtrl.dispose();
+    _lastNameCtrl.dispose();
+    _passwordCtrl.dispose();
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      if (widget.isLogin) {
+        await _authService.login(
+          LoginRequest(
+              email: _emailCtrl.text.trim(), password: _passwordCtrl.text),
+        );
+      } else {
+        await _authService.register(
+          RegisterRequest(
+            email: _emailCtrl.text.trim(),
+            phone: _phoneCtrl.text.trim(),
+            firstName: _firstNameCtrl.text.trim(),
+            lastName: _lastNameCtrl.text.trim(),
+            password: _passwordCtrl.text,
+            confirmPassword: _confirmCtrl.text,
+          ),
+        );
+      }
+      if (mounted) {
+        Navigator.pop(context); // close dialog
+        Navigator.pushReplacementNamed(widget.parentContext, '/devices');
+      }
+    } catch (e) {
+      setState(
+          () => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 380,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.18)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.isLogin ? 'Login' : 'Create Account',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Register-only fields
+              if (!widget.isLogin) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: _GlassField(
+                        controller: _firstNameCtrl,
+                        hint: 'First name',
+                        validator: (v) => (v == null || v.trim().length < 2)
+                            ? 'Min 2 chars'
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _GlassField(
+                        controller: _lastNameCtrl,
+                        hint: 'Last name',
+                        validator: (v) => (v == null || v.trim().length < 2)
+                            ? 'Min 2 chars'
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _GlassField(
+                  controller: _phoneCtrl,
+                  hint: 'Phone number (+77001234567)',
+                  keyboardType: TextInputType.phone,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty)
+                      return 'Phone is required';
+                    final clean =
+                        v.trim().replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                    if (!RegExp(r'^\+?[0-9]{7,15}$').hasMatch(clean)) {
+                      return 'Invalid phone number';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Email
+              _GlassField(
+                controller: _emailCtrl,
+                hint: 'Email',
+                keyboardType: TextInputType.emailAddress,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Email is required';
+                  if (!RegExp(r'^[\w\.\-]+@[\w\-]+\.\w{2,}$')
+                      .hasMatch(v.trim())) {
+                    return 'Invalid email format';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+
+              // Password
+              _GlassField(
+                controller: _passwordCtrl,
+                hint: 'Password',
+                obscureText: _obscurePassword,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.white54,
+                    size: 20,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Password is required';
+                  if (v.length < 8) return 'Min 8 characters';
+                  if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)').hasMatch(v)) {
+                    return 'Must include upper, lower and digit';
+                  }
+                  return null;
+                },
+              ),
+
+              // Confirm password (register only)
+              if (!widget.isLogin) ...[
+                const SizedBox(height: 12),
+                _GlassField(
+                  controller: _confirmCtrl,
+                  hint: 'Confirm password',
+                  obscureText: _obscureConfirm,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.white54,
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        setState(() => _obscureConfirm = !_obscureConfirm),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty)
+                      return 'Please confirm your password';
+                    if (v != _passwordCtrl.text)
+                      return 'Passwords do not match';
+                    return null;
+                  },
+                ),
+              ],
+
+              // Error message
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    _errorMessage!,
+                    style:
+                        const TextStyle(color: Color(0xFFfca5a5), fontSize: 13),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 20),
+
+              // Submit button
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF22d3ee),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                  ),
+                  onPressed: _loading ? null : _submit,
+                  child: _loading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          widget.isLogin
+                              ? 'Continue to Dashboard'
+                              : 'Create Account',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                ),
+              ),
+
+              // Security note
+              const SizedBox(height: 10),
+              Row(
+                children: const [
+                  Icon(Icons.lock_outline, color: Colors.white38, size: 13),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Your data is encrypted and stored securely.',
+                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Reusable glass text field ────────────────────────────────────────────────
+
+class _GlassField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+  final Widget? suffixIcon;
+
+  const _GlassField({
+    required this.controller,
+    required this.hint,
+    this.obscureText = false,
+    this.keyboardType,
+    this.validator,
+    this.suffixIcon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      validator: validator,
+      style: const TextStyle(color: Colors.white, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white54, fontSize: 14),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.08),
+        suffixIcon: suffixIcon,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.35)),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+        ),
+        errorStyle: const TextStyle(color: Color(0xFFfca5a5), fontSize: 11),
+      ),
+    );
+  }
+}
+
+// ─── Emblem / Titles / Tagline / Status (unchanged) ─────────────────────────
 
 class _SecurityEmblem extends StatelessWidget {
   final _ScreenSizing sizing;
-
   const _SecurityEmblem({required this.sizing});
 
   @override
@@ -243,11 +515,7 @@ class _SecurityEmblem extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const RadialGradient(
-              colors: [
-                Color(0xFF0ea5e9),
-                Color(0xFF0b1324),
-                Colors.black,
-              ],
+              colors: [Color(0xFF0ea5e9), Color(0xFF0b1324), Colors.black],
               stops: [0.15, 0.55, 1.0],
             ),
             boxShadow: [
@@ -292,16 +560,18 @@ class _SecurityEmblem extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF22c55e).withOpacity(0.14),
               borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: const Color(0xFF22c55e).withOpacity(0.5)),
+              border:
+                  Border.all(color: const Color(0xFF22c55e).withOpacity(0.5)),
             ),
             child: Row(
               children: [
-                Icon(Icons.shield, color: const Color(0xFF22c55e), size: sizing.badgeIcon),
+                Icon(Icons.shield,
+                    color: const Color(0xFF22c55e), size: sizing.badgeIcon),
                 const SizedBox(width: 6),
                 Text(
                   'Secure',
                   style: TextStyle(
-                    color: Color(0xFFb7f9c8),
+                    color: const Color(0xFFb7f9c8),
                     fontSize: sizing.badgeText,
                     fontWeight: FontWeight.w700,
                   ),
@@ -317,7 +587,6 @@ class _SecurityEmblem extends StatelessWidget {
 
 class _Titles extends StatelessWidget {
   final _ScreenSizing sizing;
-
   const _Titles({required this.sizing});
 
   @override
@@ -339,7 +608,7 @@ class _Titles extends StatelessWidget {
         Text(
           'SSHome',
           style: TextStyle(
-            color: Color(0xFFcdd7f5),
+            color: const Color(0xFFcdd7f5),
             fontSize: sizing.subtitle,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.8,
@@ -352,7 +621,6 @@ class _Titles extends StatelessWidget {
 
 class _Tagline extends StatelessWidget {
   final _ScreenSizing sizing;
-
   const _Tagline({required this.sizing});
 
   @override
@@ -371,7 +639,6 @@ class _Tagline extends StatelessWidget {
 
 class _SecureStatusBadge extends StatefulWidget {
   final _ScreenSizing sizing;
-
   const _SecureStatusBadge({required this.sizing});
 
   @override
@@ -391,7 +658,6 @@ class _SecureStatusBadgeState extends State<_SecureStatusBadge>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..repeat();
-
     _scale = Tween<double>(begin: 1.0, end: 2.1).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
@@ -436,9 +702,7 @@ class _SecureStatusBadgeState extends State<_SecureStatusBadge>
                       opacity: _opacity.value,
                       child: Container(
                         decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: safe,
-                        ),
+                            shape: BoxShape.circle, color: safe),
                       ),
                     ),
                   ),
@@ -446,10 +710,8 @@ class _SecureStatusBadgeState extends State<_SecureStatusBadge>
                 Container(
                   width: 10,
                   height: 10,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: safe,
-                  ),
+                  decoration:
+                      const BoxDecoration(shape: BoxShape.circle, color: safe),
                 ),
               ],
             ),
@@ -458,7 +720,7 @@ class _SecureStatusBadgeState extends State<_SecureStatusBadge>
           Text(
             'Secure connection enabled',
             style: TextStyle(
-              color: Color(0xFFb7f9c8),
+              color: const Color(0xFFb7f9c8),
               fontSize: widget.sizing.statusText,
               fontWeight: FontWeight.w600,
             ),
@@ -471,7 +733,6 @@ class _SecureStatusBadgeState extends State<_SecureStatusBadge>
 
 class _LoginButton extends StatelessWidget {
   final _ScreenSizing sizing;
-
   const _LoginButton({required this.sizing});
 
   @override
@@ -500,7 +761,6 @@ class _LoginButton extends StatelessWidget {
 
 class _RegisterButton extends StatelessWidget {
   final _ScreenSizing sizing;
-
   const _RegisterButton({required this.sizing});
 
   @override
@@ -584,6 +844,8 @@ class _ActionButtonState extends State<_ActionButton> {
     );
   }
 }
+
+// ─── Sizing ───────────────────────────────────────────────────────────────────
 
 class _ScreenSizing {
   final bool compact;
