@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../components/web_gl_shader.dart';
 
@@ -105,11 +106,125 @@ class _OnboardingContent extends StatelessWidget {
         _LoginButton(sizing: sizing),
         SizedBox(height: sizing.spacingButtons * 0.6),
         _RegisterButton(sizing: sizing),
-        SizedBox(height: sizing.spacingButtons * 0.6),
-        _RgbLegend(sizing: sizing),
       ],
     );
   }
+}
+
+Future<void> _openAuthDialog(BuildContext context, {required bool isLogin}) async {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  await showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'auth',
+    barrierColor: Colors.black54,
+    pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+    transitionBuilder: (ctx, anim, __, ___) {
+      return Center(
+        child: Opacity(
+          opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut).value,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: Container(
+                width: 360,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withOpacity(0.18)),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            isLogin ? 'Login' : 'Register',
+                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            icon: const Icon(Icons.close, color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: _glassInputDecoration('Email'),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: _glassInputDecoration('Password'),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF22d3ee),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            Navigator.pushReplacementNamed(context, '/dashboard');
+                          },
+                          child: Text(isLogin ? 'Continue to Dashboard' : 'Create Account'),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Credentials are not persisted in this demo. Wire your API here.',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 200),
+  );
+}
+
+InputDecoration _glassInputDecoration(String hint) {
+  return InputDecoration(
+    filled: true,
+    fillColor: Colors.white.withOpacity(0.08),
+    hintText: hint,
+    hintStyle: const TextStyle(color: Colors.white70),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(color: Colors.white.withOpacity(0.25)),
+    ),
+  );
 }
 
 class _SecurityEmblem extends StatelessWidget {
@@ -363,7 +478,7 @@ class _LoginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return _ActionButton(
       label: 'Login',
-      onPressed: () {},
+      onPressed: () => _openAuthDialog(context, isLogin: true),
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -392,7 +507,7 @@ class _RegisterButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return _ActionButton(
       label: 'Register',
-      onPressed: () {},
+      onPressed: () => _openAuthDialog(context, isLogin: false),
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -401,74 +516,6 @@ class _RegisterButton extends StatelessWidget {
       borderColor: Colors.white.withOpacity(0.24),
       textColor: const Color(0xFFcdd7f5),
       height: sizing.buttonHeight,
-    );
-  }
-}
-
-class _RgbLegend extends StatelessWidget {
-  final _ScreenSizing sizing;
-
-  const _RgbLegend({required this.sizing});
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: 0.75,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _LegendDot(color: Colors.redAccent, label: 'Red', sizing: sizing),
-          SizedBox(width: sizing.legendGap),
-          _LegendDot(color: Colors.lightGreenAccent.shade400, label: 'Green', sizing: sizing),
-          SizedBox(width: sizing.legendGap),
-          _LegendDot(color: Colors.lightBlueAccent, label: 'Blue', sizing: sizing),
-        ],
-      ),
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
-  final _ScreenSizing sizing;
-
-  const _LegendDot({
-    required this.color,
-    required this.label,
-    required this.sizing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: sizing.legendDot,
-          height: sizing.legendDot,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color,
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.3),
-                blurRadius: 8,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: sizing.legendText,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.1,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -562,9 +609,6 @@ class _ScreenSizing {
   final double buttonHeight;
   final double statusText;
   final double statusDot;
-  final double legendGap;
-  final double legendDot;
-  final double legendText;
 
   const _ScreenSizing({
     required this.compact,
@@ -590,9 +634,6 @@ class _ScreenSizing {
     required this.buttonHeight,
     required this.statusText,
     required this.statusDot,
-    required this.legendGap,
-    required this.legendDot,
-    required this.legendText,
   });
 
   factory _ScreenSizing.fromContext(BuildContext context) {
@@ -624,9 +665,6 @@ class _ScreenSizing {
         buttonHeight: 52,
         statusText: 12.5,
         statusDot: 13,
-        legendGap: 16,
-        legendDot: 9,
-        legendText: 12,
       );
     }
 
@@ -654,9 +692,6 @@ class _ScreenSizing {
       buttonHeight: 56,
       statusText: 13,
       statusDot: 14,
-      legendGap: 18,
-      legendDot: 10,
-      legendText: 12.5,
     );
   }
 }
