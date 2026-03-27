@@ -48,7 +48,6 @@ class AlertsTab extends StatefulWidget {
 
 class _AlertsTabState extends State<AlertsTab> with SingleTickerProviderStateMixin {
   late final TabController _tc = TabController(length: 4, vsync: this);
-  AlertEntry? _selected;
 
   List<AlertEntry> _filtered(String tab) {
     if (tab == 'all') return _mockAlerts;
@@ -69,7 +68,6 @@ class _AlertsTabState extends State<AlertsTab> with SingleTickerProviderStateMix
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Severity summary
         Row(children: [
           _SevBadge(label: 'Critical', count: _count(AlertSeverity.critical), color: const Color(0xFFef4444)),
           const SizedBox(width: 8),
@@ -115,7 +113,7 @@ class _AlertsTabState extends State<AlertsTab> with SingleTickerProviderStateMix
             controller: _tc,
             children: tabs.map((t) => _AlertList(
               alerts: _filtered(t),
-              onTap: (a) => setState(() => _selected = a),
+              onTap: (_) {},
               onAck: (a) => setState(() => a.status = AlertStatus.acknowledged),
               onResolve: (a) => setState(() => a.status = AlertStatus.resolved),
             )).toList(),
