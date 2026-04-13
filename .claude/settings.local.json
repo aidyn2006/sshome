@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(java -version 2>&1; /usr/libexec/java_home -V 2>&1)",
-      "Bash(cd /Users/aidyn/IdeaProjects/SSHome/backend && docker compose up -d 2>&1)",
-      "Bash(sleep 5 && docker ps --filter name=sshome-postgres --format \"table {{.Names}}\\\\t{{.Status}}\\\\t{{.Ports}}\")"
-    ]
-  }
-}
