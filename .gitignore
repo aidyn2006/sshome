@@ -1,0 +1,9 @@
+.idea/
+.DS_Store
+**/node_modules/
+**/.next/
+**/.expo/
+**/__pycache__/
+*.pyc
+.env
+backend/.venv/
