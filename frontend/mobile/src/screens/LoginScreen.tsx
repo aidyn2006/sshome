@@ -15,12 +15,18 @@ import type { LoginPayload } from "../types/auth";
 
 type Props = {
   appTitle: string;
+  isSubmitting?: boolean;
   onSwitchToRegister: () => void;
   onSubmit: (payload: LoginPayload) => Promise<void> | void;
 };
 
-export function LoginScreen({ appTitle, onSwitchToRegister, onSubmit }: Props) {
-  const [emailOrPhone, setEmailOrPhone] = useState("");
+export function LoginScreen({
+  appTitle,
+  isSubmitting = false,
+  onSwitchToRegister,
+  onSubmit
+}: Props) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
@@ -52,13 +58,13 @@ export function LoginScreen({ appTitle, onSwitchToRegister, onSubmit }: Props) {
             <Text style={styles.subtitle}>Sign in to continue to your account</Text>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Email or Phone</Text>
+              <Text style={styles.label}>Email</Text>
               <TextInput
-                value={emailOrPhone}
-                onChangeText={setEmailOrPhone}
+                value={email}
+                onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                placeholder="Enter your email or phone"
+                placeholder="you@example.com"
                 placeholderTextColor="#9ca3af"
                 style={styles.input}
               />
@@ -92,10 +98,11 @@ export function LoginScreen({ appTitle, onSwitchToRegister, onSubmit }: Props) {
             </View>
 
             <Pressable
-              style={styles.submit}
-              onPress={() => onSubmit({ emailOrPhone, password })}
+              style={[styles.submit, isSubmitting && styles.submitDisabled]}
+              onPress={() => onSubmit({ email, password })}
+              disabled={isSubmitting}
             >
-              <Text style={styles.submitText}>Sign In</Text>
+              <Text style={styles.submitText}>{isSubmitting ? "Signing In..." : "Sign In"}</Text>
             </Pressable>
 
             <View style={styles.dividerRow}>
@@ -270,6 +277,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center"
+  },
+  submitDisabled: {
+    opacity: 0.7
   },
   submitText: {
     color: "#ffffff",

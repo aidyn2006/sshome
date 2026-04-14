@@ -15,11 +15,17 @@ import type { RegisterPayload } from "../types/auth";
 
 type Props = {
   appTitle: string;
+  isSubmitting?: boolean;
   onSwitchToLogin: () => void;
   onSubmit: (payload: RegisterPayload) => Promise<void> | void;
 };
 
-export function RegisterScreen({ appTitle, onSwitchToLogin, onSubmit }: Props) {
+export function RegisterScreen({
+  appTitle,
+  isSubmitting = false,
+  onSwitchToLogin,
+  onSubmit
+}: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -136,7 +142,7 @@ export function RegisterScreen({ appTitle, onSwitchToLogin, onSubmit }: Props) {
             </View>
 
             <Pressable
-              style={styles.submit}
+              style={[styles.submit, isSubmitting && styles.submitDisabled]}
               onPress={() =>
                 onSubmit({
                   name,
@@ -146,8 +152,11 @@ export function RegisterScreen({ appTitle, onSwitchToLogin, onSubmit }: Props) {
                   confirmPassword
                 })
               }
+              disabled={isSubmitting}
             >
-              <Text style={styles.submitText}>Create Account</Text>
+              <Text style={styles.submitText}>
+                {isSubmitting ? "Creating..." : "Create Account"}
+              </Text>
             </Pressable>
 
             <View style={styles.footerRow}>
@@ -295,6 +304,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center"
+  },
+  submitDisabled: {
+    opacity: 0.7
   },
   submitText: {
     color: "#ffffff",

@@ -1,6 +1,15 @@
 # IoT Auth Service (FastAPI)
 
-## Run
+## Run With Docker Compose
+
+```bash
+cd /path/to/SSHome
+docker compose up --build
+```
+
+Backend will be available at `http://localhost:8000`.
+
+## Run Locally (Without Docker)
 
 ```bash
 cd backend
@@ -20,10 +29,4 @@ uvicorn app.main:app --reload
 - `GET /users/me`
 - `PUT /users/me`
 - `GET /logs` (ADMIN only)
-
-## Notes
-
-- Passwords are hashed with `bcrypt`.
-- API uses JWT access token in `Authorization: Bearer <token>`.
-- Refresh tokens are stored in DB.
-- Audit logs are recorded for register/login/logout.
+- `GET /health`
