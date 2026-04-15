@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     database_url: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/iot_control"
     database_echo: bool = False
+    database_auto_init: bool = False
     auth_mode: Literal["jwt", "introspection"] = "jwt"
     auth_jwt_secret_key: str = "super-secret-key"
     auth_jwt_algorithm: str = "HS256"
@@ -35,6 +36,21 @@ class Settings(BaseSettings):
     security_websocket_connect_rate_limit: int = 20
     security_enable_hsts: bool = False
     scenario_max_actions: int = 20
+    cors_allow_origins: str = (
+        "http://localhost:19006,"
+        "http://127.0.0.1:19006,"
+        "http://localhost:8081,"
+        "http://127.0.0.1:8081,"
+        "http://localhost:3000,"
+        "http://127.0.0.1:3000"
+    )
+    cors_allow_origin_regex: str = (
+        r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$"
+    )
+
+    @property
+    def cors_allow_origins_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_allow_origins.split(",") if origin.strip()]
 
 
 settings = Settings()

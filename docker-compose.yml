@@ -26,6 +26,7 @@ services:
       API_V1_PREFIX: /api/v1
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/iot_control
       DATABASE_ECHO: "false"
+      DATABASE_AUTO_INIT: "true"
       AUTH_MODE: jwt
       AUTH_JWT_SECRET_KEY: super-secret-key
       AUTH_JWT_ALGORITHM: HS256
@@ -38,6 +39,30 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build:
+      context: ./frontend/mobile
+      args:
+        EXPO_PUBLIC_API_BASE_URL: /api
+    container_name: sshome-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "19006:80"
 
 volumes:
   postgres_data:
