@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
     fontWeight: "500"
   },
   textActive: {
-    color: colors.textPrimary,
+    color: colors.textOnAccent,
     fontWeight: "700"
   }
 });

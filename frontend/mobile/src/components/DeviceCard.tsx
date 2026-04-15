@@ -72,7 +72,7 @@ export function DeviceCard({ device, roomName, onToggle }: Props) {
           }}
           style={[styles.powerButton, active && styles.powerButtonOn]}
         >
-          <Ionicons name="power" size={18} color={colors.textPrimary} />
+          <Ionicons name="power" size={18} color={colors.textOnAccent} />
         </Pressable>
       </Pressable>
     </Animated.View>
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(46,204,113,0.2)"
   },
   badgeOff: {
-    backgroundColor: "rgba(58,63,80,0.6)"
+    backgroundColor: "rgba(148,163,184,0.22)"
   },
   badgeText: {
     fontSize: 11,

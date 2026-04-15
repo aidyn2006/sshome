@@ -89,7 +89,7 @@ export function SceneCard({ scene, colorIndex, onRun }: Props) {
       </View>
 
       <Pressable onPress={run} style={styles.runButton}>
-        <Ionicons name="play" size={16} color={colors.textPrimary} />
+        <Ionicons name="play" size={16} color={colors.textOnAccent} />
       </Pressable>
     </Animated.View>
   );

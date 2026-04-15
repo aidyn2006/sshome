@@ -12,7 +12,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SmartHomeProvider>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <AppNavigator />
       </SmartHomeProvider>
     </GestureHandlerRootView>

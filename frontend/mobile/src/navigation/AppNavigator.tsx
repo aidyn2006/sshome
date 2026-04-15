@@ -15,7 +15,7 @@ const Tab = createBottomTabNavigator<TabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const navTheme: Theme = {
-  dark: true,
+  dark: false,
   colors: {
     primary: colors.accentBlue,
     background: colors.background,

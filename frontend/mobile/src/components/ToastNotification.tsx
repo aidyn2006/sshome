@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   text: {
-    color: colors.textPrimary,
+    color: colors.textOnAccent,
     fontWeight: "700",
     fontSize: 14
   }

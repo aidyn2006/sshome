@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: colors.textPrimary,
+    backgroundColor: colors.textOnAccent,
     position: "absolute"
   }
 });
