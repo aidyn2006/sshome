@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 
 from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, String
@@ -25,7 +25,7 @@ class AuditLog(Base):
         nullable=True,
     )
     action: Mapped[AuditLogAction] = mapped_column(SAEnum(AuditLogAction, name="audit_log_action"), nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
 
     user = relationship("User", back_populates="audit_logs")
