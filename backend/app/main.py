@@ -1,23 +1,24 @@
 from fastapi import FastAPI
 
-from app.db.init_db import init_db
-from app.routes.auth import router as auth_router
-from app.routes.logs import router as logs_router
-from app.routes.users import router as users_router
+from app.core.config import settings
+from app.core.http_security import configure_http_security
+from app.routes.auth_context import router as auth_context_router
+from app.routes.devices import router as devices_router
+from app.routes.events import router as events_router
+from app.routes.homes import router as homes_router
+from app.routes.rooms import router as rooms_router
+from app.routes.scenarios import router as scenarios_router
+from app.routes.system import router as system_router
+from app.websockets.router import router as websockets_router
 
-app = FastAPI(title="IoT Auth Service", version="1.0.0")
+app = FastAPI(title=settings.app_name, version="0.1.0")
+configure_http_security(app)
 
-
-@app.on_event("startup")
-def on_startup() -> None:
-    init_db()
-
-
-@app.get("/health", tags=["health"])
-def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(users_router, prefix="/users", tags=["users"])
-app.include_router(logs_router, prefix="/logs", tags=["logs"])
+app.include_router(system_router)
+app.include_router(auth_context_router, prefix=settings.api_v1_prefix)
+app.include_router(devices_router, prefix=settings.api_v1_prefix)
+app.include_router(events_router, prefix=settings.api_v1_prefix)
+app.include_router(homes_router, prefix=settings.api_v1_prefix)
+app.include_router(rooms_router, prefix=settings.api_v1_prefix)
+app.include_router(scenarios_router, prefix=settings.api_v1_prefix)
+app.include_router(websockets_router)

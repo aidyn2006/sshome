@@ -1,9 +1,12 @@
+import app.models  # noqa: F401
 from app.db.base import Base
 from app.db.session import engine
-from app.models.audit_log import AuditLog
-from app.models.refresh_token import RefreshToken
-from app.models.user import User
 
 
 def init_db() -> None:
+    """Fallback helper for local experiments.
+
+    Production schema management should go through Alembic migrations.
+    """
+
     Base.metadata.create_all(bind=engine)
