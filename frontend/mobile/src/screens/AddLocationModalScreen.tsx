@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   saveText: {
-    color: colors.textPrimary,
+    color: colors.textOnAccent,
     fontSize: 14,
     fontWeight: "700"
   }
