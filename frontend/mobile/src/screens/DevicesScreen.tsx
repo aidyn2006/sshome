@@ -22,9 +22,8 @@ const filters: Array<{ key: FilterType; label: string }> = [
 ];
 
 export function DevicesScreen() {
-  const { devices, rooms, toggleDevice } = useSmartHome();
+  const { devices, rooms, isDataLoading, toggleDevice } = useSmartHome();
   const [activeFilter, setActiveFilter] = useState<FilterType>("ALL");
-  const [loading] = useState(false);
 
   const filteredDevices = useMemo(() => {
     const type = mapFilterTypeToDeviceType(activeFilter);
@@ -33,7 +32,7 @@ export function DevicesScreen() {
     }
 
     return devices.filter((device) => device.type === type);
-  }, [devices, activeFilter]);
+  }, [activeFilter, devices]);
 
   const roomMap = useMemo(() => new Map(rooms.map((room) => [room.id, room.name])), [rooms]);
 
@@ -62,7 +61,7 @@ export function DevicesScreen() {
           )}
         />
 
-        {loading ? (
+        {isDataLoading ? (
           <View style={styles.skeletonGrid}>
             {Array.from({ length: 6 }).map((_, index) => (
               <SkeletonBlock key={`device-skeleton-${index}`} style={styles.skeletonCard} />
@@ -76,12 +75,20 @@ export function DevicesScreen() {
             showsVerticalScrollIndicator={false}
             columnWrapperStyle={styles.columnWrap}
             contentContainerStyle={styles.gridContent}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>No devices yet</Text>
+                <Text style={styles.emptyText}>Create a room first, then add devices through the connected backend flow.</Text>
+              </View>
+            }
             renderItem={({ item }) => (
               <View style={styles.cardWrap}>
                 <DeviceCard
                   device={item}
                   roomName={roomMap.get(item.room_id) ?? "Unknown"}
-                  onToggle={() => toggleDevice(item.id)}
+                  onToggle={() => {
+                    void toggleDevice(item.id);
+                  }}
                 />
               </View>
             )}
@@ -131,6 +138,21 @@ const styles = StyleSheet.create({
   },
   cardWrap: {
     flex: 1
+  },
+  emptyState: {
+    paddingTop: spacing.xl,
+    alignItems: "center",
+    gap: spacing.xs
+  },
+  emptyTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "700"
+  },
+  emptyText: {
+    color: colors.textSecondary,
+    textAlign: "center",
+    fontSize: 13
   },
   skeletonGrid: {
     flexDirection: "row",

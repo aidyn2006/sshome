@@ -1,4 +1,4 @@
-import type { Device, DeviceStatus, DeviceType, FilterType } from "../types/smartHome";
+import type { Device, DeviceAction, DeviceStatus, DeviceType, FilterType } from "../types/smartHome";
 
 export function getDeviceIconName(deviceType: DeviceType, status: DeviceStatus): string {
   if (deviceType === "DOOR") {
@@ -33,12 +33,25 @@ export function isDeviceActive(status: DeviceStatus): boolean {
   return status === "ON" || status === "OPEN";
 }
 
-export function getToggledStatus(device: Device): DeviceStatus {
+export function mapActionToStatus(action: DeviceAction): DeviceStatus {
+  switch (action) {
+    case "TURN_ON":
+      return "ON";
+    case "TURN_OFF":
+      return "OFF";
+    case "OPEN":
+      return "OPEN";
+    case "CLOSE":
+      return "CLOSED";
+  }
+}
+
+export function getToggledAction(device: Device): DeviceAction {
   if (device.type === "DOOR") {
     return device.status === "OPEN" ? "CLOSE" : "OPEN";
   }
 
-  return device.status === "ON" ? "OFF" : "ON";
+  return device.status === "ON" ? "TURN_OFF" : "TURN_ON";
 }
 
 export function mapFilterTypeToDeviceType(filterType: FilterType): DeviceType | null {
@@ -57,13 +70,5 @@ export function mapFilterTypeToDeviceType(filterType: FilterType): DeviceType | 
 }
 
 export function getStatusLabel(status: DeviceStatus): string {
-  if (status === "OPEN") {
-    return "ON";
-  }
-
-  if (status === "CLOSE") {
-    return "OFF";
-  }
-
   return status;
 }

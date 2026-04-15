@@ -16,6 +16,7 @@ import type { RegisterPayload } from "../types/auth";
 type Props = {
   appTitle: string;
   isSubmitting?: boolean;
+  errorMessage?: string;
   onSwitchToLogin: () => void;
   onSubmit: (payload: RegisterPayload) => Promise<void> | void;
 };
@@ -23,6 +24,7 @@ type Props = {
 export function RegisterScreen({
   appTitle,
   isSubmitting = false,
+  errorMessage,
   onSwitchToLogin,
   onSubmit
 }: Props) {
@@ -60,6 +62,7 @@ export function RegisterScreen({
             </View>
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Register to continue to your account</Text>
+            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
             <View style={styles.field}>
               <Text style={styles.label}>Name</Text>
@@ -254,6 +257,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#6b7280",
     marginBottom: 20
+  },
+  errorText: {
+    marginTop: -4,
+    marginBottom: 16,
+    color: "#dc2626",
+    textAlign: "center",
+    fontWeight: "600"
   },
   field: {
     marginBottom: 12

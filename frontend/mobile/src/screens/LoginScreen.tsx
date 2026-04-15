@@ -11,11 +11,13 @@ import {
   TextInput,
   View
 } from "react-native";
+
 import type { LoginPayload } from "../types/auth";
 
 type Props = {
   appTitle: string;
   isSubmitting?: boolean;
+  errorMessage?: string;
   onSwitchToRegister: () => void;
   onSubmit: (payload: LoginPayload) => Promise<void> | void;
 };
@@ -23,6 +25,7 @@ type Props = {
 export function LoginScreen({
   appTitle,
   isSubmitting = false,
+  errorMessage,
   onSwitchToRegister,
   onSubmit
 }: Props) {
@@ -56,6 +59,7 @@ export function LoginScreen({
             </View>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to continue to your account</Text>
+            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
             <View style={styles.field}>
               <Text style={styles.label}>Email</Text>
@@ -82,7 +86,7 @@ export function LoginScreen({
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!isPasswordVisible}
-                  placeholder="••••••••"
+                  placeholder="********"
                   placeholderTextColor="#9ca3af"
                   style={styles.passwordInput}
                 />
@@ -90,9 +94,7 @@ export function LoginScreen({
                   style={styles.showButton}
                   onPress={() => setIsPasswordVisible((prev) => !prev)}
                 >
-                  <Text style={styles.showButtonText}>
-                    {isPasswordVisible ? "Hide" : "Show"}
-                  </Text>
+                  <Text style={styles.showButtonText}>{isPasswordVisible ? "Hide" : "Show"}</Text>
                 </Pressable>
               </View>
             </View>
@@ -217,6 +219,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#6b7280",
     marginBottom: 20
+  },
+  errorText: {
+    marginTop: -4,
+    marginBottom: 16,
+    color: "#dc2626",
+    textAlign: "center",
+    fontWeight: "600"
   },
   field: {
     marginBottom: 12

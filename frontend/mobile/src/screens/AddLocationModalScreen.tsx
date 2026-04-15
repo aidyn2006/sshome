@@ -10,35 +10,39 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+
 import { FilterPill } from "../components/FilterPill";
+import type { RootStackParamList } from "../navigation/types";
 import { useSmartHome } from "../store/SmartHomeContext";
 import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
 import { typography } from "../theme/typography";
-
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "AddLocationModal">;
 
 type Mode = "home" | "room";
 
 export function AddLocationModalScreen({ navigation }: Props) {
-  const { homes, addHome, addRoom } = useSmartHome();
+  const { homes, addHome, addRoom, isAuthSubmitting, logout } = useSmartHome();
   const [mode, setMode] = useState<Mode>("home");
   const [name, setName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const save = () => {
+  const save = async () => {
     if (!name.trim()) {
       return;
     }
 
+    setIsSaving(true);
+
     if (mode === "home") {
-      addHome(name);
+      await addHome(name);
     } else {
-      addRoom(name, homes[0]?.id);
+      await addRoom(name, homes[0]?.id);
     }
 
+    setIsSaving(false);
     navigation.goBack();
   };
 
@@ -50,7 +54,7 @@ export function AddLocationModalScreen({ navigation }: Props) {
       >
         <View style={styles.card}>
           <Text style={typography.h2}>Add Home / Room</Text>
-          <Text style={styles.subtitle}>This modal uses slide-from-bottom stack transition.</Text>
+          <Text style={styles.subtitle}>Create the location on the backend and return to the dashboard.</Text>
 
           <View style={styles.modeWrap}>
             <FilterPill label="Home" isActive={mode === "home"} onPress={() => setMode("home")} />
@@ -72,10 +76,14 @@ export function AddLocationModalScreen({ navigation }: Props) {
             <Pressable style={styles.cancelButton} onPress={() => navigation.goBack()}>
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
-            <Pressable style={styles.saveButton} onPress={save}>
-              <Text style={styles.saveText}>Save</Text>
+            <Pressable style={styles.saveButton} onPress={() => void save()}>
+              <Text style={styles.saveText}>{isSaving ? "Saving..." : "Save"}</Text>
             </Pressable>
           </View>
+
+          <Pressable style={styles.signOutButton} onPress={() => void logout()} disabled={isAuthSubmitting}>
+            <Text style={styles.signOutText}>{isAuthSubmitting ? "Signing out..." : "Sign out"}</Text>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -160,5 +168,19 @@ const styles = StyleSheet.create({
     color: colors.textOnAccent,
     fontSize: 14,
     fontWeight: "700"
+  },
+  signOutButton: {
+    marginTop: spacing.sm,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  signOutText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: "600"
   }
 });

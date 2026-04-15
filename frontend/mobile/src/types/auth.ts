@@ -3,6 +3,10 @@ export type LoginPayload = {
   password: string;
 };
 
+export type RefreshPayload = {
+  refresh_token: string;
+};
+
 export type RegisterPayload = {
   name: string;
   email: string;
@@ -25,4 +29,12 @@ export type UserOut = {
   role: string;
   is_active: boolean;
   created_at: string;
+};
+
+export type AuthContextResponse = {
+  owner_id: string;
+  subject: string | null;
+  roles: string[];
+  token_type: string | null;
+  auth_mode: "jwt" | "introspection";
 };

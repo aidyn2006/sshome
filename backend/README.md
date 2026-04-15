@@ -1,19 +1,14 @@
 # SSHome IoT Control Backend
 
-Backend foundation for the smart home control system.
+Main project launch instructions now live in the root README:
 
-## Stage 1 Scope
+- [../README.md](../README.md)
 
-This stage prepares the project infrastructure:
+Use the root guide if you want to start the whole project with Docker.
 
-- FastAPI application bootstrap
-- PostgreSQL connection via SQLAlchemy
-- healthcheck endpoints
-- Alembic migration setup
+This file keeps backend-specific notes only.
 
-Business entities such as homes, rooms, devices, events, and scenarios will be added in the next stages.
-
-## Stage 2 Auth Integration
+## Auth Integration
 
 The backend supports external authentication in two modes:
 
@@ -61,25 +56,17 @@ Expected response example:
 }
 ```
 
-## Run With Docker Compose
+## Run Locally
 
-```bash
-cd /path/to/SSHome
-docker compose up --build
+```powershell
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
 Backend will be available at `http://localhost:8000`.
-
-## Run Locally
-
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-uvicorn app.main:app --reload
-```
 
 ## Health Endpoints
 
@@ -204,14 +191,14 @@ The backend includes additional protections beyond authentication to support the
 
 Create a migration:
 
-```bash
+```powershell
 cd backend
 alembic revision --autogenerate -m "create tables"
 ```
 
 Apply migrations:
 
-```bash
+```powershell
 cd backend
 alembic upgrade head
 ```

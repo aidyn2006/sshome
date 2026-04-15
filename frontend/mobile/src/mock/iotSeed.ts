@@ -37,7 +37,7 @@ export function createSeedState(ownerId: string): IoTSeedState {
 
   const devices: Device[] = [
     buildDevice("dev-living-light", "Ceiling Light", "LIGHT", "OFF", "room-living", ownerId),
-    buildDevice("dev-front-door", "Front Door", "DOOR", "CLOSE", "room-hall", ownerId),
+    buildDevice("dev-front-door", "Front Door", "DOOR", "CLOSED", "room-hall", ownerId),
     buildDevice("dev-ac-main", "Main AC", "AC", "ON", "room-living", ownerId),
     buildDevice("dev-kitchen-temp", "Kitchen Temp Sensor", "TEMP", "ON", "room-kitchen", ownerId),
     buildDevice("dev-country-light", "Country Lamp", "LIGHT", "OFF", "room-country", ownerId)
@@ -79,7 +79,7 @@ export function createSeedState(ownerId: string): IoTSeedState {
     {
       id: "evt-2",
       deviceId: "dev-ac-main",
-      action: "ON",
+      action: "TURN_ON",
       timestamp: isoMinutesAgo(30),
       ownerId,
       source: "SCENARIO"
@@ -87,7 +87,7 @@ export function createSeedState(ownerId: string): IoTSeedState {
     {
       id: "evt-3",
       deviceId: "dev-living-light",
-      action: "OFF",
+      action: "TURN_OFF",
       timestamp: isoMinutesAgo(42),
       ownerId,
       source: "MANUAL"

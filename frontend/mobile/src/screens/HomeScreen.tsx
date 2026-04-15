@@ -1,39 +1,32 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { getBackendHealth } from "../api/system";
 import { DeviceToggleRow } from "../components/DeviceToggleRow";
 import { RoomCard } from "../components/RoomCard";
 import { SkeletonBlock } from "../components/SkeletonBlock";
 import { StatCard } from "../components/StatCard";
-import { getBackendHealth } from "../api/system";
+import type { RootStackParamList } from "../navigation/types";
 import { useSmartHome } from "../store/SmartHomeContext";
 import { colors, gradients } from "../theme/colors";
 import { spacing } from "../theme/spacing";
 import { typography } from "../theme/typography";
 import { isDeviceActive } from "../utils/device";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
-import type { RootStackParamList } from "../navigation/types";
 
 const stats = [
-  { id: "temperature", icon: "thermometer-outline" as const, title: "Temperature", value: "22°C", subtitle: "Living Room" },
+  { id: "temperature", icon: "thermometer-outline" as const, title: "Temperature", value: "22 C", subtitle: "Living Room" },
   { id: "humidity", icon: "water-outline" as const, title: "Humidity", value: "45%", subtitle: "Bedroom" },
   { id: "energy", icon: "flash-outline" as const, title: "Energy", value: "1.2 kWh", subtitle: "Today" }
 ];
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { rooms, devices, toggleDevice } = useSmartHome();
-  const [loading] = useState(false);
+  const { rooms, devices, isDataLoading, toggleDevice, user } = useSmartHome();
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
 
   const activeRoomsCount = useMemo(() => {
@@ -61,7 +54,7 @@ export function HomeScreen() {
           isActive: roomDevices.some((device) => isDeviceActive(device.status))
         };
       }),
-    [rooms, devices]
+    [devices, rooms]
   );
 
   const roomNameMap = useMemo(() => new Map(rooms.map((room) => [room.id, room.name])), [rooms]);
@@ -87,9 +80,9 @@ export function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={typography.h1}>Good Evening, Alex 👋</Text>
+            <Text style={typography.h1}>Welcome, {user?.name?.split(" ")[0] || "there"}</Text>
             <Text style={styles.subText}>
-              {activeRoomsCount} rooms active · {activeDevicesCount} devices on
+              {activeRoomsCount} rooms active - {activeDevicesCount} devices on
             </Text>
             <View style={styles.backendStatusRow}>
               <View
@@ -100,19 +93,21 @@ export function HomeScreen() {
                 ]}
               />
               <Text style={styles.backendStatusText}>
-                Backend:{" "}
-                {backendOnline === null
-                  ? "checking..."
-                  : backendOnline
-                    ? "connected"
-                    : "unavailable"}
+                Backend: {backendOnline === null ? "checking..." : backendOnline ? "connected" : "unavailable"}
               </Text>
             </View>
           </View>
 
-          <Pressable onPress={() => navigation.navigate("AddLocationModal")}> 
+          <Pressable onPress={() => navigation.navigate("AddLocationModal")}>
             <LinearGradient colors={gradients.avatar} style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>AK</Text>
+              <Text style={styles.avatarText}>
+                {(user?.name || "SS")
+                  .split(" ")
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((chunk) => chunk[0]?.toUpperCase())
+                  .join("") || "SS"}
+              </Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -124,7 +119,7 @@ export function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalList}
           >
-            {loading
+            {isDataLoading
               ? Array.from({ length: 3 }).map((_, index) => (
                   <SkeletonBlock key={`stat-skeleton-${index}`} style={{ width: 180, height: 120 }} />
                 ))
@@ -142,31 +137,44 @@ export function HomeScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>My Rooms</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-          >
-            {loading
-              ? Array.from({ length: 4 }).map((_, index) => (
-                  <SkeletonBlock key={`room-skeleton-${index}`} style={{ width: 140, height: 160 }} />
-                ))
-              : roomInfo.map((room) => (
-                  <RoomCard
-                    key={room.id}
-                    emoji={room.emoji}
-                    name={room.name}
-                    deviceCount={room.deviceCount}
-                    isActive={room.isActive}
-                  />
-                ))}
-          </ScrollView>
+          {isDataLoading ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            >
+              {Array.from({ length: 4 }).map((_, index) => (
+                <SkeletonBlock key={`room-skeleton-${index}`} style={{ width: 140, height: 160 }} />
+              ))}
+            </ScrollView>
+          ) : roomInfo.length === 0 ? (
+            <View style={styles.emptyBlock}>
+              <Text style={styles.emptyTitle}>No rooms yet</Text>
+              <Text style={styles.emptyText}>Open the avatar menu to create your first home or room.</Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            >
+              {roomInfo.map((room) => (
+                <RoomCard
+                  key={room.id}
+                  emoji={room.emoji}
+                  name={room.name}
+                  deviceCount={room.deviceCount}
+                  isActive={room.isActive}
+                />
+              ))}
+            </ScrollView>
+          )}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Control</Text>
           <View style={styles.quickControlList}>
-            {loading
+            {isDataLoading
               ? Array.from({ length: 4 }).map((_, index) => (
                   <SkeletonBlock key={`quick-skeleton-${index}`} style={{ width: "100%", height: 72 }} />
                 ))
@@ -175,15 +183,27 @@ export function HomeScreen() {
                     key={device.id}
                     device={device}
                     roomName={roomNameMap.get(device.room_id) ?? "Unknown"}
-                    onToggle={() => toggleDevice(device.id)}
+                    onToggle={() => {
+                      void toggleDevice(device.id);
+                    }}
                   />
                 ))}
+
+            {!isDataLoading && favoriteDevices.length === 0 ? (
+              <View style={styles.emptyInline}>
+                <Text style={styles.emptyText}>Devices will show up here as soon as they exist on the backend.</Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
         <View style={styles.footerHint}>
-          <Ionicons name="sparkles-outline" size={16} color={colors.textSecondary} />
-          <Text style={styles.footerHintText}>Tap avatar to add a home or room in modal view</Text>
+          {isDataLoading ? (
+            <ActivityIndicator size="small" color={colors.textSecondary} />
+          ) : (
+            <Ionicons name="sparkles-outline" size={16} color={colors.textSecondary} />
+          )}
+          <Text style={styles.footerHintText}>Tap the avatar to add a home or room from the modal.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -256,6 +276,26 @@ const styles = StyleSheet.create({
   },
   quickControlList: {
     gap: spacing.sm
+  },
+  emptyBlock: {
+    padding: spacing.lg,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.xs
+  },
+  emptyInline: {
+    paddingVertical: spacing.md
+  },
+  emptyTitle: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "700"
+  },
+  emptyText: {
+    color: colors.textSecondary,
+    fontSize: 13
   },
   footerHint: {
     flexDirection: "row",

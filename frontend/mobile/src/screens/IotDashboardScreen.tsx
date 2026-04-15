@@ -54,16 +54,16 @@ function mapActionToStatus(action: DeviceAction): DeviceStatus {
     case "OPEN":
       return "OPEN";
     case "CLOSE":
-      return "CLOSE";
+      return "CLOSED";
   }
 }
 
 function mapActionToEvent(action: DeviceAction): EventAction {
   switch (action) {
     case "TURN_ON":
-      return "ON";
+      return "TURN_ON";
     case "TURN_OFF":
-      return "OFF";
+      return "TURN_OFF";
     case "OPEN":
       return "OPEN";
     case "CLOSE":
@@ -81,7 +81,7 @@ function getAllowedActions(deviceType: DeviceType): DeviceAction[] {
 
 function getInitialStatus(deviceType: DeviceType): DeviceStatus {
   if (deviceType === "DOOR") {
-    return "CLOSE";
+    return "CLOSED";
   }
 
   return "OFF";

@@ -16,10 +16,9 @@ import { typography } from "../theme/typography";
 
 export function ScenesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { scenarios, runScenario } = useSmartHome();
+  const { scenarios, isDataLoading, runScenario } = useSmartHome();
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const [loading] = useState(false);
 
   const sortedScenes = useMemo(() => [...scenarios], [scenarios]);
 
@@ -34,12 +33,12 @@ export function ScenesScreen() {
 
         <View style={styles.headerRow}>
           <Text style={typography.h2}>Automation</Text>
-          <Pressable style={styles.addButton} onPress={() => navigation.navigate("AddLocationModal")}> 
+          <Pressable style={styles.addButton} onPress={() => navigation.navigate("AddLocationModal")}>
             <Ionicons name="add" size={20} color={colors.textPrimary} />
           </Pressable>
         </View>
 
-        {loading ? (
+        {isDataLoading ? (
           <View style={styles.list}>
             {Array.from({ length: 4 }).map((_, index) => (
               <SkeletonBlock key={`scene-skeleton-${index}`} style={{ width: "100%", height: 100, borderRadius: 20 }} />
@@ -51,18 +50,25 @@ export function ScenesScreen() {
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.list}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>No automations yet</Text>
+                <Text style={styles.emptyText}>Scenario cards will appear here after they are created on the backend.</Text>
+              </View>
+            }
             renderItem={({ item, index }) => (
               <SceneCard
                 scene={item}
                 colorIndex={index}
                 onRun={() => {
-                  const scene = runScenario(item.id);
-                  if (!scene) {
-                    return;
-                  }
+                  void runScenario(item.id).then((scene) => {
+                    if (!scene) {
+                      return;
+                    }
 
-                  setToastMessage("Scene running...");
-                  setToastVisible(true);
+                    setToastMessage("Scenario running...");
+                    setToastVisible(true);
+                  });
                 }}
               />
             )}
@@ -102,5 +108,20 @@ const styles = StyleSheet.create({
   list: {
     gap: spacing.md,
     paddingBottom: spacing.xxxl
+  },
+  emptyState: {
+    paddingTop: spacing.xl,
+    alignItems: "center",
+    gap: spacing.xs
+  },
+  emptyTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "700"
+  },
+  emptyText: {
+    color: colors.textSecondary,
+    textAlign: "center",
+    fontSize: 13
   }
 });

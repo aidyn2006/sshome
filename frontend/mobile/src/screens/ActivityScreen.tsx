@@ -65,13 +65,13 @@ function groupByTime(events: Event[]): Section[] {
 }
 
 export function ActivityScreen() {
-  const { events, devices } = useSmartHome();
+  const { events, devices, isDataLoading } = useSmartHome();
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
 
   const filteredEvents = useMemo(() => {
     const cutoff = getCutoff(dateFilter);
     return events.filter((event) => event.timestamp >= cutoff);
-  }, [events, dateFilter]);
+  }, [dateFilter, events]);
 
   const sections = useMemo(() => groupByTime(filteredEvents), [filteredEvents]);
   const deviceMap = useMemo(() => new Map(devices.map((device) => [device.id, device])), [devices]);
@@ -95,9 +95,10 @@ export function ActivityScreen() {
 
         {sections.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🛰️</Text>
-            <Text style={styles.emptyTitle}>No activity yet</Text>
-            <Text style={styles.emptyText}>Actions on your devices will appear here</Text>
+            <Text style={styles.emptyTitle}>{isDataLoading ? "Loading activity..." : "No activity yet"}</Text>
+            <Text style={styles.emptyText}>
+              {isDataLoading ? "Fetching events from the backend." : "Actions on your devices will appear here."}
+            </Text>
           </View>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContainer}>
@@ -165,9 +166,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: spacing.sm
-  },
-  emptyEmoji: {
-    fontSize: 48
   },
   emptyTitle: {
     color: colors.textPrimary,

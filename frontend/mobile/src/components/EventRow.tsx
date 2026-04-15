@@ -32,9 +32,9 @@ function getBadge(event: Event): { label: string; color: string } {
   }
 
   switch (event.action) {
-    case "ON":
+    case "TURN_ON":
       return { label: "TURNED ON", color: colors.activeGreen };
-    case "OFF":
+    case "TURN_OFF":
       return { label: "TURNED OFF", color: colors.danger };
     case "OPEN":
       return { label: "UNLOCKED", color: colors.activeGreen };
@@ -48,7 +48,7 @@ function getDotColor(event: Event): string {
     return colors.accentBlue;
   }
 
-  if (event.action === "ON" || event.action === "OPEN") {
+  if (event.action === "TURN_ON" || event.action === "OPEN") {
     return colors.activeGreen;
   }
 

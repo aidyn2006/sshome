@@ -1,6 +1,8 @@
 export type DeviceType = "LIGHT" | "DOOR" | "AC" | "TEMP";
 
-export type DeviceStatus = "ON" | "OFF" | "OPEN" | "CLOSE";
+export type DeviceStatus = "ON" | "OFF" | "OPEN" | "CLOSED";
+
+export type DeviceAction = "TURN_ON" | "TURN_OFF" | "OPEN" | "CLOSE";
 
 export type FilterType = "ALL" | "LIGHT" | "DOOR" | "AC" | "TEMP";
 
@@ -23,13 +25,16 @@ export type Device = {
   type: DeviceType;
   status: DeviceStatus;
   room_id: string;
+  owner_id?: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type DeviceEvent = {
   id: string;
   type: "DEVICE";
   device_id: string;
-  action: DeviceStatus;
+  action: DeviceAction;
   timestamp: number;
 };
 
@@ -45,13 +50,13 @@ export type Event = DeviceEvent | SceneEvent;
 
 export type ScenarioAction = {
   device_id: string;
-  action: DeviceStatus;
+  action: DeviceAction;
 };
 
 export type Scenario = {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   actions: ScenarioAction[];
 };
 

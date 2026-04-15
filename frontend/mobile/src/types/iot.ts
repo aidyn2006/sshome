@@ -1,10 +1,10 @@
 export type DeviceType = "LIGHT" | "DOOR" | "AC" | "TEMP";
 
-export type DeviceStatus = "ON" | "OFF" | "OPEN" | "CLOSE";
+export type DeviceStatus = "ON" | "OFF" | "OPEN" | "CLOSED";
 
 export type DeviceAction = "TURN_ON" | "TURN_OFF" | "OPEN" | "CLOSE";
 
-export type EventAction = "ON" | "OFF" | "OPEN" | "CLOSE";
+export type EventAction = "TURN_ON" | "TURN_OFF" | "OPEN" | "CLOSE";
 
 export type EventSource = "MANUAL" | "SCENARIO";
 
