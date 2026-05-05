@@ -11,6 +11,7 @@ import { DevicesScreen } from "../screens/DevicesScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { LoginScreen } from "../screens/LoginScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
+import { Room3DScreen } from "../screens/Room3DScreen";
 import { ScenesScreen } from "../screens/ScenesScreen";
 import { useSmartHome } from "../store/SmartHomeContext";
 import { colors } from "../theme/colors";
@@ -95,6 +96,7 @@ function TabsNavigator() {
       tabBar={(props) => <TabBar {...props} />}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Room3D" component={Room3DScreen} options={{ title: "3D Room" }} />
       <Tab.Screen name="Devices" component={DevicesScreen} />
       <Tab.Screen name="Scenes" component={ScenesScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />

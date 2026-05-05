@@ -16,13 +16,20 @@ export async function login(payload: LoginPayload): Promise<TokenPairResponse> {
 }
 
 export async function register(payload: RegisterPayload): Promise<UserOut> {
+  const fullName = payload.name.trim();
+  const chunks = fullName.split(/\s+/).filter(Boolean);
+  const firstName = chunks[0] || fullName || "User";
+  const lastName = chunks.slice(1).join(" ") || "User";
+
   return apiRequest<UserOut>("/auth/register", {
     method: "POST",
     body: {
-      name: payload.name,
       email: payload.email,
       phone: payload.phone,
-      password: payload.password
+      firstName,
+      lastName,
+      password: payload.password,
+      confirmPassword: payload.confirmPassword
     }
   });
 }

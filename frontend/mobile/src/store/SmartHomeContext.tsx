@@ -271,11 +271,23 @@ function buildSceneEvent(scenario: Scenario): Event {
 }
 
 function resolveActionForStatus(device: Device, nextStatus: DeviceStatus): DeviceAction {
-  if (device.type === "DOOR") {
+  if (device.type === "DOOR" || device.type === "WINDOW") {
     return nextStatus === "OPEN" ? "OPEN" : "CLOSE";
   }
 
   return nextStatus === "ON" ? "TURN_ON" : "TURN_OFF";
+}
+
+function normalizeSession(tokens: { access_token?: string; refresh_token?: string; token?: string }): SessionTokens {
+  const accessToken = tokens.access_token || tokens.token;
+  if (!accessToken) {
+    throw new Error("Authentication token is missing in server response");
+  }
+
+  return {
+    accessToken,
+    refreshToken: tokens.refresh_token || ""
+  };
 }
 
 export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
@@ -397,7 +409,10 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const completeAuthentication = useCallback(
-    async (tokens: SessionTokens, options?: { seedDemoData?: boolean }) => {
+    async (
+      tokens: SessionTokens,
+      options?: { seedDemoData?: boolean; fallbackUser?: UserOut | null }
+    ) => {
       setSessionTokens(tokens);
       setAuthStatus("loading");
       setAuthError(null);
@@ -420,6 +435,20 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
         await hydrateState(tokens.accessToken);
         setAuthStatus("authenticated");
       } catch (error) {
+        // Compatibility mode for backends without /api/v1/auth-context and /api/v1/users/me.
+        if (options?.fallbackUser) {
+          setUser(options.fallbackUser);
+          setOwnerId(null);
+          setHomes([]);
+          setRooms([]);
+          setDevices([]);
+          setDeviceEvents([]);
+          setSceneEvents([]);
+          setScenarios([]);
+          setAuthStatus("authenticated");
+          return;
+        }
+
         clearSessionState();
         setAuthError(getErrorMessage(error, "Unable to start your session"));
       }
@@ -471,10 +500,21 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const tokens = await loginRequest(payload);
-        await completeAuthentication({
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token
-        });
+        const normalized = normalizeSession(tokens);
+        const fallbackUser: UserOut | null =
+          tokens.email && tokens.firstName && tokens.lastName
+            ? {
+                id: tokens.email,
+                email: tokens.email,
+                name: `${tokens.firstName} ${tokens.lastName}`.trim(),
+                phone: null,
+                role: tokens.role || "USER",
+                is_active: true,
+                created_at: new Date().toISOString()
+              }
+            : null;
+
+        await completeAuthentication(normalized, { fallbackUser });
       } catch (error) {
         setAuthError(getErrorMessage(error, "Unable to sign in"));
       } finally {
@@ -491,23 +531,37 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      if (!payload.phone.trim()) {
+        setAuthError("Phone number is required");
+        return;
+      }
+
+      if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}/.test(payload.password)) {
+        setAuthError("Password must be 8+ chars and include upper, lower, and number");
+        return;
+      }
+
       setIsAuthSubmitting(true);
       setAuthError(null);
 
       try {
-        await registerRequest(payload);
+        const registerResponse = await registerRequest(payload);
         const tokens = await loginRequest({
           email: payload.email,
           password: payload.password
         });
+        const normalized = normalizeSession(tokens);
+        const fallbackUser: UserOut = {
+          id: registerResponse.id || payload.email,
+          email: registerResponse.email || payload.email,
+          name: registerResponse.name || payload.name,
+          phone: registerResponse.phone ?? payload.phone,
+          role: registerResponse.role || "USER",
+          is_active: registerResponse.is_active ?? true,
+          created_at: registerResponse.created_at || new Date().toISOString()
+        };
 
-        await completeAuthentication(
-          {
-            accessToken: tokens.access_token,
-            refreshToken: tokens.refresh_token
-          },
-          { seedDemoData: true }
-        );
+        await completeAuthentication(normalized, { seedDemoData: true, fallbackUser });
       } catch (error) {
         setAuthError(getErrorMessage(error, "Unable to create your account"));
       } finally {
@@ -586,7 +640,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       }
 
       const nextStatus =
-        device.type === "DOOR"
+        device.type === "DOOR" || device.type === "WINDOW"
           ? device.status === "OPEN"
             ? "CLOSED"
             : "OPEN"

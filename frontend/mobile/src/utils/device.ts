@@ -5,6 +5,10 @@ export function getDeviceIconName(deviceType: DeviceType, status: DeviceStatus):
     return status === "OPEN" ? "lock-open-outline" : "lock-closed-outline";
   }
 
+  if (deviceType === "WINDOW") {
+    return status === "OPEN" ? "scan-outline" : "square-outline";
+  }
+
   if (deviceType === "AC") {
     return "snow-outline";
   }
@@ -22,6 +26,8 @@ export function getDeviceTypeLabel(deviceType: DeviceType): string {
       return "Lights";
     case "DOOR":
       return "Doors";
+    case "WINDOW":
+      return "Windows";
     case "AC":
       return "AC";
     case "TEMP":
@@ -47,7 +53,7 @@ export function mapActionToStatus(action: DeviceAction): DeviceStatus {
 }
 
 export function getToggledAction(device: Device): DeviceAction {
-  if (device.type === "DOOR") {
+  if (device.type === "DOOR" || device.type === "WINDOW") {
     return device.status === "OPEN" ? "CLOSE" : "OPEN";
   }
 
@@ -60,6 +66,8 @@ export function mapFilterTypeToDeviceType(filterType: FilterType): DeviceType | 
       return "LIGHT";
     case "DOOR":
       return "DOOR";
+    case "WINDOW":
+      return "WINDOW";
     case "AC":
       return "AC";
     case "TEMP":

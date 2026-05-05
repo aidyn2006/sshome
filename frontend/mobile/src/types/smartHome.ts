@@ -1,10 +1,10 @@
-export type DeviceType = "LIGHT" | "DOOR" | "AC" | "TEMP";
+export type DeviceType = "LIGHT" | "DOOR" | "WINDOW" | "AC" | "TEMP";
 
 export type DeviceStatus = "ON" | "OFF" | "OPEN" | "CLOSED";
 
 export type DeviceAction = "TURN_ON" | "TURN_OFF" | "OPEN" | "CLOSE";
 
-export type FilterType = "ALL" | "LIGHT" | "DOOR" | "AC" | "TEMP";
+export type FilterType = "ALL" | "LIGHT" | "DOOR" | "WINDOW" | "AC" | "TEMP";
 
 export type Home = {
   id: string;

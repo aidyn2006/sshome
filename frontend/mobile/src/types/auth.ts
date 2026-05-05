@@ -10,15 +10,20 @@ export type RefreshPayload = {
 export type RegisterPayload = {
   name: string;
   email: string;
-  phone?: string;
+  phone: string;
   password: string;
   confirmPassword: string;
 };
 
 export type TokenPairResponse = {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
+  access_token?: string;
+  refresh_token?: string;
+  token_type?: string;
+  token?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string;
 };
 
 export type UserOut = {

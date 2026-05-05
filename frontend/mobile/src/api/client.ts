@@ -5,6 +5,9 @@ type ApiErrorDetail = {
 };
 
 type ApiErrorBody = {
+  error?: string;
+  message?: string;
+  errors?: Record<string, string>;
   detail?: string | ApiErrorDetail | ApiErrorDetail[];
 };
 
@@ -15,6 +18,22 @@ type ApiRequestOptions = Omit<RequestInit, "body" | "headers"> & {
 };
 
 function buildErrorMessage(status: number, body: ApiErrorBody | null): string {
+  if (body?.error && body.error.trim()) {
+    return body.error;
+  }
+
+  if (body?.message && body.message.trim()) {
+    return body.message;
+  }
+
+  if (body?.errors && Object.keys(body.errors).length > 0) {
+    const firstField = Object.keys(body.errors)[0];
+    const firstMessage = body.errors[firstField];
+    if (firstMessage?.trim()) {
+      return firstMessage;
+    }
+  }
+
   const detail = body?.detail;
 
   if (typeof detail === "string" && detail.trim()) {

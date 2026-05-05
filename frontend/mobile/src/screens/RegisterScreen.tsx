@@ -89,7 +89,7 @@ export function RegisterScreen({
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Phone (optional)</Text>
+              <Text style={styles.label}>Phone</Text>
               <TextInput
                 value={phone}
                 onChangeText={setPhone}
@@ -150,7 +150,7 @@ export function RegisterScreen({
                 onSubmit({
                   name,
                   email,
-                  phone: phone || undefined,
+                  phone,
                   password,
                   confirmPassword
                 })

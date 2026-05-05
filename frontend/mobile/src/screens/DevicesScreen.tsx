@@ -17,6 +17,7 @@ const filters: Array<{ key: FilterType; label: string }> = [
   { key: "ALL", label: "All" },
   { key: "LIGHT", label: "Lights" },
   { key: "DOOR", label: "Doors" },
+  { key: "WINDOW", label: "Windows" },
   { key: "AC", label: "AC" },
   { key: "TEMP", label: "Sensors" }
 ];

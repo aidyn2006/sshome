@@ -19,6 +19,8 @@ function getTypeColor(type: Device["type"]): string {
       return "rgba(245,166,35,0.25)";
     case "DOOR":
       return "rgba(74,144,226,0.25)";
+    case "WINDOW":
+      return "rgba(106,193,255,0.24)";
     case "AC":
       return "rgba(40,198,200,0.25)";
     case "TEMP":

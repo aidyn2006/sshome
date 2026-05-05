@@ -41,6 +41,8 @@ function getBadge(event: Event): { label: string; color: string } {
     case "CLOSE":
       return { label: "LOCKED", color: colors.danger };
   }
+
+  return { label: "UPDATED", color: colors.textSecondary };
 }
 
 function getDotColor(event: Event): string {
@@ -69,11 +71,15 @@ function getIconName(event: Event, device?: Device): keyof typeof Ionicons.glyph
       return "bulb-outline";
     case "DOOR":
       return "lock-closed-outline";
+    case "WINDOW":
+      return "scan-outline";
     case "AC":
       return "snow-outline";
     case "TEMP":
       return "thermometer-outline";
   }
+
+  return "hardware-chip-outline";
 }
 
 export function EventRow({ event, device }: Props) {

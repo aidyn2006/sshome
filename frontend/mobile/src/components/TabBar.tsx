@@ -7,6 +7,7 @@ import { colors } from "../theme/colors";
 
 const iconMap: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
   Home: { active: "home", inactive: "home-outline" },
+  Room3D: { active: "cube", inactive: "cube-outline" },
   Devices: { active: "bulb", inactive: "bulb-outline" },
   Scenes: { active: "flash", inactive: "flash-outline" },
   Activity: { active: "stats-chart", inactive: "stats-chart-outline" }
