@@ -62,3 +62,21 @@ def apply_device_action(
         action=payload.action,
     )
     return device
+
+
+@router.post("/{device_id}/toggle", response_model=DeviceRead)
+def toggle_device(
+    device_id: UUID,
+    owner_id: CurrentOwnerId,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> DeviceRead:
+    enforce_device_action_rate_limit(request, str(owner_id))
+    device = device_service.toggle_device(db, device_id=device_id, owner_id=owner_id)
+    device_read = DeviceRead.model_validate(device)
+    publish_device_update_from_sync(
+        owner_id=owner_id,
+        device=device_read,
+        source="device_action",
+    )
+    return device_read

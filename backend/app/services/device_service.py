@@ -143,3 +143,24 @@ def apply_device_action(
     db.commit()
     db.refresh(device)
     return device
+
+
+def toggle_device(db: Session, *, device_id: UUID, owner_id: UUID) -> Device:
+    device = get_device_or_404(db, device_id=device_id, owner_id=owner_id)
+    next_action_by_status = {
+        DeviceStatus.ON: DeviceAction.TURN_OFF,
+        DeviceStatus.OFF: DeviceAction.TURN_ON,
+        DeviceStatus.OPEN: DeviceAction.CLOSE,
+        DeviceStatus.CLOSED: DeviceAction.OPEN,
+    }
+    action = next_action_by_status.get(device.status)
+    if action is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Device status {device.status.value} cannot be toggled",
+        )
+
+    _apply_device_action_to_device(db, device=device, owner_id=owner_id, action=action)
+    db.commit()
+    db.refresh(device)
+    return device

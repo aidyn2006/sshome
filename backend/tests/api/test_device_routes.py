@@ -211,6 +211,44 @@ def test_apply_device_action_passes_command_to_service(client, monkeypatch) -> N
     }
 
 
+def test_toggle_device_is_available_on_root_tz_path(client, monkeypatch) -> None:
+    owner_id = UUID("550e8400-e29b-41d4-a716-446655440000")
+    fake_db = object()
+    device_id = uuid4()
+    room_id = uuid4()
+    created_at = datetime(2026, 4, 15, 12, 0, tzinfo=UTC)
+    updated_at = datetime(2026, 4, 15, 12, 5, tzinfo=UTC)
+
+    _override_dependencies(client, owner_id, fake_db)
+
+    def fake_toggle_device(db, *, device_id, owner_id):
+        assert db is fake_db
+        assert device_id == device_id_value
+        assert owner_id == owner_id_value
+        return SimpleNamespace(
+            id=device_id,
+            name="Main Light",
+            type="LIGHT",
+            status="OFF",
+            room_id=room_id,
+            owner_id=owner_id,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    device_id_value = device_id
+    owner_id_value = owner_id
+    monkeypatch.setattr("app.routes.devices.device_service.toggle_device", fake_toggle_device)
+
+    response = client.post(f"/devices/{device_id}/toggle")
+
+    _clear_overrides(client)
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(device_id)
+    assert response.json()["status"] == "OFF"
+
+
 @pytest.mark.parametrize(
     ("method", "path", "payload"),
     [

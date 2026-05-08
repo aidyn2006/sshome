@@ -43,6 +43,14 @@ def test_auth_workflow_registers_logs_in_refreshes_and_logs_out(integration_clie
 
     auth_headers = integration_client.auth_headers(login_payload["access_token"])
 
+    profile_response = integration_client.client.get("/users/me", headers=auth_headers)
+    assert profile_response.status_code == 200
+    assert profile_response.json()["email"] == "auth-flow@example.com"
+
+    logs_as_user_response = integration_client.client.get("/logs", headers=auth_headers)
+    assert logs_as_user_response.status_code == 403
+    assert logs_as_user_response.json()["detail"] == "Admin access required"
+
     auth_context_response = integration_client.client.get("/api/v1/auth-context/me", headers=auth_headers)
     assert auth_context_response.status_code == 200
     assert auth_context_response.json()["subject"] == register_response.json()["id"]
