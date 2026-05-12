@@ -1,5 +1,7 @@
 import pytest
 
+from app.integrations.google_oauth import GoogleIdentity
+
 pytestmark = pytest.mark.integration
 
 
@@ -101,3 +103,28 @@ def test_auth_workflow_rejects_invalid_password(integration_client) -> None:
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid email or password"
+
+
+def test_google_auth_workflow_creates_user_and_returns_tokens(integration_client, monkeypatch) -> None:
+    async def fake_verify_google_id_token(id_token: str) -> GoogleIdentity:
+        assert id_token == "google.jwt.identity.token"
+        return GoogleIdentity(email="google-user@example.com", name="Google User", subject="google-subject")
+
+    monkeypatch.setattr("app.services.auth_service.verify_google_id_token", fake_verify_google_id_token)
+
+    response = integration_client.client.post("/auth/google", json={"id_token": "google.jwt.identity.token"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["token_type"] == "bearer"
+    assert payload["access_token"]
+    assert payload["refresh_token"]
+
+    profile_response = integration_client.client.get(
+        "/users/me",
+        headers=integration_client.auth_headers(payload["access_token"]),
+    )
+
+    assert profile_response.status_code == 200
+    assert profile_response.json()["email"] == "google-user@example.com"
+    assert profile_response.json()["name"] == "Google User"

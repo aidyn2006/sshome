@@ -3,6 +3,10 @@ export type LoginPayload = {
   password: string;
 };
 
+export type GoogleLoginPayload = {
+  id_token: string;
+};
+
 export type RefreshPayload = {
   refresh_token: string;
 };

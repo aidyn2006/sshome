@@ -12,6 +12,10 @@ class TokenPairResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class GoogleLoginRequest(BaseModel):
+    id_token: str = Field(min_length=20)
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
 

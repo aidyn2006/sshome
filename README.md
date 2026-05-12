@@ -160,6 +160,7 @@ Public auth endpoints:
 
 - `POST /auth/register`
 - `POST /auth/login`
+- `POST /auth/google`
 - `POST /auth/refresh`
 - `POST /auth/logout`
 
@@ -192,7 +193,7 @@ You can authenticate with:
 
 ## Environment In Docker
 
-Docker Compose already passes the needed environment variables. No `.env` file is required for the Docker launch.
+Docker Compose already passes the needed environment variables. No `.env` file is required for the basic Docker launch.
 
 Important defaults from compose:
 
@@ -202,6 +203,24 @@ Important defaults from compose:
 - backend auth mode: `jwt`
 - backend port: `8000`
 - frontend public URL: `http://localhost:19006`
+
+Google sign-in requires a Google OAuth web client ID:
+
+```bash
+GOOGLE_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
+```
+
+For the hosted frontend, use the HTTPS proxy URL and add this authorized JavaScript origin:
+
+```text
+https://sshome.46.62.225.70.sslip.io
+```
+
+And this authorized redirect URI:
+
+```text
+https://sshome.46.62.225.70.sslip.io/auth/google/callback
+```
 
 ## Clean Reset
 

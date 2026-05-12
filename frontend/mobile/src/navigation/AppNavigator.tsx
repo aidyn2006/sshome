@@ -52,7 +52,7 @@ const navTheme: Theme = {
 
 function AuthGateway() {
   const [mode, setMode] = useState<"login" | "register">("login");
-  const { authError, authStatus, isAuthSubmitting, login, register } = useSmartHome();
+  const { authError, authStatus, isAuthSubmitting, login, loginWithGoogle, register } = useSmartHome();
 
   if (authStatus === "loading") {
     return (
@@ -82,6 +82,7 @@ function AuthGateway() {
       isSubmitting={isAuthSubmitting}
       errorMessage={authError ?? undefined}
       onSwitchToRegister={() => setMode("register")}
+      onGoogleSubmit={loginWithGoogle}
       onSubmit={login}
     />
   );

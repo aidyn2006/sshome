@@ -1,6 +1,7 @@
 import { apiRequest } from "./client";
 import type {
   AuthContextResponse,
+  GoogleLoginPayload,
   LoginPayload,
   RefreshPayload,
   TokenPairResponse,
@@ -10,6 +11,13 @@ import type {
 
 export async function login(payload: LoginPayload): Promise<TokenPairResponse> {
   return apiRequest<TokenPairResponse>("/auth/login", {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function loginWithGoogle(payload: GoogleLoginPayload): Promise<TokenPairResponse> {
+  return apiRequest<TokenPairResponse>("/auth/google", {
     method: "POST",
     body: payload
   });

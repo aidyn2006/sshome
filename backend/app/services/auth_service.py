@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from secrets import token_urlsafe
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -6,10 +7,11 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.jwt import create_access_token, create_refresh_token
 from app.core.security import hash_password, verify_password
+from app.integrations.google_oauth import verify_google_id_token
 from app.models.audit_log import AuditLogAction
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
-from app.schemas.auth import LoginRequest, LogoutRequest, RefreshRequest, TokenPairResponse
+from app.schemas.auth import GoogleLoginRequest, LoginRequest, LogoutRequest, RefreshRequest, TokenPairResponse
 from app.schemas.user import RegisterRequest
 from app.services.audit_service import log_action
 
@@ -33,11 +35,7 @@ def register_user(payload: RegisterRequest, db: Session, ip_address: str | None)
     return user
 
 
-def login_user(payload: LoginRequest, db: Session, ip_address: str | None) -> TokenPairResponse:
-    user = db.query(User).filter(User.email == payload.email).first()
-    if not user or not verify_password(payload.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
-
+def _issue_token_pair(user: User, db: Session) -> TokenPairResponse:
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is inactive")
 
@@ -52,8 +50,42 @@ def login_user(payload: LoginRequest, db: Session, ip_address: str | None) -> To
     db.add(refresh_entity)
     db.commit()
 
-    log_action(db, action=AuditLogAction.LOGIN, user_id=user.id, ip_address=ip_address)
     return TokenPairResponse(access_token=access_token, refresh_token=refresh_token)
+
+
+def login_user(payload: LoginRequest, db: Session, ip_address: str | None) -> TokenPairResponse:
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+
+    token_pair = _issue_token_pair(user=user, db=db)
+    log_action(db, action=AuditLogAction.LOGIN, user_id=user.id, ip_address=ip_address)
+    return token_pair
+
+
+async def login_with_google(payload: GoogleLoginRequest, db: Session, ip_address: str | None) -> TokenPairResponse:
+    identity = await verify_google_id_token(payload.id_token)
+    user = db.query(User).filter(User.email == identity.email).first()
+
+    if user is None:
+        user = User(
+            email=identity.email,
+            password_hash=hash_password(token_urlsafe(32)),
+            name=identity.name,
+            phone=None,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        log_action(db, action=AuditLogAction.REGISTER, user_id=user.id, ip_address=ip_address)
+    elif not user.name:
+        user.name = identity.name
+        db.commit()
+        db.refresh(user)
+
+    token_pair = _issue_token_pair(user=user, db=db)
+    log_action(db, action=AuditLogAction.LOGIN, user_id=user.id, ip_address=ip_address)
+    return token_pair
 
 
 def refresh_access_token(payload: RefreshRequest, db: Session) -> str:

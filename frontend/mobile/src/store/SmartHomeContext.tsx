@@ -12,6 +12,7 @@ import {
   getAuthContext,
   getCurrentUser,
   login as loginRequest,
+  loginWithGoogle as loginWithGoogleRequest,
   logout as logoutRequest,
   refreshAccessToken,
   register as registerRequest
@@ -46,6 +47,7 @@ import type {
   Scenario
 } from "../types/smartHome";
 import { mapActionToStatus } from "../utils/device";
+import { requestGoogleIdToken } from "../utils/googleAuth";
 
 type AuthStatus = "anonymous" | "loading" | "authenticated";
 
@@ -62,6 +64,7 @@ type SmartHomeContextValue = {
   events: Event[];
   scenarios: Scenario[];
   login: (payload: LoginPayload) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
   refreshData: () => Promise<void>;
@@ -524,6 +527,23 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     [completeAuthentication]
   );
 
+  const loginWithGoogle = useCallback(async () => {
+    setIsAuthSubmitting(true);
+    setAuthError(null);
+
+    try {
+      const idToken = await requestGoogleIdToken();
+      const tokens = await loginWithGoogleRequest({ id_token: idToken });
+      const normalized = normalizeSession(tokens);
+
+      await completeAuthentication(normalized);
+    } catch (error) {
+      setAuthError(getErrorMessage(error, "Unable to sign in with Google"));
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  }, [completeAuthentication]);
+
   const register = useCallback(
     async (payload: RegisterPayload) => {
       if (payload.password !== payload.confirmPassword) {
@@ -746,6 +766,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       events,
       scenarios,
       login,
+      loginWithGoogle,
       register,
       logout,
       refreshData,
@@ -766,6 +787,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       isAuthSubmitting,
       isDataLoading,
       login,
+      loginWithGoogle,
       logout,
       ownerId,
       refreshData,

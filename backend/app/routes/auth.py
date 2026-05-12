@@ -6,13 +6,14 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
     AccessTokenResponse,
+    GoogleLoginRequest,
     LoginRequest,
     LogoutRequest,
     RefreshRequest,
     TokenPairResponse,
 )
 from app.schemas.user import RegisterRequest, UserOut
-from app.services.auth_service import login_user, logout_user, refresh_access_token, register_user
+from app.services.auth_service import login_user, login_with_google, logout_user, refresh_access_token, register_user
 
 router = APIRouter()
 
@@ -26,6 +27,15 @@ def register(payload: RegisterRequest, request: Request, db: Session = Depends(g
 @router.post("/login", response_model=TokenPairResponse)
 def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)) -> TokenPairResponse:
     return login_user(payload=payload, db=db, ip_address=request.client.host if request.client else None)
+
+
+@router.post("/google", response_model=TokenPairResponse)
+async def google_login(
+    payload: GoogleLoginRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> TokenPairResponse:
+    return await login_with_google(payload=payload, db=db, ip_address=request.client.host if request.client else None)
 
 
 @router.post("/refresh", response_model=AccessTokenResponse)

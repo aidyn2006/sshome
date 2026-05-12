@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     auth_jwt_access_token_type: str = "access"
     auth_introspection_url: str | None = None
     auth_introspection_timeout_seconds: float = 5.0
+    google_oauth_client_id: str | None = None
+    google_oauth_jwks_url: str = "https://www.googleapis.com/oauth2/v3/certs"
+    google_oauth_jwks_cache_seconds: int = 3600
     jwt_secret_key: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30

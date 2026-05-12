@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ImageBackground,
   KeyboardAvoidingView,
@@ -13,12 +13,14 @@ import {
 } from "react-native";
 
 import type { LoginPayload } from "../types/auth";
+import { completeGooglePopupRedirect } from "../utils/googleAuth";
 
 type Props = {
   appTitle: string;
   isSubmitting?: boolean;
   errorMessage?: string;
   onSwitchToRegister: () => void;
+  onGoogleSubmit: () => Promise<void> | void;
   onSubmit: (payload: LoginPayload) => Promise<void> | void;
 };
 
@@ -27,11 +29,16 @@ export function LoginScreen({
   isSubmitting = false,
   errorMessage,
   onSwitchToRegister,
+  onGoogleSubmit,
   onSubmit
 }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
+  useEffect(() => {
+    completeGooglePopupRedirect();
+  }, []);
 
   return (
     <KeyboardAvoidingView
@@ -114,7 +121,11 @@ export function LoginScreen({
             </View>
 
             <View style={styles.socialRow}>
-              <Pressable style={styles.socialButton}>
+              <Pressable
+                style={[styles.socialButton, isSubmitting && styles.socialButtonDisabled]}
+                onPress={onGoogleSubmit}
+                disabled={isSubmitting}
+              >
                 <Ionicons name="logo-google" size={18} color="#374151" />
                 <Text style={styles.socialText}>Google</Text>
               </Pressable>
@@ -326,6 +337,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
     gap: 8
+  },
+  socialButtonDisabled: {
+    opacity: 0.7
   },
   socialText: {
     color: "#374151",
