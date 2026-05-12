@@ -131,10 +131,6 @@ export function LoginScreen({
                 <Ionicons name="logo-google" size={18} color="#374151" />
                 <Text style={styles.socialText}>Google</Text>
               </Pressable>
-              <Pressable style={styles.socialButton}>
-                <Ionicons name="logo-github" size={18} color="#111827" />
-                <Text style={styles.socialText}>GitHub</Text>
-              </Pressable>
             </View>
 
             <View style={styles.footerRow}>
