@@ -2,175 +2,116 @@ import { Platform } from "react-native";
 
 import { GOOGLE_CLIENT_ID } from "../config/google";
 
-const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
-const GOOGLE_CALLBACK_PATH = "/auth/google/callback";
-const POPUP_MESSAGE_TYPE = "sshome-google-auth";
+const GOOGLE_IDENTITY_SCRIPT_URL = "https://accounts.google.com/gsi/client";
 
-type GooglePopupMessage = {
-  type: typeof POPUP_MESSAGE_TYPE;
-  state: string | null;
-  idToken?: string | null;
-  error?: string | null;
+type GoogleTokenResponse = {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
 };
 
-function assertWeb(): void {
+type GoogleTokenClient = {
+  requestAccessToken: (overrideConfig?: { prompt?: string }) => void;
+};
+
+type GoogleIdentityApi = {
+  accounts?: {
+    oauth2?: {
+      initTokenClient: (config: {
+        client_id: string;
+        scope: string;
+        prompt?: string;
+        callback: (response: GoogleTokenResponse) => void;
+      }) => GoogleTokenClient;
+    };
+  };
+};
+
+type WindowWithGoogle = Window &
+  typeof globalThis & {
+    google?: GoogleIdentityApi;
+  };
+
+let scriptPromise: Promise<void> | null = null;
+
+function getWebWindow(): WindowWithGoogle {
   if (Platform.OS !== "web" || typeof window === "undefined") {
     throw new Error("Google sign-in is only configured for the web app");
   }
+
+  return window as WindowWithGoogle;
 }
 
-function randomString(): string {
-  if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
-    const values = new Uint32Array(4);
-    window.crypto.getRandomValues(values);
-    return Array.from(values, (value) => value.toString(16)).join("");
+export function preloadGoogleIdentity(): Promise<void> {
+  const webWindow = getWebWindow();
+
+  if (webWindow.google?.accounts?.oauth2) {
+    return Promise.resolve();
   }
 
-  return `${Date.now()}${Math.random()}`;
+  if (scriptPromise) {
+    return scriptPromise;
+  }
+
+  scriptPromise = new Promise((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      `script[src="${GOOGLE_IDENTITY_SCRIPT_URL}"]`
+    );
+
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(), { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Unable to load Google sign-in")), {
+        once: true
+      });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = GOOGLE_IDENTITY_SCRIPT_URL;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Unable to load Google sign-in"));
+    document.head.appendChild(script);
+  });
+
+  return scriptPromise;
 }
 
-function getPopupFeatures(width: number, height: number): string {
-  const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
-  const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
-
-  return [
-    "popup=yes",
-    `width=${width}`,
-    `height=${height}`,
-    `left=${Math.max(left, 0)}`,
-    `top=${Math.max(top, 0)}`,
-    "resizable=yes",
-    "scrollbars=yes"
-  ].join(",");
-}
-
-function parseCallbackParams(): URLSearchParams {
-  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  if ([...hashParams.keys()].length > 0) {
-    return hashParams;
-  }
-
-  return new URLSearchParams(window.location.search.replace(/^\?/, ""));
-}
-
-export function completeGooglePopupRedirect(): void {
-  if (Platform.OS !== "web" || typeof window === "undefined") {
-    return;
-  }
-
-  if (window.location.pathname !== GOOGLE_CALLBACK_PATH) {
-    return;
-  }
-
-  const params = parseCallbackParams();
-  const message: GooglePopupMessage = {
-    type: POPUP_MESSAGE_TYPE,
-    state: params.get("state"),
-    idToken: params.get("id_token"),
-    error: params.get("error_description") || params.get("error")
-  };
-
-  if (window.opener && !window.opener.closed) {
-    window.opener.postMessage(message, window.location.origin);
-    window.close();
-    return;
-  }
-
-  window.history.replaceState(null, "", "/");
-}
-
-export function requestGoogleIdToken(): Promise<string> {
-  assertWeb();
+export async function requestGoogleAccessToken(): Promise<string> {
+  const webWindow = getWebWindow();
 
   if (!GOOGLE_CLIENT_ID) {
     throw new Error("Google sign-in is not configured");
   }
 
-  const state = randomString();
-  const nonce = randomString();
-  const redirectUri = `${window.location.origin}${GOOGLE_CALLBACK_PATH}`;
-  const authUrl = new URL(GOOGLE_AUTH_URL);
+  await preloadGoogleIdentity();
 
-  authUrl.search = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: redirectUri,
-    response_type: "id_token token",
-    scope: "openid email profile",
-    nonce,
-    state,
-    prompt: "select_account"
-  }).toString();
+  const oauth2 = webWindow.google?.accounts?.oauth2;
+  if (!oauth2) {
+    throw new Error("Google sign-in is not available");
+  }
 
   return new Promise((resolve, reject) => {
-    const popup = window.open(authUrl.toString(), "sshome_google_auth", getPopupFeatures(500, 680));
+    const tokenClient = oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: "openid email profile",
+      prompt: "select_account",
+      callback: (response) => {
+        if (response.error) {
+          reject(new Error(response.error_description || response.error));
+          return;
+        }
 
-    if (!popup) {
-      reject(new Error("Allow popups to sign in with Google"));
-      return;
-    }
+        if (!response.access_token) {
+          reject(new Error("Google did not return an access token"));
+          return;
+        }
 
-    let settled = false;
-    let closeTimer: number | undefined;
-    let timeoutTimer: number | undefined;
-    let handleMessage = (_event: MessageEvent<GooglePopupMessage>) => {};
-
-    const cleanup = () => {
-      settled = true;
-      window.removeEventListener("message", handleMessage);
-      if (closeTimer !== undefined) {
-        window.clearInterval(closeTimer);
+        resolve(response.access_token);
       }
-      if (timeoutTimer !== undefined) {
-        window.clearTimeout(timeoutTimer);
-      }
+    });
 
-      if (!popup.closed) {
-        popup.close();
-      }
-    };
-
-    const finish = (callback: () => void) => {
-      if (settled) {
-        return;
-      }
-
-      cleanup();
-      callback();
-    };
-
-    handleMessage = (event: MessageEvent<GooglePopupMessage>) => {
-      if (event.origin !== window.location.origin || event.data?.type !== POPUP_MESSAGE_TYPE) {
-        return;
-      }
-
-      if (event.data.state !== state) {
-        return;
-      }
-
-      if (event.data.error) {
-        finish(() => reject(new Error(event.data.error || "Google sign-in failed")));
-        return;
-      }
-
-      if (!event.data.idToken) {
-        finish(() => reject(new Error("Google did not return an identity token")));
-        return;
-      }
-
-      finish(() => resolve(event.data.idToken as string));
-    };
-
-    closeTimer = window.setInterval(() => {
-      if (popup.closed) {
-        finish(() => reject(new Error("Google sign-in was cancelled")));
-      }
-    }, 500);
-
-    timeoutTimer = window.setTimeout(() => {
-      finish(() => reject(new Error("Google sign-in timed out")));
-    }, 5 * 60 * 1000);
-
-    window.addEventListener("message", handleMessage);
-    popup.focus();
+    tokenClient.requestAccessToken({ prompt: "select_account" });
   });
 }

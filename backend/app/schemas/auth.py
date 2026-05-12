@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
+from pydantic import model_validator
 
 
 class LoginRequest(BaseModel):
@@ -13,7 +14,14 @@ class TokenPairResponse(BaseModel):
 
 
 class GoogleLoginRequest(BaseModel):
-    id_token: str = Field(min_length=20)
+    id_token: str | None = Field(default=None, min_length=20)
+    access_token: str | None = Field(default=None, min_length=20)
+
+    @model_validator(mode="after")
+    def require_google_token(self) -> "GoogleLoginRequest":
+        if not self.id_token and not self.access_token:
+            raise ValueError("Google token is required")
+        return self
 
 
 class RefreshRequest(BaseModel):

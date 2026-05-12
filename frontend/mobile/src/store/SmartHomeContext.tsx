@@ -47,7 +47,7 @@ import type {
   Scenario
 } from "../types/smartHome";
 import { mapActionToStatus } from "../utils/device";
-import { requestGoogleIdToken } from "../utils/googleAuth";
+import { requestGoogleAccessToken } from "../utils/googleAuth";
 
 type AuthStatus = "anonymous" | "loading" | "authenticated";
 
@@ -532,8 +532,8 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     setAuthError(null);
 
     try {
-      const idToken = await requestGoogleIdToken();
-      const tokens = await loginWithGoogleRequest({ id_token: idToken });
+      const accessToken = await requestGoogleAccessToken();
+      const tokens = await loginWithGoogleRequest({ access_token: accessToken });
       const normalized = normalizeSession(tokens);
 
       await completeAuthentication(normalized);

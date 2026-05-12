@@ -13,7 +13,7 @@ import {
 } from "react-native";
 
 import type { LoginPayload } from "../types/auth";
-import { completeGooglePopupRedirect } from "../utils/googleAuth";
+import { preloadGoogleIdentity } from "../utils/googleAuth";
 
 type Props = {
   appTitle: string;
@@ -37,7 +37,9 @@ export function LoginScreen({
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   useEffect(() => {
-    completeGooglePopupRedirect();
+    if (Platform.OS === "web") {
+      preloadGoogleIdentity().catch(() => undefined);
+    }
   }, []);
 
   return (

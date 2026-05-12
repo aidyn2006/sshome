@@ -99,3 +99,53 @@ async def verify_google_id_token(id_token: str) -> GoogleIdentity:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Google token")
 
     return GoogleIdentity(email=email, name=name, subject=subject)
+
+
+async def verify_google_access_token(access_token: str) -> GoogleIdentity:
+    if not settings.google_oauth_client_id:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google authentication is not configured",
+        )
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(
+                "https://openidconnect.googleapis.com/v1/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google authentication is temporarily unavailable",
+        ) from exc
+
+    if response.status_code == status.HTTP_401_UNAUTHORIZED:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Google token")
+
+    try:
+        response.raise_for_status()
+        claims = response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google authentication is temporarily unavailable",
+        ) from exc
+
+    email = claims.get("email")
+    email_verified = claims.get("email_verified")
+    if isinstance(email_verified, str):
+        email_verified = email_verified.lower() == "true"
+
+    if not email or not email_verified:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Google email is not verified")
+
+    subject = claims.get("sub")
+    if not subject:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Google token")
+
+    return GoogleIdentity(
+        email=email,
+        name=claims.get("name") or email.split("@", maxsplit=1)[0],
+        subject=subject,
+    )

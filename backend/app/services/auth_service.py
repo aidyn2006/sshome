@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.jwt import create_access_token, create_refresh_token
 from app.core.security import hash_password, verify_password
-from app.integrations.google_oauth import verify_google_id_token
+from app.integrations.google_oauth import verify_google_access_token, verify_google_id_token
 from app.models.audit_log import AuditLogAction
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
@@ -64,7 +64,13 @@ def login_user(payload: LoginRequest, db: Session, ip_address: str | None) -> To
 
 
 async def login_with_google(payload: GoogleLoginRequest, db: Session, ip_address: str | None) -> TokenPairResponse:
-    identity = await verify_google_id_token(payload.id_token)
+    if payload.id_token:
+        identity = await verify_google_id_token(payload.id_token)
+    elif payload.access_token:
+        identity = await verify_google_access_token(payload.access_token)
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Google token")
+
     user = db.query(User).filter(User.email == identity.email).first()
 
     if user is None:
