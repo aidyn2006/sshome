@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,9 +8,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
+  View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import type { RegisterPayload } from "../types/auth";
+import { colors } from "../theme/colors";
 
 type Props = {
   appTitle: string;
@@ -21,320 +23,494 @@ type Props = {
   onSubmit: (payload: RegisterPayload) => Promise<void> | void;
 };
 
+function getStrength(pw: string): 0 | 1 | 2 | 3 | 4 {
+  if (pw.length === 0) return 0;
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  return score as 0 | 1 | 2 | 3 | 4;
+}
+
+const STRENGTH_LABEL = ["-", "Weak", "Fair", "Strong", "Excellent"] as const;
+const STRENGTH_COLOR = [colors.ink300, colors.danger, colors.warn, colors.info, colors.success] as const;
+
 export function RegisterScreen({
   appTitle,
   isSubmitting = false,
   errorMessage,
   onSwitchToLogin,
-  onSubmit
+  onSubmit,
 }: Props) {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [phoneFocused, setPhoneFocused] = useState(false);
+  const [pwFocused, setPwFocused] = useState(false);
+  const [confirmFocused, setConfirmFocused] = useState(false);
+
+  const strength = getStrength(password);
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={styles.keyboardWrap}
+      style={styles.wrap}
     >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <View style={styles.glow} />
-          <ImageBackground
-            source={{
-              uri: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=1200&q=80"
-            }}
-            resizeMode="cover"
-            style={styles.banner}
-            imageStyle={styles.bannerImage}
-          >
-            <View style={styles.bannerMask} />
-          </ImageBackground>
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top }]}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Compact header */}
+        <View style={styles.compactHeader}>
+          <Pressable onPress={onSwitchToLogin} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={16} color={colors.ink700} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+          <Text style={styles.compactTitle}>
+            Make yourself <Text style={styles.heroAccent}>at home.</Text>
+          </Text>
+          <Text style={styles.compactSub}>
+            Takes about 30 seconds. We'll set up your first home next.
+          </Text>
+        </View>
 
-          <View style={styles.content}>
-            <Text style={styles.appLabel}>{appTitle}</Text>
-            <View style={styles.logoCircle}>
-              <Ionicons name="person-add" size={30} color="#3b82f6" />
+        {/* Form */}
+        <View style={styles.form}>
+          {errorMessage ? (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
+              <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Register to continue to your account</Text>
-            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+          ) : null}
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Name</Text>
+          <Field label="FULL NAME" focused={nameFocused}>
+            <Ionicons name="person-outline" size={18} color={colors.ink500} />
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Your full name"
+              placeholderTextColor={colors.ink400}
+              style={styles.input}
+              onFocus={() => setNameFocused(true)}
+              onBlur={() => setNameFocused(false)}
+            />
+          </Field>
+
+          <Field label="EMAIL" focused={emailFocused}>
+            <Ionicons name="mail-outline" size={18} color={colors.ink500} />
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholder="you@home.com"
+              placeholderTextColor={colors.ink400}
+              style={styles.input}
+              onFocus={() => setEmailFocused(true)}
+              onBlur={() => setEmailFocused(false)}
+            />
+          </Field>
+
+          <Field label="PHONE (OPTIONAL)" focused={phoneFocused}>
+            <Ionicons name="call-outline" size={18} color={colors.ink500} />
+            <TextInput
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              placeholder="+7 777 123 45 67"
+              placeholderTextColor={colors.ink400}
+              style={styles.input}
+              onFocus={() => setPhoneFocused(true)}
+              onBlur={() => setPhoneFocused(false)}
+            />
+          </Field>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>PASSWORD</Text>
+            <View style={[styles.inputWrap, pwFocused && styles.inputWrapFocused]}>
+              <Ionicons name="lock-closed-outline" size={18} color={colors.ink500} />
               <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="Your full name"
-                placeholderTextColor="#9ca3af"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPw}
+                placeholder="At least 8 characters"
+                placeholderTextColor={colors.ink400}
                 style={styles.input}
+                onFocus={() => setPwFocused(true)}
+                onBlur={() => setPwFocused(false)}
               />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                placeholder="you@example.com"
-                placeholderTextColor="#9ca3af"
-                style={styles.input}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Phone</Text>
-              <TextInput
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-                placeholder="+7 777 123 45 67"
-                placeholderTextColor="#9ca3af"
-                style={styles.input}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordWrap}>
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  placeholder="At least 8 characters"
-                  placeholderTextColor="#9ca3af"
-                  style={styles.passwordInput}
+              <Pressable onPress={() => setShowPw((v) => !v)} style={styles.eyeBtn}>
+                <Ionicons
+                  name={showPw ? "eye-off-outline" : "eye-outline"}
+                  size={18}
+                  color={colors.ink500}
                 />
-                <Pressable
-                  style={styles.showButton}
-                  onPress={() => setShowPassword((prev) => !prev)}
-                >
-                  <Text style={styles.showButtonText}>
-                    {showPassword ? "Hide" : "Show"}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Confirm password</Text>
-              <View style={styles.passwordWrap}>
-                <TextInput
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
-                  placeholder="Repeat password"
-                  placeholderTextColor="#9ca3af"
-                  style={styles.passwordInput}
-                />
-                <Pressable
-                  style={styles.showButton}
-                  onPress={() => setShowConfirmPassword((prev) => !prev)}
-                >
-                  <Text style={styles.showButtonText}>
-                    {showConfirmPassword ? "Hide" : "Show"}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
-            <Pressable
-              style={[styles.submit, isSubmitting && styles.submitDisabled]}
-              onPress={() =>
-                onSubmit({
-                  name,
-                  email,
-                  phone,
-                  password,
-                  confirmPassword
-                })
-              }
-              disabled={isSubmitting}
-            >
-              <Text style={styles.submitText}>
-                {isSubmitting ? "Creating..." : "Create Account"}
-              </Text>
-            </Pressable>
-
-            <View style={styles.footerRow}>
-              <Text style={styles.footerText}>Already have an account?</Text>
-              <Pressable onPress={onSwitchToLogin}>
-                <Text style={styles.footerLink}>Sign in</Text>
               </Pressable>
             </View>
+            {/* Strength meter */}
+            {password.length > 0 && (
+              <View style={styles.strengthRow}>
+                <View style={styles.strengthBars}>
+                  {[1, 2, 3, 4].map((i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.strengthBar,
+                        { backgroundColor: i <= strength ? STRENGTH_COLOR[strength] : colors.ink100 },
+                      ]}
+                    />
+                  ))}
+                </View>
+                <Text style={[styles.strengthLabel, { color: STRENGTH_COLOR[strength] }]}>
+                  {STRENGTH_LABEL[strength].toUpperCase()}
+                </Text>
+              </View>
+            )}
           </View>
+
+          <Field label="CONFIRM PASSWORD" focused={confirmFocused}>
+            <Ionicons name="lock-closed-outline" size={18} color={colors.ink500} />
+            <TextInput
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirm}
+              placeholder="Repeat password"
+              placeholderTextColor={colors.ink400}
+              style={styles.input}
+              onFocus={() => setConfirmFocused(true)}
+              onBlur={() => setConfirmFocused(false)}
+            />
+            <Pressable onPress={() => setShowConfirm((v) => !v)} style={styles.eyeBtn}>
+              <Ionicons
+                name={showConfirm ? "eye-off-outline" : "eye-outline"}
+                size={18}
+                color={colors.ink500}
+              />
+            </Pressable>
+          </Field>
+
+          {/* Info box */}
+          <View style={styles.infoBox}>
+            <Ionicons name="server-outline" size={16} color={colors.ink500} />
+            <Text style={styles.infoText}>
+              Your data lives on your home server. We never see your credentials.
+            </Text>
+          </View>
+
+          <Pressable
+            style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
+            onPress={() => onSubmit({ name, email, phone, password, confirmPassword })}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.submitText}>
+              {isSubmitting ? "Creating account…" : "Create Account"}
+            </Text>
+            {!isSubmitting && <Ionicons name="chevron-forward" size={18} color="#fff" />}
+          </Pressable>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account?{" "}</Text>
+            <Pressable onPress={onSwitchToLogin}>
+              <Text style={styles.footerLink}>Sign in</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.termsText}>
+            By continuing you agree to the Terms of Service{"\n"}and the Local-First Privacy Notice.
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
+function Field({
+  label,
+  focused,
+  children,
+}: {
+  label: string;
+  focused: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.fieldGroup}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={[styles.inputWrap, focused && styles.inputWrapFocused]}>{children}</View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  keyboardWrap: {
-    flex: 1
+  wrap: {
+    flex: 1,
+    backgroundColor: colors.cream50,
   },
   scroll: {
     flexGrow: 1,
-    justifyContent: "center",
-    padding: 16
   },
-  card: {
-    borderRadius: 24,
-    backgroundColor: "#ffffff",
+  compactHeader: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.hairline,
+  },
+  backButton: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  backText: {
+    color: colors.ink700,
+    fontSize: 14,
+  },
+  compactTitle: {
+    marginTop: 18,
+    fontSize: 30,
+    fontWeight: "700",
+    color: colors.ink900,
+    letterSpacing: -0.9,
+    lineHeight: 34,
+  },
+  compactSub: {
+    marginTop: 4,
+    fontSize: 13.5,
+    color: colors.ink500,
+    lineHeight: 19,
+  },
+  hero: {
+    position: "relative",
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: "#0f172a",
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 14 },
-    shadowRadius: 22,
-    elevation: 8
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 28,
+    backgroundColor: colors.cream100,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.hairline,
   },
-  glow: {
+  blob1: {
     position: "absolute",
-    top: -28,
-    left: 20,
-    right: 20,
+    top: -80,
+    right: -60,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: colors.accentTint,
+    opacity: 0.6,
+  },
+  blobRing: {
+    position: "absolute",
+    top: 40,
+    right: 60,
+    width: 120,
     height: 120,
-    borderRadius: 999,
-    backgroundColor: "rgba(96,165,250,0.22)",
-    zIndex: 0
+    borderRadius: 60,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
   },
-  banner: {
-    height: 86,
-    justifyContent: "flex-end"
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    position: "relative",
   },
-  bannerImage: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24
-  },
-  bannerMask: {
-    height: 56,
-    backgroundColor: "rgba(255,255,255,0.68)"
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 22
-  },
-  appLabel: {
-    textAlign: "center",
-    color: "#94a3b8",
-    fontSize: 12,
-    marginBottom: 8
-  },
-  logoCircle: {
-    alignSelf: "center",
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+  brandMark: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: colors.ink900,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
-    shadowColor: "#93c5fd",
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 5 },
-    shadowRadius: 14,
-    elevation: 5
   },
-  title: {
-    textAlign: "center",
-    fontSize: 26,
+  brandLabel: {
+    fontFamily: "monospace",
+    fontSize: 12,
+    color: colors.ink700,
+    letterSpacing: 0.8,
+  },
+  heroTitle: {
+    fontSize: 36,
     fontWeight: "700",
-    color: "#111827"
+    color: colors.ink900,
+    letterSpacing: -1,
+    lineHeight: 42,
+    marginTop: 28,
+    position: "relative",
   },
-  subtitle: {
-    marginTop: 6,
-    textAlign: "center",
-    color: "#6b7280",
-    marginBottom: 20
+  heroAccent: {
+    color: colors.accent,
+  },
+  heroSub: {
+    marginTop: 8,
+    fontSize: 14,
+    color: colors.ink500,
+    lineHeight: 20,
+    position: "relative",
+  },
+  pillRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 16,
+    position: "relative",
+  },
+  secPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: colors.ink100,
+  },
+  secPillSuccess: {
+    backgroundColor: colors.successSoft,
+  },
+  secPillText: {
+    fontFamily: "monospace",
+    fontSize: 10,
+    fontWeight: "500",
+    color: colors.ink500,
+    letterSpacing: 0.3,
+  },
+  form: {
+    flex: 1,
+    padding: 24,
+    gap: 14,
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: colors.dangerSoft,
   },
   errorText: {
-    marginTop: -4,
-    marginBottom: 16,
-    color: "#dc2626",
-    textAlign: "center",
-    fontWeight: "600"
+    flex: 1,
+    color: colors.danger,
+    fontSize: 14,
+    fontWeight: "500",
   },
-  field: {
-    marginBottom: 12
+  fieldGroup: {
+    gap: 6,
   },
-  label: {
-    marginBottom: 6,
-    color: "#374151",
-    fontWeight: "600"
+  fieldLabel: {
+    fontFamily: "monospace",
+    fontSize: 10.5,
+    fontWeight: "500",
+    color: colors.ink500,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    height: 52,
+    paddingHorizontal: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    borderRadius: 14,
+  },
+  inputWrapFocused: {
+    borderColor: colors.ink900,
+    borderWidth: 1,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    backgroundColor: "#f9fafb",
-    height: 48,
-    paddingHorizontal: 12,
-    color: "#111827"
-  },
-  passwordWrap: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    backgroundColor: "#f9fafb",
-    height: 48,
-    flexDirection: "row",
-    alignItems: "center"
-  },
-  passwordInput: {
     flex: 1,
     height: "100%",
-    paddingHorizontal: 12,
-    color: "#111827"
+    color: colors.ink900,
+    fontSize: 16,
   },
-  showButton: {
-    paddingHorizontal: 12,
-    height: "100%",
-    justifyContent: "center"
+  eyeBtn: {
+    padding: 4,
   },
-  showButtonText: {
-    color: "#2563eb",
-    fontSize: 13,
-    fontWeight: "600"
-  },
-  submit: {
-    marginTop: 4,
-    backgroundColor: "#2563eb",
-    height: 50,
-    borderRadius: 12,
+  strengthRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center"
+    gap: 10,
+    marginTop: 4,
   },
-  submitDisabled: {
-    opacity: 0.7
+  strengthBars: {
+    flexDirection: "row",
+    gap: 4,
+    flex: 1,
+  },
+  strengthBar: {
+    flex: 1,
+    height: 3,
+    borderRadius: 999,
+  },
+  strengthLabel: {
+    fontFamily: "monospace",
+    fontSize: 10,
+    fontWeight: "500",
+    letterSpacing: 0.5,
+  },
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: colors.cream100,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+  },
+  infoText: {
+    flex: 1,
+    color: colors.ink500,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  submitBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    height: 52,
+    borderRadius: 999,
+    backgroundColor: colors.ink900,
+    marginTop: 4,
+  },
+  submitBtnDisabled: {
+    opacity: 0.6,
   },
   submitText: {
-    color: "#ffffff",
-    fontWeight: "700",
-    fontSize: 15
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "500",
   },
-  footerRow: {
-    marginTop: 16,
+  footer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 6
+    marginTop: 4,
   },
   footerText: {
-    color: "#6b7280"
+    color: colors.ink500,
+    fontSize: 14,
   },
   footerLink: {
-    color: "#2563eb",
-    fontWeight: "700"
-  }
+    color: colors.ink900,
+    fontSize: 14,
+    fontWeight: "500",
+    textDecorationLine: "underline",
+  },
+  termsText: {
+    color: colors.ink500,
+    fontSize: 11,
+    lineHeight: 16,
+    textAlign: "center",
+  },
 });

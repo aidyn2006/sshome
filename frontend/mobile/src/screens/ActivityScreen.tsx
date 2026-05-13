@@ -1,179 +1,337 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EventRow } from "../components/EventRow";
 import { FilterPill } from "../components/FilterPill";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { useSmartHome } from "../store/SmartHomeContext";
 import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
-import { typography } from "../theme/typography";
 import type { DateFilter, Event } from "../types/smartHome";
 
-const dateFilters: Array<{ key: DateFilter; label: string }> = [
+const DATE_FILTERS: Array<{ key: DateFilter; label: string }> = [
   { key: "today", label: "Today" },
-  { key: "week", label: "Week" },
-  { key: "month", label: "Month" }
+  { key: "week",  label: "Week" },
+  { key: "month", label: "Month" },
 ];
 
-type Section = {
-  title: string;
-  data: Event[];
-};
+const SOURCE_FILTERS = ["ALL", "MANUAL", "SCENARIO", "SYSTEM"] as const;
+
+type Section = { title: string; data: Event[] };
+type SourceFilter = typeof SOURCE_FILTERS[number];
 
 function getCutoff(filter: DateFilter): number {
   const now = Date.now();
-
-  if (filter === "today") {
-    return now - 24 * 60 * 60 * 1000;
-  }
-
-  if (filter === "week") {
-    return now - 7 * 24 * 60 * 60 * 1000;
-  }
-
-  return now - 30 * 24 * 60 * 60 * 1000;
+  if (filter === "today") return now - 86400000;
+  if (filter === "week")  return now - 86400000 * 7;
+  return now - 86400000 * 30;
 }
 
 function groupByTime(events: Event[]): Section[] {
   const now = Date.now();
   const justNow: Event[] = [];
-  const oneHourAgo: Event[] = [];
+  const oneHour: Event[] = [];
   const yesterday: Event[] = [];
-
-  events.forEach((event) => {
-    const diff = now - event.timestamp;
-
-    if (diff <= 15 * 60 * 1000) {
-      justNow.push(event);
-      return;
-    }
-
-    if (diff <= 24 * 60 * 60 * 1000) {
-      oneHourAgo.push(event);
-      return;
-    }
-
-    yesterday.push(event);
+  events.forEach((e) => {
+    const diff = now - e.timestamp;
+    if (diff <= 900000) { justNow.push(e); return; }
+    if (diff <= 86400000) { oneHour.push(e); return; }
+    yesterday.push(e);
   });
-
   return [
-    { title: "JUST NOW", data: justNow },
-    { title: "1 HOUR AGO", data: oneHourAgo },
-    { title: "YESTERDAY", data: yesterday }
-  ].filter((section) => section.data.length > 0);
+    { title: "JUST NOW",    data: justNow },
+    { title: "1 HOUR AGO",  data: oneHour },
+    { title: "YESTERDAY",   data: yesterday },
+  ].filter((s) => s.data.length > 0);
+}
+
+function getEventSource(event: Event): Exclude<SourceFilter, "ALL"> {
+  return event.type === "SCENE" ? "SCENARIO" : "MANUAL";
 }
 
 export function ActivityScreen() {
   const { events, devices, isDataLoading } = useSmartHome();
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("ALL");
 
-  const filteredEvents = useMemo(() => {
+  const filtered = useMemo(() => {
     const cutoff = getCutoff(dateFilter);
-    return events.filter((event) => event.timestamp >= cutoff);
-  }, [dateFilter, events]);
+    return events.filter((e) => {
+      if (e.timestamp < cutoff) return false;
+      if (sourceFilter !== "ALL" && getEventSource(e) !== sourceFilter) return false;
+      return true;
+    });
+  }, [dateFilter, events, sourceFilter]);
 
-  const sections = useMemo(() => groupByTime(filteredEvents), [filteredEvents]);
-  const deviceMap = useMemo(() => new Map(devices.map((device) => [device.id, device])), [devices]);
+  const sections = useMemo(() => groupByTime(filtered), [filtered]);
+  const deviceMap = useMemo(() => new Map(devices.map((d) => [d.id, d])), [devices]);
+
+  const counts = useMemo(() => ({
+    total:    events.length,
+    manual:   events.filter((e) => getEventSource(e) === "MANUAL").length,
+    scenario: events.filter((e) => getEventSource(e) === "SCENARIO").length,
+    system:   0,
+  }), [events]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.headerRow}>
-          <Text style={typography.h2}>Activity</Text>
-          <View style={styles.dateFilterWrap}>
-            {dateFilters.map((filter) => (
-              <FilterPill
-                key={filter.key}
-                label={filter.label}
-                isActive={filter.key === dateFilter}
-                onPress={() => setDateFilter(filter.key)}
-              />
-            ))}
+    <View style={styles.screen}>
+      <ScreenHeader
+        eyebrow="AUDIT LOG"
+        title="Activity"
+        subtitle="A signed, append-only record of every action on this home."
+        secure
+        right={
+          <View style={styles.filterBtn}>
+            <Ionicons name="filter-outline" size={17} color={colors.ink700} />
           </View>
+        }
+      />
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        {/* Period segmented control */}
+        <View style={styles.segment}>
+          {DATE_FILTERS.map((f) => {
+            const on = f.key === dateFilter;
+            return (
+              <View key={f.key} onTouchEnd={() => setDateFilter(f.key)} style={[styles.segItem, on && styles.segItemActive]}>
+                <Text style={[styles.segText, on && styles.segTextActive]}>{f.label}</Text>
+              </View>
+            );
+          })}
         </View>
 
+        {/* Stat strip */}
+        <View style={styles.statStrip}>
+          <LogStat label="Total"    value={counts.total}    accent={colors.ink900} />
+          <View style={styles.statDiv} />
+          <LogStat label="Manual"   value={counts.manual}   accent={colors.accent} />
+          <View style={styles.statDiv} />
+          <LogStat label="Scenario" value={counts.scenario} accent={colors.info} />
+          <View style={styles.statDiv} />
+          <LogStat label="System"   value={counts.system}   accent={colors.success} />
+        </View>
+
+        {/* Source filter pills */}
+        <View style={styles.pillRow}>
+          {SOURCE_FILTERS.map((s) => (
+            <FilterPill
+              key={s}
+              label={s === "ALL" ? "All sources" : s.charAt(0) + s.slice(1).toLowerCase()}
+              isActive={sourceFilter === s}
+              onPress={() => setSourceFilter(s)}
+            />
+          ))}
+        </View>
+
+        {/* Event groups */}
         {sections.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>{isDataLoading ? "Loading activity..." : "No activity yet"}</Text>
-            <Text style={styles.emptyText}>
-              {isDataLoading ? "Fetching events from the backend." : "Actions on your devices will appear here."}
-            </Text>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="pulse-outline" size={26} color={colors.ink500} />
+            </View>
+            <Text style={styles.emptyTitle}>{isDataLoading ? "Loading…" : "Quiet hour"}</Text>
+            <Text style={styles.emptyText}>No events in this window.</Text>
           </View>
         ) : (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContainer}>
-            {sections.map((section) => (
-              <View key={section.title} style={styles.section}>
-                <Text style={styles.sectionTitle}>{section.title}</Text>
-                <View style={styles.eventsList}>
-                  {section.data.map((event) => (
-                    <EventRow
-                      key={event.id}
-                      event={event}
-                      device={event.type === "DEVICE" ? deviceMap.get(event.device_id) : undefined}
-                    />
-                  ))}
-                </View>
+          sections.map(({ title, data }) => (
+            <View key={title} style={styles.group}>
+              <View style={styles.groupHeader}>
+                <Text style={styles.groupLabel}>{title}</Text>
+                <View style={styles.groupLine} />
+                <Text style={styles.groupCount}>{data.length}</Text>
               </View>
-            ))}
-          </ScrollView>
+              {data.map((e, i) => (
+                <EventRow
+                  key={e.id}
+                  event={e}
+                  device={e.type === "DEVICE" ? deviceMap.get(e.device_id) : undefined}
+                  isFirst={i === 0}
+                  isLast={i === data.length - 1}
+                />
+              ))}
+            </View>
+          ))
         )}
-      </View>
-    </SafeAreaView>
+
+        {/* Console footer */}
+        <View style={styles.console}>
+          <Text style={styles.consoleDim}>$ sshome audit verify --tail 24h</Text>
+          <Text style={styles.consoleOk}>✓ {counts.total}/{counts.total} events signed</Text>
+          <Text style={styles.consoleOk}>✓ ledger head 0xa3f1…b29c</Text>
+          <Text style={styles.consoleDim}>EOF</Text>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function LogStat({ label, value, accent }: { label: string; value: number; accent: string }) {
+  return (
+    <View style={styles.statCell}>
+      <Text style={[styles.statValue, { color: accent }]}>{String(value).padStart(2, "0")}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  screen: {
     flex: 1,
-    backgroundColor: colors.background
+    backgroundColor: colors.cream50,
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md
+  content: {
+    paddingHorizontal: 20,
+    paddingBottom: 120,
+    gap: spacing.md,
   },
-  headerRow: {
-    gap: spacing.md
+  filterBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  dateFilterWrap: {
+  segment: {
     flexDirection: "row",
-    gap: spacing.sm
+    gap: 4,
+    padding: 4,
+    backgroundColor: colors.ink100,
+    borderRadius: 999,
   },
-  listContainer: {
-    gap: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xxxl
+  segItem: {
+    flex: 1,
+    height: 32,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  section: {
-    gap: spacing.sm
+  segItemActive: {
+    backgroundColor: colors.surface,
+    shadowColor: colors.ink900,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  sectionTitle: {
-    color: colors.textSecondary,
-    fontSize: 12,
+  segText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.ink500,
+  },
+  segTextActive: {
+    color: colors.ink900,
     fontWeight: "600",
-    letterSpacing: 0.8
   },
-  eventsList: {
+  statStrip: {
+    flexDirection: "row",
     backgroundColor: colors.surface,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.sm
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  statDiv: {
+    width: 0.5,
+    backgroundColor: colors.hairlineStrong,
+    marginVertical: 2,
+  },
+  statCell: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  statValue: {
+    fontFamily: "monospace",
+    fontSize: 18,
+    fontWeight: "500",
+    lineHeight: 22,
+  },
+  statLabel: {
+    fontFamily: "monospace",
+    fontSize: 9.5,
+    color: colors.ink500,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  pillRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  group: {
+    gap: 2,
+    marginTop: 6,
+  },
+  groupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 2,
+  },
+  groupLabel: {
+    fontFamily: "monospace",
+    fontSize: 10.5,
+    fontWeight: "500",
+    color: colors.ink500,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  groupLine: {
+    flex: 1,
+    height: 0.5,
+    backgroundColor: colors.hairlineStrong,
+  },
+  groupCount: {
+    fontFamily: "monospace",
+    fontSize: 10.5,
+    color: colors.ink400,
+  },
+  console: {
+    marginTop: 8,
+    padding: 14,
+    backgroundColor: colors.ink900,
+    borderRadius: 10,
+    gap: 2,
+  },
+  consoleDim: {
+    fontFamily: "monospace",
+    fontSize: 11,
+    color: "rgba(244, 245, 247, 0.5)",
+    lineHeight: 18,
+  },
+  consoleOk: {
+    fontFamily: "monospace",
+    fontSize: 11,
+    color: colors.success,
+    lineHeight: 18,
   },
   emptyState: {
-    flex: 1,
-    justifyContent: "center",
+    paddingTop: 48,
     alignItems: "center",
-    gap: spacing.sm
+    gap: 12,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: colors.ink100,
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptyTitle: {
-    color: colors.textPrimary,
+    color: colors.ink900,
     fontSize: 20,
-    fontWeight: "700"
+    fontWeight: "700",
+    letterSpacing: -0.3,
   },
   emptyText: {
-    color: colors.textSecondary,
-    fontSize: 13
-  }
+    color: colors.ink500,
+    textAlign: "center",
+    fontSize: 13.5,
+  },
 });

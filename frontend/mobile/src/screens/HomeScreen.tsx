@@ -1,310 +1,384 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getBackendHealth } from "../api/system";
 import { DeviceToggleRow } from "../components/DeviceToggleRow";
 import { RoomCard } from "../components/RoomCard";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { SkeletonBlock } from "../components/SkeletonBlock";
 import { StatCard } from "../components/StatCard";
 import type { RootStackParamList } from "../navigation/types";
 import { useSmartHome } from "../store/SmartHomeContext";
-import { colors, gradients } from "../theme/colors";
+import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
-import { typography } from "../theme/typography";
 import { isDeviceActive } from "../utils/device";
 
-const stats = [
-  { id: "temperature", icon: "thermometer-outline" as const, title: "Temperature", value: "22 C", subtitle: "Living Room" },
-  { id: "humidity", icon: "water-outline" as const, title: "Humidity", value: "45%", subtitle: "Bedroom" },
-  { id: "energy", icon: "flash-outline" as const, title: "Energy", value: "1.2 kWh", subtitle: "Today" }
+const statConfig = [
+  { id: "temperature", icon: "thermometer-outline" as const, title: "Temperature", value: "22 °C", subtitle: "Indoor",     accent: "#C8674A" },
+  { id: "humidity",    icon: "water-outline" as const,       title: "Humidity",    value: "48 %",  subtitle: "Humidity",   accent: "#2A6FDB" },
+  { id: "energy",      icon: "flash-outline" as const,       title: "Energy",      value: "1.84",  subtitle: "kWh · 1h",  accent: "#B45309" },
+  { id: "air",         icon: "leaf-outline" as const,        title: "Air Quality", value: "42 AQI",subtitle: "Air quality", accent: "#1F8A5B" },
 ];
+
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 5)  return "Good night";
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { rooms, devices, isDataLoading, toggleDevice, user } = useSmartHome();
-  const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
-
-  const activeRoomsCount = useMemo(() => {
-    const activeRooms = new Set(
-      devices.filter((device) => isDeviceActive(device.status)).map((device) => device.room_id)
-    );
-
-    return activeRooms.size;
-  }, [devices]);
+  const [backendStatus, setBackendStatus] = useState<"connected" | "checking" | "unavailable">("checking");
 
   const activeDevicesCount = useMemo(
-    () => devices.filter((device) => isDeviceActive(device.status)).length,
+    () => devices.filter((d) => isDeviceActive(d.status)).length,
     [devices]
   );
-
-  const favoriteDevices = useMemo(() => devices.slice(0, 4), [devices]);
 
   const roomInfo = useMemo(
     () =>
       rooms.map((room) => {
-        const roomDevices = devices.filter((device) => device.room_id === room.id);
-        return {
-          ...room,
-          deviceCount: roomDevices.length,
-          isActive: roomDevices.some((device) => isDeviceActive(device.status))
-        };
+        const roomDevices = devices.filter((d) => d.room_id === room.id);
+        const activeCount = roomDevices.filter((d) => isDeviceActive(d.status)).length;
+        return { ...room, deviceCount: roomDevices.length, activeCount, isActive: activeCount > 0 };
       }),
     [devices, rooms]
   );
 
-  const roomNameMap = useMemo(() => new Map(rooms.map((room) => [room.id, room.name])), [rooms]);
+  const roomNameMap = useMemo(() => new Map(rooms.map((r) => [r.id, r.name])), [rooms]);
+  const { favoriteDeviceIds } = useSmartHome();
+  const favoriteDevices = useMemo(
+    () =>
+      favoriteDeviceIds.length > 0
+        ? devices.filter((d) => favoriteDeviceIds.includes(d.id))
+        : devices.slice(0, 4),
+    [devices, favoriteDeviceIds]
+  );
 
   useEffect(() => {
     const controller = new AbortController();
-
     getBackendHealth(controller.signal)
-      .then((response) => {
-        setBackendOnline(response.status === "ok");
-      })
-      .catch(() => {
-        setBackendOnline(false);
-      });
-
-    return () => {
-      controller.abort();
-    };
+      .then((r) => setBackendStatus(r.status === "ok" ? "connected" : "unavailable"))
+      .catch(() => setBackendStatus("unavailable"));
+    return () => controller.abort();
   }, []);
 
+  const firstName = user?.name?.split(" ")[0] || "there";
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={typography.h1}>Welcome, {user?.name?.split(" ")[0] || "there"}</Text>
-            <Text style={styles.subText}>
-              {activeRoomsCount} rooms active - {activeDevicesCount} devices on
-            </Text>
-            <View style={styles.backendStatusRow}>
-              <View
-                style={[
-                  styles.backendStatusDot,
-                  backendOnline === true && styles.backendStatusDotOnline,
-                  backendOnline === false && styles.backendStatusDotOffline
-                ]}
-              />
-              <Text style={styles.backendStatusText}>
-                Backend: {backendOnline === null ? "checking..." : backendOnline ? "connected" : "unavailable"}
-              </Text>
-            </View>
-          </View>
-
-          <Pressable onPress={() => navigation.navigate("AddLocationModal")}>
-            <LinearGradient colors={gradients.avatar} style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>
-                {(user?.name || "SS")
-                  .split(" ")
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((chunk) => chunk[0]?.toUpperCase())
-                  .join("") || "SS"}
-              </Text>
-            </LinearGradient>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+    >
+      <ScreenHeader
+        eyebrow="LINDEN HOUSE"
+        title={<Text style={styles.greetTitle}>{greeting()}, <Text style={styles.greetAccent}>{firstName}.</Text></Text>}
+        subtitle={`${activeDevicesCount} of ${devices.length} devices active · ${rooms.length} rooms`}
+        secure
+        backendStatus={backendStatus}
+        right={
+          <Pressable onPress={() => navigation.navigate("AddLocationModal")} style={styles.avatarBtn}>
+            <Ionicons name="person-outline" size={18} color={colors.ink700} />
           </Pressable>
-        </View>
+        }
+      />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Overview</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-          >
+      <View style={styles.body}>
+        {/* Overview grid */}
+        <Section eyebrow="OVERVIEW" title="Right now">
+          <View style={styles.grid2}>
             {isDataLoading
-              ? Array.from({ length: 3 }).map((_, index) => (
-                  <SkeletonBlock key={`stat-skeleton-${index}`} style={{ width: 180, height: 120 }} />
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonBlock key={i} style={styles.statSkeleton} />
                 ))
-              : stats.map((item) => (
-                  <StatCard
-                    key={item.id}
-                    icon={item.icon}
-                    title={item.title}
-                    value={item.value}
-                    subtitle={item.subtitle}
-                  />
+              : statConfig.map((s) => (
+                  <StatCard key={s.id} icon={s.icon} title={s.title} value={s.value} subtitle={s.subtitle} accent={s.accent} />
                 ))}
-          </ScrollView>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>My Rooms</Text>
-          {isDataLoading ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalList}
-            >
-              {Array.from({ length: 4 }).map((_, index) => (
-                <SkeletonBlock key={`room-skeleton-${index}`} style={{ width: 140, height: 160 }} />
-              ))}
-            </ScrollView>
-          ) : roomInfo.length === 0 ? (
-            <View style={styles.emptyBlock}>
-              <Text style={styles.emptyTitle}>No rooms yet</Text>
-              <Text style={styles.emptyText}>Open the avatar menu to create your first home or room.</Text>
-            </View>
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalList}
-            >
-              {roomInfo.map((room) => (
-                <RoomCard
-                  key={room.id}
-                  emoji={room.emoji}
-                  name={room.name}
-                  deviceCount={room.deviceCount}
-                  isActive={room.isActive}
-                />
-              ))}
-            </ScrollView>
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Control</Text>
-          <View style={styles.quickControlList}>
-            {isDataLoading
-              ? Array.from({ length: 4 }).map((_, index) => (
-                  <SkeletonBlock key={`quick-skeleton-${index}`} style={{ width: "100%", height: 72 }} />
-                ))
-              : favoriteDevices.map((device) => (
-                  <DeviceToggleRow
-                    key={device.id}
-                    device={device}
-                    roomName={roomNameMap.get(device.room_id) ?? "Unknown"}
-                    onToggle={() => {
-                      void toggleDevice(device.id);
-                    }}
-                  />
-                ))}
-
-            {!isDataLoading && favoriteDevices.length === 0 ? (
-              <View style={styles.emptyInline}>
-                <Text style={styles.emptyText}>Devices will show up here as soon as they exist on the backend.</Text>
-              </View>
-            ) : null}
           </View>
+        </Section>
+
+        {/* Rooms grid */}
+        <Section eyebrow="MY ROOMS" title="Rooms" action="See all" onAction={() => navigation.navigate("AllRoomsModal")}>
+          <View style={styles.grid2}>
+            {isDataLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonBlock key={i} style={styles.roomSkeleton} />
+                ))
+              : roomInfo.length === 0
+                ? (
+                  <View style={styles.emptyCard}>
+                    <Text style={styles.emptyTitle}>No rooms yet</Text>
+                    <Text style={styles.emptyText}>Open the profile icon to add a home or room.</Text>
+                  </View>
+                )
+                : roomInfo.slice(0, 4).map((r) => (
+                    <View key={r.id} style={styles.roomCardWrap}>
+                      <RoomCard
+                        emoji={r.emoji}
+                        name={r.name}
+                        deviceCount={r.deviceCount}
+                        isActive={r.isActive}
+                        activeCount={r.activeCount}
+                      />
+                    </View>
+                  ))}
+          </View>
+        </Section>
+
+        {/* Quick control */}
+        <Section eyebrow="QUICK CONTROL" title="Favorites" action="Edit" onAction={() => navigation.navigate("ManageFavoritesModal")}>
+          <View style={styles.quickCard}>
+            {isDataLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonBlock key={i} style={styles.rowSkeleton} />
+                ))
+              : favoriteDevices.length === 0
+                ? (
+                  <View style={styles.emptyInline}>
+                    <Text style={styles.emptyText}>Devices will appear here once connected.</Text>
+                  </View>
+                )
+                : favoriteDevices.map((d, i) => (
+                    <View key={d.id}>
+                      <DeviceToggleRow
+                        device={d}
+                        roomName={roomNameMap.get(d.room_id) ?? "Unknown"}
+                        onToggle={() => void toggleDevice(d.id)}
+                      />
+                      {i < favoriteDevices.length - 1 && <View style={styles.divider} />}
+                    </View>
+                  ))}
+          </View>
+        </Section>
+
+        {/* Security strip */}
+        <View style={styles.securityStrip}>
+          <View style={styles.secIconBox}>
+            <Ionicons name="shield-checkmark" size={22} color={colors.success} />
+          </View>
+          <View style={styles.secContent}>
+            <Text style={styles.secTitle}>All perimeter locked</Text>
+            <Text style={styles.secMeta}>4 DOORS · 4 WINDOWS · ARMED</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.ink400} />
         </View>
 
-        <View style={styles.footerHint}>
-          {isDataLoading ? (
-            <ActivityIndicator size="small" color={colors.textSecondary} />
-          ) : (
-            <Ionicons name="sparkles-outline" size={16} color={colors.textSecondary} />
-          )}
-          <Text style={styles.footerHintText}>Tap the avatar to add a home or room from the modal.</Text>
+        {/* Loading hint */}
+        {isDataLoading && (
+          <View style={styles.loadingHint}>
+            <ActivityIndicator size="small" color={colors.ink400} />
+            <Text style={styles.loadingText}>Loading your home…</Text>
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+function Section({
+  eyebrow, title, action, onAction, children,
+}: { eyebrow: string; title: string; action?: string; onAction?: () => void; children: React.ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={styles.sectionEyebrow}>{eyebrow}</Text>
+          <Text style={styles.sectionTitle}>{title}</Text>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+        {action && (
+          <Pressable style={styles.sectionAction} onPress={onAction} disabled={!onAction}>
+            <Text style={styles.sectionActionText}>{action}</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.ink700} />
+          </Pressable>
+        )}
+      </View>
+      {children}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  scroll: {
     flex: 1,
-    backgroundColor: colors.background
+    backgroundColor: colors.cream50,
   },
-  contentContainer: {
-    padding: spacing.lg,
-    gap: spacing.xl,
-    paddingBottom: spacing.xxxl
+  content: {
+    paddingBottom: 120,
   },
-  headerRow: {
-    flexDirection: "row",
+  body: {
+    paddingHorizontal: 20,
+    gap: 26,
+  },
+  greetTitle: {
+    fontSize: 32,
+    fontWeight: "700",
+    color: colors.ink900,
+    letterSpacing: -0.8,
+    lineHeight: 36,
+  },
+  greetAccent: {
+    color: colors.accent,
+  },
+  avatarBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
     alignItems: "center",
-    gap: spacing.md
-  },
-  subText: {
-    marginTop: spacing.xs,
-    fontSize: 12,
-    color: colors.textSecondary
-  },
-  backendStatusRow: {
-    marginTop: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs
-  },
-  backendStatusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.inactiveGray
-  },
-  backendStatusDotOnline: {
-    backgroundColor: colors.activeGreen
-  },
-  backendStatusDotOffline: {
-    backgroundColor: colors.danger
-  },
-  backendStatusText: {
-    fontSize: 12,
-    color: colors.textSecondary
-  },
-  avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  avatarText: {
-    color: colors.textOnAccent,
-    fontSize: 16,
-    fontWeight: "700"
+    justifyContent: "center",
   },
   section: {
-    gap: spacing.md
+    gap: 12,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+  },
+  sectionEyebrow: {
+    fontFamily: "monospace",
+    fontSize: 10.5,
+    fontWeight: "500",
+    color: colors.ink500,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
   },
   sectionTitle: {
-    ...typography.h2
+    fontSize: 22,
+    fontWeight: "700",
+    color: colors.ink900,
+    letterSpacing: -0.4,
+    marginTop: 3,
   },
-  horizontalList: {
-    gap: spacing.md,
-    paddingRight: spacing.xs
-  },
-  quickControlList: {
-    gap: spacing.sm
-  },
-  emptyBlock: {
-    padding: spacing.lg,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.xs
-  },
-  emptyInline: {
-    paddingVertical: spacing.md
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: "700"
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    fontSize: 13
-  },
-  footerHint: {
+  sectionAction: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
-    marginTop: -4
+    gap: 2,
   },
-  footerHintText: {
-    color: colors.textSecondary,
-    fontSize: 12
-  }
+  sectionActionText: {
+    fontSize: 13,
+    color: colors.ink700,
+  },
+  grid2: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  statSkeleton: {
+    width: "48%",
+    height: 96,
+    borderRadius: 14,
+    flexGrow: 1,
+  },
+  roomCardWrap: {
+    width: "48%",
+    flexGrow: 1,
+  },
+  roomSkeleton: {
+    width: "48%",
+    height: 124,
+    borderRadius: 16,
+    flexGrow: 1,
+  },
+  rowSkeleton: {
+    width: "100%",
+    height: 68,
+    borderRadius: 12,
+  },
+  quickCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    shadowColor: colors.ink900,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  divider: {
+    height: 0.5,
+    backgroundColor: colors.hairline,
+    marginLeft: 60,
+  },
+  emptyCard: {
+    flex: 1,
+    padding: spacing.lg,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    gap: 4,
+  },
+  emptyInline: {
+    padding: spacing.lg,
+  },
+  emptyTitle: {
+    color: colors.ink900,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  emptyText: {
+    color: colors.ink500,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  securityStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    shadowColor: colors.ink900,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  secIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: colors.successSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  secContent: {
+    flex: 1,
+  },
+  secTitle: {
+    color: colors.ink900,
+    fontSize: 14.5,
+    fontWeight: "500",
+  },
+  secMeta: {
+    fontFamily: "monospace",
+    fontSize: 11,
+    color: colors.ink500,
+    marginTop: 2,
+    letterSpacing: 0.3,
+  },
+  loadingHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  loadingText: {
+    color: colors.ink500,
+    fontSize: 13,
+  },
 });

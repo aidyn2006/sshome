@@ -7,102 +7,80 @@ import type { Device, Event } from "../types/smartHome";
 type Props = {
   event: Event;
   device?: Device;
+  isFirst?: boolean;
+  isLast?: boolean;
 };
 
 function timeAgo(timestamp: number): string {
   const diff = Date.now() - timestamp;
   const minutes = Math.max(1, Math.floor(diff / 60000));
-
-  if (minutes < 60) {
-    return `${minutes} min ago`;
-  }
-
+  if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-  }
-
-  const days = Math.floor(hours / 24);
-  return `${days} day${days === 1 ? "" : "s"} ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }
 
-function getBadge(event: Event): { label: string; color: string } {
-  if (event.type === "SCENE") {
-    return { label: "SCENE RUN", color: colors.accentBlue };
-  }
-
+type VerbConfig = { label: string; tone: "accent" | "success" | "danger" | "warn" | "info" | "neutral" };
+function getVerb(event: Event): VerbConfig {
+  if (event.type === "SCENE") return { label: "EXECUTE", tone: "info" };
   switch (event.action) {
-    case "TURN_ON":
-      return { label: "TURNED ON", color: colors.activeGreen };
-    case "TURN_OFF":
-      return { label: "TURNED OFF", color: colors.danger };
-    case "OPEN":
-      return { label: "UNLOCKED", color: colors.activeGreen };
-    case "CLOSE":
-      return { label: "LOCKED", color: colors.danger };
+    case "TURN_ON":  return { label: "TURN_ON",  tone: "accent" };
+    case "TURN_OFF": return { label: "TURN_OFF", tone: "neutral" };
+    case "OPEN":     return { label: "OPEN",     tone: "accent" };
+    case "CLOSE":    return { label: "CLOSE",    tone: "neutral" };
   }
-
-  return { label: "UPDATED", color: colors.textSecondary };
+  return { label: "UPDATE", tone: "neutral" };
 }
 
-function getDotColor(event: Event): string {
-  if (event.type === "SCENE") {
-    return colors.accentBlue;
-  }
-
-  if (event.action === "TURN_ON" || event.action === "OPEN") {
-    return colors.activeGreen;
-  }
-
-  return colors.danger;
-}
+const TONE_COLORS: Record<string, { bg: string; fg: string }> = {
+  accent:  { bg: colors.accentTint,   fg: colors.accent },
+  success: { bg: colors.successSoft,  fg: colors.success },
+  danger:  { bg: colors.dangerSoft,   fg: colors.danger },
+  warn:    { bg: colors.warnSoft,     fg: colors.warn },
+  info:    { bg: colors.infoSoft,     fg: colors.info },
+  neutral: { bg: colors.ink100,       fg: colors.ink700 },
+};
 
 function getIconName(event: Event, device?: Device): keyof typeof Ionicons.glyphMap {
-  if (event.type === "SCENE") {
-    return "flash-outline";
+  if (event.type === "SCENE") return "flash-outline";
+  switch (device?.type) {
+    case "LIGHT":  return "bulb-outline";
+    case "DOOR":   return "lock-closed-outline";
+    case "WINDOW": return "scan-outline";
+    case "AC":     return "snow-outline";
+    case "TEMP":   return "thermometer-outline";
   }
-
-  if (!device) {
-    return "hardware-chip-outline";
-  }
-
-  switch (device.type) {
-    case "LIGHT":
-      return "bulb-outline";
-    case "DOOR":
-      return "lock-closed-outline";
-    case "WINDOW":
-      return "scan-outline";
-    case "AC":
-      return "snow-outline";
-    case "TEMP":
-      return "thermometer-outline";
-  }
-
   return "hardware-chip-outline";
 }
 
-export function EventRow({ event, device }: Props) {
-  const badge = getBadge(event);
-  const title = event.type === "SCENE" ? event.scene_name : device?.name ?? "Unknown device";
+export function EventRow({ event, device, isFirst = false, isLast = false }: Props) {
+  const verb = getVerb(event);
+  const tc = TONE_COLORS[verb.tone] ?? TONE_COLORS.neutral;
+  const title = event.type === "SCENE" ? (event.scene_name ?? "Scene") : (device?.name ?? "Unknown device");
+  const code = event.type === "SCENE" ? "scenario.run" : "device.cmd.exec";
 
   return (
     <View style={styles.row}>
-      <View style={styles.timelineColumn}>
-        <View style={styles.timelineLine} />
-        <View style={[styles.timelineDot, { backgroundColor: getDotColor(event) }]} />
-      </View>
-
-      <View style={styles.iconCircle}>
-        <Ionicons name={getIconName(event, device)} size={16} color={colors.textPrimary} />
-      </View>
-
-      <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
-        <View style={[styles.badge, { backgroundColor: `${badge.color}25` }]}>
-          <Text style={[styles.badgeText, { color: badge.color }]}>{badge.label}</Text>
+      {/* timeline */}
+      <View style={styles.railCol}>
+        {!isFirst && <View style={styles.railTop} />}
+        {!isLast  && <View style={styles.railBot} />}
+        <View style={styles.railNode}>
+          <Ionicons name={getIconName(event, device)} size={10} color={colors.ink700} />
         </View>
-        <Text style={styles.time}>{timeAgo(event.timestamp)}</Text>
+      </View>
+
+      <View style={styles.body}>
+        <View style={styles.titleRow}>
+          <View style={[styles.verbPill, { backgroundColor: tc.bg }]}>
+            <Text style={[styles.verbText, { color: tc.fg }]}>{verb.label}</Text>
+          </View>
+          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+        </View>
+        <Text style={styles.meta}>
+          <Text style={styles.code}>{code}</Text>
+          {"  ·  "}{timeAgo(event.timestamp)}
+        </Text>
       </View>
     </View>
   );
@@ -111,60 +89,77 @@ export function EventRow({ event, device }: Props) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    gap: 12,
     paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.border,
-    gap: 10
   },
-  timelineColumn: {
-    width: 16,
-    alignItems: "center"
-  },
-  timelineLine: {
-    position: "absolute",
-    width: 1,
-    top: -10,
-    bottom: -10,
-    backgroundColor: colors.border
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginTop: 8
-  },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+  railCol: {
+    width: 22,
     alignItems: "center",
-    justifyContent: "center"
+    position: "relative",
+    flexShrink: 0,
   },
-  content: {
+  railTop: {
+    position: "absolute",
+    top: -1,
+    bottom: "50%",
+    width: 1,
+    backgroundColor: colors.hairlineStrong,
+    left: 10,
+  },
+  railBot: {
+    position: "absolute",
+    top: "50%",
+    bottom: -1,
+    width: 1,
+    backgroundColor: colors.hairlineStrong,
+    left: 10,
+  },
+  railNode: {
+    marginTop: 12,
+    width: 18,
+    height: 18,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  body: {
     flex: 1,
-    gap: 4
+    gap: 4,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  verbPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  verbText: {
+    fontFamily: "monospace",
+    fontSize: 10,
+    fontWeight: "600",
+    letterSpacing: 0.3,
   },
   title: {
-    color: colors.textPrimary,
+    color: colors.ink900,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500",
+    letterSpacing: -0.1,
+    flex: 1,
   },
-  badge: {
-    borderRadius: 50,
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 2
-  },
-  badgeText: {
+  meta: {
+    fontFamily: "monospace",
     fontSize: 11,
-    fontWeight: "700"
+    color: colors.ink500,
   },
-  time: {
-    color: colors.textSecondary,
-    fontSize: 12
-  }
+  code: {
+    color: colors.ink600,
+  },
 });

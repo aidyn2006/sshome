@@ -1,85 +1,137 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+import type { RootStackParamList } from "../navigation/types";
 
 import { DeviceCard } from "../components/DeviceCard";
 import { FilterPill } from "../components/FilterPill";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { SkeletonBlock } from "../components/SkeletonBlock";
 import { useSmartHome } from "../store/SmartHomeContext";
 import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
-import { typography } from "../theme/typography";
 import type { FilterType } from "../types/smartHome";
 import { mapFilterTypeToDeviceType } from "../utils/device";
 
-const filters: Array<{ key: FilterType; label: string }> = [
-  { key: "ALL", label: "All" },
-  { key: "LIGHT", label: "Lights" },
-  { key: "DOOR", label: "Doors" },
+const FILTERS: Array<{ key: FilterType; label: string }> = [
+  { key: "ALL",    label: "All" },
+  { key: "LIGHT",  label: "Lights" },
+  { key: "DOOR",   label: "Doors" },
   { key: "WINDOW", label: "Windows" },
-  { key: "AC", label: "AC" },
-  { key: "TEMP", label: "Sensors" }
+  { key: "AC",     label: "Climate" },
+  { key: "TEMP",   label: "Sensors" },
 ];
 
 export function DevicesScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { devices, rooms, isDataLoading, toggleDevice } = useSmartHome();
   const [activeFilter, setActiveFilter] = useState<FilterType>("ALL");
+  const [query, setQuery] = useState("");
 
   const filteredDevices = useMemo(() => {
     const type = mapFilterTypeToDeviceType(activeFilter);
-    if (!type) {
-      return devices;
-    }
+    return devices.filter((d) => {
+      if (type && d.type !== type) return false;
+      if (query && !d.name.toLowerCase().includes(query.toLowerCase())) return false;
+      return true;
+    });
+  }, [activeFilter, devices, query]);
 
-    return devices.filter((device) => device.type === type);
-  }, [activeFilter, devices]);
+  const roomMap = useMemo(() => new Map(rooms.map((r) => [r.id, r.name])), [rooms]);
 
-  const roomMap = useMemo(() => new Map(rooms.map((room) => [room.id, room.name])), [rooms]);
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { ALL: devices.length };
+    FILTERS.slice(1).forEach((f) => {
+      const type = mapFilterTypeToDeviceType(f.key);
+      c[f.key] = type ? devices.filter((d) => d.type === type).length : 0;
+    });
+    return c;
+  }, [devices]);
+
+  const activeCount = useMemo(
+    () => devices.filter((d) => d.status === "ON" || d.status === "OPEN").length,
+    [devices]
+  );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.headerRow}>
-          <Text style={typography.h2}>All Devices</Text>
-          <Pressable style={styles.filterButton}>
-            <Ionicons name="options-outline" size={18} color={colors.textPrimary} />
-          </Pressable>
+    <View style={styles.screen}>
+      <ScreenHeader
+        eyebrow="INVENTORY"
+        title="Devices"
+        subtitle={`${activeCount} active · all responding`}
+        secure
+        right={
+          <View style={styles.headerBtns}>
+            <Pressable style={styles.headerBtn} onPress={() => navigation.navigate("AddDeviceModal")}>
+              <Ionicons name="add" size={20} color={colors.ink700} />
+            </Pressable>
+            <View style={styles.headerBtn}>
+              <Ionicons name="options-outline" size={18} color={colors.ink700} />
+            </View>
+          </View>
+        }
+      />
+
+      <View style={styles.body}>
+        {/* search */}
+        <View style={styles.searchBox}>
+          <Ionicons name="search-outline" size={17} color={colors.ink500} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search devices…"
+            placeholderTextColor={colors.ink400}
+            style={styles.searchInput}
+          />
+          {query.length > 0 && (
+            <Ionicons name="close-outline" size={18} color={colors.ink500} onPress={() => setQuery("")} />
+          )}
         </View>
 
+        {/* filter pills */}
         <FlatList
           horizontal
-          data={filters}
-          keyExtractor={(item) => item.key}
+          data={FILTERS}
+          keyExtractor={(i) => i.key}
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.pillList}
+          contentContainerStyle={styles.pillRow}
           renderItem={({ item }) => (
             <FilterPill
               label={item.label}
               isActive={item.key === activeFilter}
               onPress={() => setActiveFilter(item.key)}
+              count={counts[item.key]}
             />
           )}
         />
 
+        {/* grid */}
         {isDataLoading ? (
           <View style={styles.skeletonGrid}>
-            {Array.from({ length: 6 }).map((_, index) => (
-              <SkeletonBlock key={`device-skeleton-${index}`} style={styles.skeletonCard} />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonBlock key={i} style={styles.skeletonCard} />
             ))}
           </View>
         ) : (
           <FlatList
             data={filteredDevices}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(d) => d.id}
             numColumns={2}
             showsVerticalScrollIndicator={false}
-            columnWrapperStyle={styles.columnWrap}
+            columnWrapperStyle={styles.colWrap}
             contentContainerStyle={styles.gridContent}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>No devices yet</Text>
-                <Text style={styles.emptyText}>Create a room first, then add devices through the connected backend flow.</Text>
+                <View style={styles.emptyIcon}>
+                  <Ionicons name="search-outline" size={26} color={colors.ink500} />
+                </View>
+                <Text style={styles.emptyTitle}>Nothing matches</Text>
+                <Text style={styles.emptyText}>
+                  {query ? `No devices matching "${query}".` : `No ${activeFilter.toLowerCase()} devices.`}
+                </Text>
               </View>
             }
             renderItem={({ item }) => (
@@ -87,83 +139,106 @@ export function DevicesScreen() {
                 <DeviceCard
                   device={item}
                   roomName={roomMap.get(item.room_id) ?? "Unknown"}
-                  onToggle={() => {
-                    void toggleDevice(item.id);
-                  }}
+                  onToggle={() => void toggleDevice(item.id)}
                 />
               </View>
             )}
           />
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  screen: {
     flex: 1,
-    backgroundColor: colors.background
+    backgroundColor: colors.cream50,
   },
-  container: {
+  body: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    gap: spacing.md
+    paddingHorizontal: 20,
+    gap: spacing.md,
   },
-  headerRow: {
+  headerBtns: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center"
+    gap: 8,
   },
-  filterButton: {
+  headerBtn: {
     width: 38,
     height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
   },
-  pillList: {
-    gap: spacing.sm,
-    paddingBottom: spacing.sm
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    height: 44,
+    paddingHorizontal: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    borderRadius: 14,
+  },
+  searchInput: {
+    flex: 1,
+    height: "100%",
+    color: colors.ink900,
+    fontSize: 15,
+  },
+  pillRow: {
+    gap: 8,
+    paddingBottom: 4,
   },
   gridContent: {
     gap: spacing.md,
-    paddingBottom: spacing.xxxl
+    paddingBottom: 120,
   },
-  columnWrap: {
-    gap: spacing.md
+  colWrap: {
+    gap: spacing.md,
   },
   cardWrap: {
-    flex: 1
-  },
-  emptyState: {
-    paddingTop: spacing.xl,
-    alignItems: "center",
-    gap: spacing.xs
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: 18,
-    fontWeight: "700"
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    textAlign: "center",
-    fontSize: 13
+    flex: 1,
   },
   skeletonGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.md,
-    paddingBottom: spacing.xxxl
   },
   skeletonCard: {
     width: "48%",
-    height: 160,
-    borderRadius: 20
-  }
+    height: 152,
+    borderRadius: 16,
+  },
+  emptyState: {
+    paddingTop: 48,
+    alignItems: "center",
+    gap: 12,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: colors.ink100,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTitle: {
+    color: colors.ink900,
+    fontSize: 20,
+    fontWeight: "700",
+    letterSpacing: -0.3,
+  },
+  emptyText: {
+    color: colors.ink500,
+    textAlign: "center",
+    fontSize: 13.5,
+    maxWidth: 240,
+    lineHeight: 19,
+  },
 });

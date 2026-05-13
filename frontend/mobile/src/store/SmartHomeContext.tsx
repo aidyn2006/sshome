@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState
@@ -61,6 +62,7 @@ type SmartHomeContextValue = {
   devices: Device[];
   events: Event[];
   scenarios: Scenario[];
+  favoriteDeviceIds: string[];
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
@@ -70,6 +72,8 @@ type SmartHomeContextValue = {
   runScenario: (scenarioId: string) => Promise<Scenario | null>;
   addHome: (name: string) => Promise<void>;
   addRoom: (name: string, homeId?: string) => Promise<void>;
+  addDevice: (name: string, type: Device["type"], roomId: string) => Promise<void>;
+  toggleFavorite: (deviceId: string) => void;
 };
 
 type SessionTokens = {
@@ -303,6 +307,8 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
   const [deviceEvents, setDeviceEvents] = useState<Event[]>([]);
   const [sceneEvents, setSceneEvents] = useState<Event[]>([]);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [favoriteDeviceIds, setFavoriteDeviceIds] = useState<string[]>([]);
+  const favoritesInitialized = useRef(false);
 
   const sessionRef = useRef<SessionTokens | null>(null);
 
@@ -705,6 +711,36 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     [runWithSession]
   );
 
+  useEffect(() => {
+    if (!favoritesInitialized.current && devices.length > 0) {
+      favoritesInitialized.current = true;
+      setFavoriteDeviceIds(devices.slice(0, 4).map((d) => d.id));
+    }
+  }, [devices]);
+
+  const toggleFavorite = useCallback((deviceId: string) => {
+    setFavoriteDeviceIds((prev) =>
+      prev.includes(deviceId) ? prev.filter((id) => id !== deviceId) : [...prev, deviceId]
+    );
+  }, []);
+
+  const addDevice = useCallback(
+    async (name: string, type: Device["type"], roomId: string) => {
+      const trimmedName = name.trim();
+      if (!trimmedName || !roomId) return;
+
+      try {
+        const device = await runWithSession((accessToken) =>
+          createDevice(accessToken, { name: trimmedName, type, roomId })
+        );
+        setDevices((prev) => mergeUpdatedDeviceList(prev, [mapDevice(device)]));
+      } catch (error) {
+        Alert.alert("Create device failed", getErrorMessage(error, "Unable to create the device"));
+      }
+    },
+    [runWithSession]
+  );
+
   const addRoom = useCallback(
     async (name: string, homeId?: string) => {
       const trimmedName = name.trim();
@@ -745,6 +781,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       devices,
       events,
       scenarios,
+      favoriteDeviceIds,
       login,
       register,
       logout,
@@ -753,15 +790,19 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       setDeviceStatus,
       runScenario,
       addHome,
-      addRoom
+      addRoom,
+      addDevice,
+      toggleFavorite
     }),
     [
+      addDevice,
       addHome,
       addRoom,
       authError,
       authStatus,
       devices,
       events,
+      favoriteDeviceIds,
       homes,
       isAuthSubmitting,
       isDataLoading,
@@ -775,6 +816,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       scenarios,
       setDeviceStatus,
       toggleDevice,
+      toggleFavorite,
       user
     ]
   );
