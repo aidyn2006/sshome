@@ -17,3 +17,12 @@ def test_auth_migration_exists() -> None:
     assert "users" in migration
     assert "refresh_tokens" in migration
     assert "audit_logs" in migration
+
+
+def test_device_hardware_id_migration_exists() -> None:
+    migration_path = Path("alembic/versions/20260513_0003_add_device_hardware_id.py")
+
+    assert migration_path.exists()
+    migration = migration_path.read_text(encoding="utf-8")
+    assert "add device hardware id" in migration
+    assert "hardware_id" in migration

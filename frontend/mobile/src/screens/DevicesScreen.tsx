@@ -20,9 +20,10 @@ const FILTERS: Array<{ key: FilterType; label: string }> = [
   { key: "ALL",    label: "All" },
   { key: "LIGHT",  label: "Lights" },
   { key: "DOOR",   label: "Doors" },
-  { key: "WINDOW", label: "Windows" },
   { key: "AC",     label: "Climate" },
   { key: "TEMP",   label: "Sensors" },
+  { key: "CAMERA", label: "Cameras" },
+  { key: "MOTION", label: "Motion" },
 ];
 
 export function DevicesScreen() {
@@ -139,7 +140,11 @@ export function DevicesScreen() {
                 <DeviceCard
                   device={item}
                   roomName={roomMap.get(item.room_id) ?? "Unknown"}
-                  onToggle={() => void toggleDevice(item.id)}
+                  onToggle={
+                    item.type === "CAMERA" || item.type === "MOTION" || item.type === "TEMP"
+                      ? undefined
+                      : () => void toggleDevice(item.id)
+                  }
                 />
               </View>
             )}

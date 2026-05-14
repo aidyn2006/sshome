@@ -93,20 +93,31 @@ function normalizeBody(body: ApiRequestOptions["body"]): BodyInit | undefined {
   return JSON.stringify(body);
 }
 
+const REQUEST_TIMEOUT_MS = 8000;
+
 export async function apiRequest<T>(
   path: string,
   { body, headers, token, ...init }: ApiRequestOptions = {}
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    body: normalizeBody(body),
-    headers: {
-      Accept: "application/json",
-      ...(body != null && !(body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(headers || {})
-    }
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      body: normalizeBody(body),
+      headers: {
+        Accept: "application/json",
+        ...(body != null && !(body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(headers || {})
+      }
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 
   const text = await response.text();
   let parsedBody: ApiErrorBody | null = null;

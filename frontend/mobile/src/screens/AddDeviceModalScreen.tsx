@@ -30,9 +30,10 @@ type DeviceTypeOption = {
 const DEVICE_TYPES: DeviceTypeOption[] = [
   { type: "LIGHT",  label: "Light",   icon: "bulb-outline" },
   { type: "DOOR",   label: "Door",    icon: "lock-closed-outline" },
-  { type: "WINDOW", label: "Window",  icon: "square-outline" },
   { type: "AC",     label: "Climate", icon: "snow-outline" },
   { type: "TEMP",   label: "Sensor",  icon: "thermometer-outline" },
+  { type: "CAMERA", label: "Camera",  icon: "videocam-outline" },
+  { type: "MOTION", label: "Motion",  icon: "walk-outline" },
 ];
 
 export function AddDeviceModalScreen({ navigation }: Props) {
@@ -40,19 +41,30 @@ export function AddDeviceModalScreen({ navigation }: Props) {
   const { rooms, addDevice } = useSmartHome();
 
   const [name, setName] = useState("");
+  const [hardwareId, setHardwareId] = useState("");
   const [selectedType, setSelectedType] = useState<DeviceType>("LIGHT");
   const [selectedRoomId, setSelectedRoomId] = useState<string>(rooms[0]?.id ?? "");
   const [nameFocused, setNameFocused] = useState(false);
+  const [hardwareFocused, setHardwareFocused] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const canSave = name.trim().length > 0 && selectedRoomId.length > 0;
+  const canSave = name.trim().length > 0 && hardwareId.trim().length > 0 && selectedRoomId.length > 0;
 
   const save = async () => {
     if (!canSave) return;
+    setSaveError(null);
     setIsSaving(true);
-    await addDevice(name, selectedType, selectedRoomId);
-    setIsSaving(false);
-    navigation.goBack();
+    try {
+      const added = await addDevice(name, selectedType, selectedRoomId, hardwareId);
+      if (added) {
+        navigation.goBack();
+      }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Unable to add device");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -101,6 +113,26 @@ export function AddDeviceModalScreen({ navigation }: Props) {
           </View>
         </View>
 
+        {/* Firmware ID */}
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>FIRMWARE ID</Text>
+          <View style={[styles.inputWrap, hardwareFocused && styles.inputWrapFocused]}>
+            <Ionicons name="barcode-outline" size={18} color={colors.ink500} />
+            <TextInput
+              value={hardwareId}
+              onChangeText={setHardwareId}
+              placeholder="sshome_20260513_a3f2"
+              placeholderTextColor={colors.ink400}
+              style={styles.input}
+              onFocus={() => setHardwareFocused(true)}
+              onBlur={() => setHardwareFocused(false)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="next"
+            />
+          </View>
+        </View>
+
         {/* Device name */}
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>DEVICE NAME</Text>
@@ -126,7 +158,7 @@ export function AddDeviceModalScreen({ navigation }: Props) {
           <Text style={styles.fieldLabel}>ROOM</Text>
           {rooms.length === 0 ? (
             <View style={styles.noRooms}>
-              <Text style={styles.noRoomsText}>No rooms yet — add a room first via the profile icon.</Text>
+              <Text style={styles.noRoomsText}>No rooms yet - add a room first via the profile icon.</Text>
             </View>
           ) : (
             <View style={styles.roomList}>
@@ -149,6 +181,13 @@ export function AddDeviceModalScreen({ navigation }: Props) {
           )}
         </View>
 
+        {saveError && (
+          <View style={styles.errorBox}>
+            <Ionicons name="alert-circle-outline" size={16} color={colors.error ?? "#e53e3e"} />
+            <Text style={styles.errorText}>{saveError}</Text>
+          </View>
+        )}
+
         {/* Actions */}
         <View style={styles.actions}>
           <Pressable style={styles.cancelBtn} onPress={() => navigation.goBack()}>
@@ -159,7 +198,7 @@ export function AddDeviceModalScreen({ navigation }: Props) {
             onPress={() => void save()}
             disabled={!canSave || isSaving}
           >
-            <Text style={styles.saveText}>{isSaving ? "Adding…" : "Add Device"}</Text>
+            <Text style={styles.saveText}>{isSaving ? "Adding..." : "Add Device"}</Text>
             {!isSaving && <Ionicons name="add" size={18} color="#fff" />}
           </Pressable>
         </View>
@@ -364,5 +403,22 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "500",
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#fff1f1",
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: "#f5c6c6",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  errorText: {
+    flex: 1,
+    color: "#c53030",
+    fontSize: 13.5,
+    lineHeight: 18,
   },
 });

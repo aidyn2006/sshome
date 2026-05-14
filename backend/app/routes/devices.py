@@ -6,11 +6,23 @@ from sqlalchemy.orm import Session
 from app.core.deps import CurrentOwnerId
 from app.core.rate_limit import enforce_device_action_rate_limit
 from app.db.session import get_db
+from app.models.enums import DeviceAction, DeviceStatus
 from app.schemas.device import DeviceActionRequest, DeviceCreate, DeviceRead
 from app.services import device_service
+from app.services.mqtt_service import publish_device_command
 from app.websockets.publisher import publish_device_update_from_sync
 
 router = APIRouter(prefix="/devices", tags=["devices"])
+
+
+def _action_for_result_status(status_value: DeviceStatus | str) -> DeviceAction:
+    status_text = status_value.value if isinstance(status_value, DeviceStatus) else status_value
+    return {
+        DeviceStatus.ON.value: DeviceAction.TURN_ON,
+        DeviceStatus.OFF.value: DeviceAction.TURN_OFF,
+        DeviceStatus.OPEN.value: DeviceAction.OPEN,
+        DeviceStatus.CLOSED.value: DeviceAction.CLOSE,
+    }[status_text]
 
 
 @router.post("", response_model=DeviceRead, status_code=status.HTTP_201_CREATED)
@@ -19,7 +31,8 @@ def create_device(
     owner_id: CurrentOwnerId,
     db: Session = Depends(get_db),
 ) -> DeviceRead:
-    return device_service.create_device(db, owner_id=owner_id, payload=payload)
+    device, _ = device_service.create_device(db, owner_id=owner_id, payload=payload)
+    return device
 
 
 @router.get("", response_model=list[DeviceRead])
@@ -61,7 +74,17 @@ def apply_device_action(
         source="device_action",
         action=payload.action,
     )
+    publish_device_command(device=device, action=payload.action)
     return device
+
+
+@router.delete("/{device_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_device(
+    device_id: UUID,
+    owner_id: CurrentOwnerId,
+    db: Session = Depends(get_db),
+) -> None:
+    device_service.delete_device(db, device_id=device_id, owner_id=owner_id)
 
 
 @router.post("/{device_id}/toggle", response_model=DeviceRead)
@@ -79,4 +102,5 @@ def toggle_device(
         device=device_read,
         source="device_action",
     )
+    publish_device_command(device=device, action=_action_for_result_status(device_read.status))
     return device_read

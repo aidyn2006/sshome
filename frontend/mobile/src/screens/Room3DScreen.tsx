@@ -370,11 +370,9 @@ export function Room3DScreen() {
 
   const lightDevice = useMemo(() => pickByType(devices, "LIGHT"), [devices]);
   const doorDevice = useMemo(() => pickByType(devices, "DOOR"), [devices]);
-  const windowDevice = useMemo(() => pickByType(devices, "WINDOW"), [devices]);
-
   const lightOn = isOn(lightDevice?.status);
   const doorOpen = isOpen(doorDevice?.status);
-  const windowOpen = windowDevice ? isOpen(windowDevice.status) : localWindowOpen;
+  const windowOpen = localWindowOpen;
 
   const toggleLight = useCallback(() => {
     if (!lightDevice) return;
@@ -387,21 +385,16 @@ export function Room3DScreen() {
   }, [doorDevice, doorOpen, setDeviceStatus]);
 
   const toggleWindow = useCallback(() => {
-    if (!windowDevice) {
-      setLocalWindowOpen((value) => !value);
-      return;
-    }
-    void setDeviceStatus(windowDevice.id, windowOpen ? "CLOSED" : "OPEN");
-  }, [setDeviceStatus, windowDevice, windowOpen]);
+    setLocalWindowOpen((value) => !value);
+  }, []);
 
   const switchAll = useCallback(
     (next: "ON" | "OFF") => {
       if (lightDevice) void setDeviceStatus(lightDevice.id, next);
       if (doorDevice) void setDeviceStatus(doorDevice.id, next === "ON" ? "OPEN" : "CLOSED");
-      if (windowDevice) void setDeviceStatus(windowDevice.id, next === "ON" ? "OPEN" : "CLOSED");
-      else setLocalWindowOpen(next === "ON");
+      setLocalWindowOpen(next === "ON");
     },
-    [doorDevice, lightDevice, setDeviceStatus, windowDevice]
+    [doorDevice, lightDevice, setDeviceStatus]
   );
 
   const activeCount = [lightOn, doorOpen, windowOpen].filter(Boolean).length;

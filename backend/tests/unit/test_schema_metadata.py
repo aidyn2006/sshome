@@ -13,6 +13,8 @@ def test_device_model_uses_expected_enums_and_indexes() -> None:
     assert device_table.c.status.type.name == "device_status"
     assert device_table.c.room_id.index is True
     assert device_table.c.owner_id.index is True
+    assert device_table.c.hardware_id.index is True
+    assert device_table.c.hardware_id.unique is True
 
 
 def test_events_table_uses_device_action_enum() -> None:

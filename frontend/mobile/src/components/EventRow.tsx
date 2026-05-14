@@ -46,7 +46,6 @@ function getIconName(event: Event, device?: Device): keyof typeof Ionicons.glyph
   switch (device?.type) {
     case "LIGHT":  return "bulb-outline";
     case "DOOR":   return "lock-closed-outline";
-    case "WINDOW": return "scan-outline";
     case "AC":     return "snow-outline";
     case "TEMP":   return "thermometer-outline";
   }

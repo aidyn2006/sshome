@@ -10,7 +10,7 @@ import { getDeviceIconName, isDeviceActive } from "../utils/device";
 type Props = {
   device: Device;
   roomName: string;
-  onToggle: () => void;
+  onToggle?: () => void;
 };
 
 export function DeviceCard({ device, roomName, onToggle }: Props) {
@@ -40,20 +40,29 @@ export function DeviceCard({ device, roomName, onToggle }: Props) {
             />
           </View>
 
-          <Pressable
-            onPress={async () => {
-              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onToggle();
-            }}
-            style={[styles.powerBtn, active && styles.powerBtnOn]}
-          >
-            <Ionicons name="power" size={14} color={active ? colors.cream50 : colors.ink500} />
-          </Pressable>
+          {onToggle ? (
+            <Pressable
+              onPress={async () => {
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onToggle();
+              }}
+              style={[styles.powerBtn, active && styles.powerBtnOn]}
+            >
+              <Ionicons name="power" size={14} color={active ? colors.cream50 : colors.ink500} />
+            </Pressable>
+          ) : (
+            <View style={[styles.powerBtn, styles.powerBtnReadOnly]}>
+              <Ionicons name="eye-outline" size={14} color={colors.ink400} />
+            </View>
+          )}
         </View>
 
         {/* name + room */}
         <View style={styles.meta}>
           <Text numberOfLines={1} style={styles.name}>{device.name}</Text>
+          {device.hardware_id && (
+            <Text numberOfLines={1} style={styles.hardwareId}>{device.hardware_id}</Text>
+          )}
           <View style={styles.statusRow}>
             <Text style={styles.room}>{roomName}</Text>
             <Text style={styles.dot}>·</Text>
@@ -113,6 +122,10 @@ const styles = StyleSheet.create({
   powerBtnOn: {
     backgroundColor: colors.ink900,
   },
+  powerBtnReadOnly: {
+    backgroundColor: colors.ink50 ?? colors.ink100,
+    opacity: 0.6,
+  },
   meta: {
     gap: 4,
   },
@@ -130,6 +143,11 @@ const styles = StyleSheet.create({
   room: {
     color: colors.ink500,
     fontSize: 12,
+  },
+  hardwareId: {
+    color: colors.ink400,
+    fontFamily: "monospace",
+    fontSize: 10.5,
   },
   dot: {
     color: colors.ink300,

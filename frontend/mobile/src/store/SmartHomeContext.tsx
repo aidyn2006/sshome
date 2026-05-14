@@ -7,6 +7,7 @@ import {
   useRef,
   useState
 } from "react";
+import { API_BASE_URL } from "../config/api";
 import { Alert } from "react-native";
 
 import {
@@ -24,6 +25,7 @@ import {
   createHome,
   createRoom,
   createScenario,
+  deleteDevice,
   listDevices,
   listEvents,
   listHomes,
@@ -47,6 +49,7 @@ import type {
   Scenario
 } from "../types/smartHome";
 import { mapActionToStatus } from "../utils/device";
+import { clearTokens, loadTokens, saveTokens } from "../utils/storage";
 
 type AuthStatus = "anonymous" | "loading" | "authenticated";
 
@@ -72,7 +75,8 @@ type SmartHomeContextValue = {
   runScenario: (scenarioId: string) => Promise<Scenario | null>;
   addHome: (name: string) => Promise<void>;
   addRoom: (name: string, homeId?: string) => Promise<void>;
-  addDevice: (name: string, type: Device["type"], roomId: string) => Promise<void>;
+  addDevice: (name: string, type: Device["type"], roomId: string, hardwareId?: string) => Promise<boolean>;
+  removeDevice: (deviceId: string) => Promise<boolean>;
   toggleFavorite: (deviceId: string) => void;
 };
 
@@ -214,8 +218,13 @@ function mapDevice(device: ApiDevice): Device {
     name: device.name,
     type: device.type,
     status: device.status,
+    hardware_id: device.hardware_id,
     room_id: device.room_id,
     owner_id: device.owner_id,
+    battery_level: device.battery_level,
+    last_error: device.last_error,
+    last_seen_at: device.last_seen_at,
+    telemetry: device.telemetry,
     created_at: device.created_at,
     updated_at: device.updated_at
   };
@@ -245,13 +254,11 @@ function sortEventsByNewest(events: Event[]): Event[] {
 }
 
 function mergeUpdatedDeviceList(currentDevices: Device[], updatedDevices: Device[]): Device[] {
-  const deviceMap = new Map(currentDevices.map((device) => [device.id, device]));
-
-  updatedDevices.forEach((device) => {
-    deviceMap.set(device.id, device);
-  });
-
-  return Array.from(deviceMap.values()).sort((left, right) => left.name.localeCompare(right.name));
+  const updatedIds = new Set(updatedDevices.map(d => d.id));
+  const result = [
+    ...currentDevices.map(d => updatedIds.has(d.id) ? updatedDevices.find(u => u.id === d.id)! : d),
+  ].sort((left, right) => left.name.localeCompare(right.name));
+  return result;
 }
 
 function buildDeviceEvent(deviceId: string, action: DeviceAction, timestamp = Date.now()): Event {
@@ -275,7 +282,7 @@ function buildSceneEvent(scenario: Scenario): Event {
 }
 
 function resolveActionForStatus(device: Device, nextStatus: DeviceStatus): DeviceAction {
-  if (device.type === "DOOR" || device.type === "WINDOW") {
+  if (device.type === "DOOR") {
     return nextStatus === "OPEN" ? "OPEN" : "CLOSE";
   }
 
@@ -295,7 +302,7 @@ function normalizeSession(tokens: { access_token?: string; refresh_token?: strin
 }
 
 export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
-  const [authStatus, setAuthStatus] = useState<AuthStatus>("anonymous");
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(false);
@@ -311,9 +318,15 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
   const favoritesInitialized = useRef(false);
 
   const sessionRef = useRef<SessionTokens | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   const setSessionTokens = useCallback((tokens: SessionTokens | null) => {
     sessionRef.current = tokens;
+    if (tokens) {
+      saveTokens(tokens.accessToken, tokens.refreshToken);
+    } else {
+      clearTokens();
+    }
   }, []);
 
   const clearSessionState = useCallback(() => {
@@ -461,6 +474,16 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     },
     [bootstrapDemoData, clearSessionState, hydrateState, setSessionTokens]
   );
+
+  useEffect(() => {
+    const stored = loadTokens();
+    if (!stored) {
+      setAuthStatus("anonymous");
+      return;
+    }
+    completeAuthentication(stored).catch(() => setAuthStatus("anonymous"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const runWithSession = useCallback(
     async function executeWithSession<T>(operation: (accessToken: string) => Promise<T>): Promise<T> {
@@ -646,7 +669,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       }
 
       const nextStatus =
-        device.type === "DOOR" || device.type === "WINDOW"
+        device.type === "DOOR"
           ? device.status === "OPEN"
             ? "CLOSED"
             : "OPEN"
@@ -718,6 +741,39 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [devices]);
 
+  useEffect(() => {
+    if (authStatus !== "authenticated" || !sessionRef.current) {
+      wsRef.current?.close();
+      wsRef.current = null;
+      return;
+    }
+
+    const token = sessionRef.current.accessToken;
+    const wsBase = API_BASE_URL.replace(/^http/, "ws");
+    const url = `${wsBase}/ws/devices?token=${token}`;
+    console.log("[WS] connecting to", url);
+    const ws = new WebSocket(url);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data as string) as { type: string; device?: ApiDevice };
+        if (msg.type === "device.updated" && msg.device) {
+          setDevices((prev) => mergeUpdatedDeviceList(prev, [mapDevice(msg.device!)]));
+        }
+      } catch {
+        // ignore malformed messages
+      }
+    };
+
+    ws.onerror = () => {};
+
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
+  }, [authStatus]);
+
   const toggleFavorite = useCallback((deviceId: string) => {
     setFavoriteDeviceIds((prev) =>
       prev.includes(deviceId) ? prev.filter((id) => id !== deviceId) : [...prev, deviceId]
@@ -725,17 +781,34 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addDevice = useCallback(
-    async (name: string, type: Device["type"], roomId: string) => {
+    async (name: string, type: Device["type"], roomId: string, hardwareId?: string) => {
       const trimmedName = name.trim();
-      if (!trimmedName || !roomId) return;
+      const trimmedHardwareId = hardwareId?.trim();
+      if (!trimmedName || !roomId) return false;
 
+      const device = await runWithSession((accessToken) =>
+        createDevice(accessToken, {
+          name: trimmedName,
+          type,
+          roomId,
+          hardwareId: trimmedHardwareId || null
+        })
+      );
+      setDevices((prev) => mergeUpdatedDeviceList(prev, [mapDevice(device)]));
+      return true;
+    },
+    [runWithSession]
+  );
+
+  const removeDevice = useCallback(
+    async (deviceId: string) => {
       try {
-        const device = await runWithSession((accessToken) =>
-          createDevice(accessToken, { name: trimmedName, type, roomId })
-        );
-        setDevices((prev) => mergeUpdatedDeviceList(prev, [mapDevice(device)]));
+        await runWithSession((accessToken) => deleteDevice(accessToken, deviceId));
+        setDevices((prev) => prev.filter((d) => d.id !== deviceId));
+        return true;
       } catch (error) {
-        Alert.alert("Create device failed", getErrorMessage(error, "Unable to create the device"));
+        Alert.alert("Delete failed", getErrorMessage(error, "Unable to delete the device"));
+        return false;
       }
     },
     [runWithSession]
@@ -792,12 +865,14 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       addHome,
       addRoom,
       addDevice,
+      removeDevice,
       toggleFavorite
     }),
     [
       addDevice,
       addHome,
       addRoom,
+      removeDevice,
       authError,
       authStatus,
       devices,

@@ -1,10 +1,10 @@
-export type DeviceType = "LIGHT" | "DOOR" | "WINDOW" | "AC" | "TEMP";
+export type DeviceType = "LIGHT" | "DOOR" | "AC" | "TEMP" | "CAMERA" | "MOTION";
 
 export type DeviceStatus = "ON" | "OFF" | "OPEN" | "CLOSED";
 
 export type DeviceAction = "TURN_ON" | "TURN_OFF" | "OPEN" | "CLOSE";
 
-export type FilterType = "ALL" | "LIGHT" | "DOOR" | "WINDOW" | "AC" | "TEMP";
+export type FilterType = "ALL" | "LIGHT" | "DOOR" | "AC" | "TEMP" | "CAMERA" | "MOTION";
 
 export type Home = {
   id: string;
@@ -24,8 +24,13 @@ export type Device = {
   name: string;
   type: DeviceType;
   status: DeviceStatus;
+  hardware_id?: string | null;
   room_id: string;
   owner_id?: string;
+  battery_level?: number | null;
+  last_error?: string | null;
+  last_seen_at?: string | null;
+  telemetry?: Record<string, unknown> | null;
   created_at?: string;
   updated_at?: string;
 };

@@ -6,4 +6,6 @@
 **/__pycache__/
 *.pyc
 .env
+**/.env
 backend/.venv/
+manufactured_secrets.txt

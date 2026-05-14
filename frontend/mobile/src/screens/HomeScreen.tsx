@@ -16,11 +16,11 @@ import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
 import { isDeviceActive } from "../utils/device";
 
-const statConfig = [
-  { id: "temperature", icon: "thermometer-outline" as const, title: "Temperature", value: "22 °C", subtitle: "Indoor",     accent: "#C8674A" },
-  { id: "humidity",    icon: "water-outline" as const,       title: "Humidity",    value: "48 %",  subtitle: "Humidity",   accent: "#2A6FDB" },
-  { id: "energy",      icon: "flash-outline" as const,       title: "Energy",      value: "1.84",  subtitle: "kWh · 1h",  accent: "#B45309" },
-  { id: "air",         icon: "leaf-outline" as const,        title: "Air Quality", value: "42 AQI",subtitle: "Air quality", accent: "#1F8A5B" },
+const STATIC_STAT_CONFIG = [
+  { id: "temperature", icon: "thermometer-outline" as const, title: "Temperature", accent: "#C8674A" },
+  { id: "humidity",    icon: "water-outline" as const,       title: "Humidity",    accent: "#2A6FDB" },
+  { id: "energy",      icon: "flash-outline" as const,       title: "Energy",      accent: "#B45309" },
+  { id: "air",         icon: "leaf-outline" as const,        title: "Air Quality", accent: "#1F8A5B" },
 ];
 
 function greeting(): string {
@@ -52,6 +52,30 @@ export function HomeScreen() {
   );
 
   const roomNameMap = useMemo(() => new Map(rooms.map((r) => [r.id, r.name])), [rooms]);
+
+  const tempDevice = useMemo(
+    () => devices.find((d) => d.type === "TEMP" && d.telemetry),
+    [devices]
+  );
+
+  const statConfig = useMemo(() => {
+    const temp = tempDevice?.telemetry?.temp;
+    const humidity = tempDevice?.telemetry?.humidity;
+    return [
+      {
+        ...STATIC_STAT_CONFIG[0],
+        value: temp != null ? `${temp} °C` : "— °C",
+        subtitle: tempDevice ? tempDevice.name : "No sensor",
+      },
+      {
+        ...STATIC_STAT_CONFIG[1],
+        value: humidity != null ? `${humidity} %` : "— %",
+        subtitle: tempDevice ? tempDevice.name : "No sensor",
+      },
+      { ...STATIC_STAT_CONFIG[2], value: "1.84", subtitle: "kWh · 1h" },
+      { ...STATIC_STAT_CONFIG[3], value: "42 AQI", subtitle: "Air quality" },
+    ];
+  }, [tempDevice]);
   const { favoriteDeviceIds } = useSmartHome();
   const favoriteDevices = useMemo(
     () =>
@@ -150,7 +174,11 @@ export function HomeScreen() {
                       <DeviceToggleRow
                         device={d}
                         roomName={roomNameMap.get(d.room_id) ?? "Unknown"}
-                        onToggle={() => void toggleDevice(d.id)}
+                        onToggle={
+                          d.type === "CAMERA" || d.type === "MOTION" || d.type === "TEMP"
+                            ? undefined
+                            : () => void toggleDevice(d.id)
+                        }
                       />
                       {i < favoriteDevices.length - 1 && <View style={styles.divider} />}
                     </View>

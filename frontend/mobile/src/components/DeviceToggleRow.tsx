@@ -10,7 +10,7 @@ import { getDeviceIconName, isDeviceActive } from "../utils/device";
 type Props = {
   device: Device;
   roomName: string;
-  onToggle: () => void;
+  onToggle?: () => void;
 };
 
 export function DeviceToggleRow({ device, roomName, onToggle }: Props) {
@@ -42,11 +42,11 @@ export function DeviceToggleRow({ device, roomName, onToggle }: Props) {
       </View>
 
       <Pressable
-        onPress={async () => {
+        onPress={onToggle ? async () => {
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onToggle();
-        }}
-        style={[styles.track, isActive && styles.trackActive]}
+        } : undefined}
+        style={[styles.track, isActive && styles.trackActive, !onToggle && styles.trackReadOnly]}
       >
         <Animated.View style={[styles.thumb, { transform: [{ translateX: thumbX }] }]} />
       </Pressable>
@@ -99,6 +99,9 @@ const styles = StyleSheet.create({
   },
   trackActive: {
     backgroundColor: colors.accent,
+  },
+  trackReadOnly: {
+    opacity: 0.4,
   },
   thumb: {
     width: 24,

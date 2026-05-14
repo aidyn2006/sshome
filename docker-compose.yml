@@ -34,6 +34,11 @@ services:
       AUTH_JWT_SUBJECT_CLAIM: sub
       AUTH_JWT_TOKEN_TYPE_CLAIM: type
       AUTH_JWT_ACCESS_TOKEN_TYPE: access
+      HIVEMQ_CLUSTER_URL: ${HIVEMQ_CLUSTER_URL:-}
+      HIVEMQ_USERNAME: ${HIVEMQ_USERNAME:-}
+      HIVEMQ_PASSWORD: ${HIVEMQ_PASSWORD:-}
+    volumes:
+      - ./manufactured_devices.json:/app/manufactured_devices.json
     depends_on:
       db:
         condition: service_healthy

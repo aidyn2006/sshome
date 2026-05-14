@@ -1,0 +1,86 @@
+[
+  {
+    "hardware_id": "sshome_20260513_29r0pz",
+    "device_type": "LIGHT",
+    "secret_hash": "4fd6a9397b5e1e3c02847fc48339b1332a4c88239bbf7d2393a708275a0fd9dc",
+    "batch": "20260513",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260513_6y71z9",
+    "device_type": "LIGHT",
+    "secret_hash": "0a7677cb586dd49c87ac3684dfdb19361d1f5fe4834a1aa465fce474a996fa88",
+    "batch": "20260513",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260513_l56qs0",
+    "device_type": "LIGHT",
+    "secret_hash": "5ddc0c097ed173604285b8884b7e929c33e4b41a294ed2bac4b36aefa11239ea",
+    "batch": "20260513",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260513_lmmrdl",
+    "device_type": "DOOR",
+    "secret_hash": "0028696ad539456479715c00493502c4e1e2ee88517906dd3c87a7754e8c57e3",
+    "batch": "20260513",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260513_f0q899",
+    "device_type": "DOOR",
+    "secret_hash": "b7bc390e7749add48f70f9e6a8e2ad5cce9272889896e297e199066787ea5b4d",
+    "batch": "20260513",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260513_as06an",
+    "device_type": "TEMP",
+    "secret_hash": "b343e3774f5e1101982894ead7f23febbd0e27cce5fb74f2ce2bfb211b0dfbf6",
+    "batch": "20260513",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260513_zty9t8",
+    "device_type": "TEMP",
+    "secret_hash": "e44ab5a5cf3f01426fa74d0b69541c3fc7b302141c05548d8fe12dd75be71e7b",
+    "batch": "20260513",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260513_7ixujq",
+    "device_type": "CAMERA",
+    "secret_hash": "b434f76038dc663f49dc6c729f7836183bcc58c13dbce390246436230eeda97d",
+    "batch": "20260513",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260513_nykhza",
+    "device_type": "MOTION",
+    "secret_hash": "6271584fd91ac3efb017a765b89bd2e758d5d53134c287413ff96cf8c9c260e8",
+    "batch": "20260513",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260514_mjiq8q",
+    "device_type": "LIGHT",
+    "secret_hash": "d7f1173ff6c7209fe7328cd4338c4816c932035a3052d9042080910abc1af2ae",
+    "batch": "20260514",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260514_a8bgb5",
+    "device_type": "LIGHT",
+    "secret_hash": "d6f084e11a89b9ff9c4f1af19f36112d6e53ca464afecea8e31c4b9b84c6625a",
+    "batch": "20260514",
+    "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260514_xrhjh6",
+    "device_type": "TEMP",
+    "secret_hash": "6cb36fe7944f97eafa4f19f5acf8c004e82480d9843daf90a1624edbdb40a4c6",
+    "batch": "20260514",
+    "claimed": true
+  }
+]

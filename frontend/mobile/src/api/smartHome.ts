@@ -20,8 +20,13 @@ export type ApiDevice = {
   name: string;
   type: DeviceType;
   status: "ON" | "OFF" | "OPEN" | "CLOSED";
+  hardware_id: string | null;
   room_id: string;
   owner_id: string;
+  battery_level: number | null;
+  last_error: string | null;
+  last_seen_at: string | null;
+  telemetry: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 };
@@ -87,7 +92,7 @@ export async function listDevices(token: string): Promise<ApiDevice[]> {
 
 export async function createDevice(
   token: string,
-  payload: { name: string; type: DeviceType; roomId: string }
+  payload: { name: string; type: DeviceType; roomId: string; hardwareId?: string | null }
 ): Promise<ApiDevice> {
   return apiRequest<ApiDevice>("/api/v1/devices", {
     method: "POST",
@@ -95,7 +100,8 @@ export async function createDevice(
     body: {
       name: payload.name,
       type: payload.type,
-      room_id: payload.roomId
+      room_id: payload.roomId,
+      hardware_id: payload.hardwareId ?? null
     }
   });
 }
@@ -111,6 +117,10 @@ export async function applyDeviceAction(
       action: payload.action
     }
   });
+}
+
+export async function deleteDevice(token: string, deviceId: string): Promise<void> {
+  return apiRequest<void>(`/api/v1/devices/${deviceId}`, { method: "DELETE", token });
 }
 
 export async function listEvents(token: string): Promise<ApiEvent[]> {

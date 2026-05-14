@@ -39,11 +39,13 @@ def test_create_device_sets_owner_scope_and_serializes_response(client, monkeypa
         assert payload.name == "Main Light"
         assert payload.room_id == room_id
         assert payload.type == DeviceType.LIGHT
+        assert payload.hardware_id == "esp8266_ali_001"
         return SimpleNamespace(
             id=device_id,
             name=payload.name,
             type=payload.type,
             status="OFF",
+            hardware_id=payload.hardware_id,
             room_id=payload.room_id,
             owner_id=owner_id,
             created_at=created_at,
@@ -55,7 +57,12 @@ def test_create_device_sets_owner_scope_and_serializes_response(client, monkeypa
 
     response = client.post(
         "/api/v1/devices",
-        json={"name": "Main Light", "type": "LIGHT", "room_id": str(room_id)},
+        json={
+            "name": "Main Light",
+            "type": "LIGHT",
+            "room_id": str(room_id),
+            "hardware_id": " ESP8266_ALI_001 ",
+        },
     )
 
     _clear_overrides(client)
@@ -66,6 +73,7 @@ def test_create_device_sets_owner_scope_and_serializes_response(client, monkeypa
         "name": "Main Light",
         "type": "LIGHT",
         "status": "OFF",
+        "hardware_id": "esp8266_ali_001",
         "room_id": str(room_id),
         "owner_id": str(owner_id),
         "created_at": _iso_utc(created_at),
@@ -86,6 +94,7 @@ def test_list_devices_supports_home_filter(client, monkeypatch) -> None:
         name="Bedroom AC",
         type="AC",
         status="OFF",
+        hardware_id="esp8266_bed_ac",
         room_id=room_id,
         owner_id=owner_id,
         created_at=created_at,
@@ -112,11 +121,12 @@ def test_list_devices_supports_home_filter(client, monkeypatch) -> None:
     assert response.json() == [
         {
             "id": str(device_id),
-            "name": "Bedroom AC",
-            "type": "AC",
-            "status": "OFF",
-            "room_id": str(room_id),
-            "owner_id": str(owner_id),
+                "name": "Bedroom AC",
+                "type": "AC",
+                "status": "OFF",
+                "hardware_id": "esp8266_bed_ac",
+                "room_id": str(room_id),
+                "owner_id": str(owner_id),
             "created_at": _iso_utc(created_at),
             "updated_at": _iso_utc(updated_at),
         }
@@ -181,6 +191,7 @@ def test_apply_device_action_passes_command_to_service(client, monkeypatch) -> N
             name="Main Light",
             type="LIGHT",
             status="ON",
+            hardware_id="esp8266_main_light",
             room_id=room_id,
             owner_id=owner_id,
             created_at=created_at,
@@ -204,6 +215,7 @@ def test_apply_device_action_passes_command_to_service(client, monkeypatch) -> N
         "name": "Main Light",
         "type": "LIGHT",
         "status": "ON",
+        "hardware_id": "esp8266_main_light",
         "room_id": str(room_id),
         "owner_id": str(owner_id),
         "created_at": _iso_utc(created_at),
@@ -283,6 +295,36 @@ def test_create_device_rejects_invalid_device_type_before_service_call(client, m
     response = client.post(
         "/api/v1/devices",
         json={"name": "Main Light", "type": "SPEAKER", "room_id": str(room_id)},
+    )
+
+    _clear_overrides(client)
+
+    assert response.status_code == 422
+    assert called is False
+
+
+def test_create_device_rejects_unknown_firmware_id_before_service_call(client, monkeypatch) -> None:
+    owner_id = UUID("550e8400-e29b-41d4-a716-446655440000")
+    fake_db = object()
+    room_id = uuid4()
+    _override_dependencies(client, owner_id, fake_db)
+
+    called = False
+
+    def fake_create_device(*args, **kwargs):
+        nonlocal called
+        called = True
+
+    monkeypatch.setattr("app.routes.devices.device_service.create_device", fake_create_device)
+
+    response = client.post(
+        "/api/v1/devices",
+        json={
+            "name": "Main Light",
+            "type": "LIGHT",
+            "room_id": str(room_id),
+            "hardware_id": "arduino-random-001",
+        },
     )
 
     _clear_overrides(client)
