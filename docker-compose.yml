@@ -40,6 +40,7 @@ services:
       HIVEMQ_PASSWORD: ${HIVEMQ_PASSWORD:-}
     volumes:
       - ./manufactured_devices.json:/app/manufactured_devices.json
+      - ./manufactured_secrets.txt:/app/manufactured_secrets.txt
     depends_on:
       db:
         condition: service_healthy

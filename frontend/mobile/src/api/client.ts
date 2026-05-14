@@ -95,6 +95,19 @@ function normalizeBody(body: ApiRequestOptions["body"]): BodyInit | undefined {
 
 const REQUEST_TIMEOUT_MS = 8000;
 
+function joinApiUrl(baseUrl: string, path: string): string {
+  if (/^https?:\/\//i.test(baseUrl)) {
+    return new URL(path, baseUrl).toString();
+  }
+
+  const normalizedBase = baseUrl.replace(/\/+$/, "") || "";
+  if (!normalizedBase) {
+    return path;
+  }
+
+  return `${normalizedBase}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
 export async function apiRequest<T>(
   path: string,
   { body, headers, token, ...init }: ApiRequestOptions = {}
@@ -104,7 +117,7 @@ export async function apiRequest<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(joinApiUrl(API_BASE_URL, path), {
       ...init,
       signal: controller.signal,
       body: normalizeBody(body),

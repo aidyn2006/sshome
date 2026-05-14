@@ -9,6 +9,7 @@ from app.core.http_security import configure_http_security
 from app.db.init_db import init_db
 from app.services import device_registry, mqtt_subscriber
 from app.routes.ai import router as ai_router
+from app.routes.admin import router as admin_router
 from app.routes.auth import router as auth_router
 from app.routes.auth_context import router as auth_context_router
 from app.routes.devices import router as devices_router
@@ -51,6 +52,7 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(ai_router)
 app.include_router(devices_router)
 app.include_router(scenes_router)
+app.include_router(admin_router, prefix=settings.api_v1_prefix)
 app.include_router(auth_context_router, prefix=settings.api_v1_prefix)
 app.include_router(ai_router, prefix=settings.api_v1_prefix)
 app.include_router(devices_router, prefix=settings.api_v1_prefix)

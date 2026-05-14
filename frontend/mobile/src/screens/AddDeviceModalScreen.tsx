@@ -183,7 +183,7 @@ export function AddDeviceModalScreen({ navigation }: Props) {
 
         {saveError && (
           <View style={styles.errorBox}>
-            <Ionicons name="alert-circle-outline" size={16} color={colors.error ?? "#e53e3e"} />
+            <Ionicons name="alert-circle-outline" size={16} color={colors.red} />
             <Text style={styles.errorText}>{saveError}</Text>
           </View>
         )}

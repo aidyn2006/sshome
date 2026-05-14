@@ -82,5 +82,99 @@
     "secret_hash": "6cb36fe7944f97eafa4f19f5acf8c004e82480d9843daf90a1624edbdb40a4c6",
     "batch": "20260514",
     "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260514_bcpxkp",
+    "device_type": "TEMP",
+    "secret_hash": "6cfc8ba0a8e0af2897b30ba4209fe92269c664cb39069706e0c0379ed3df3378",
+    "batch": "20260514",
+    "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260514_hnn7ze",
+    "device_type": "LIGHT",
+    "secret_hash": "d3645ac219f755848575bd58b89c32710ef7eb98da5bfe42b61cb1ce3c3aed8d",
+    "batch": "20260514",
+    "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260514_v2a978",
+    "device_type": "CAMERA",
+    "secret": "e5d52029a70bfe3d714163bacc7d8e3599e494c74c8cb737ac68753ae5ea44f5",
+    "secret_hash": "5f28d4ce3e8ef65f80d3171aec76428ae29a291da80449108feed7bc3a4f2ad8",
+    "batch": "20260514",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260514_kyf5p6",
+    "device_type": "CAMERA",
+    "secret": "713f1c98645909bbd55cd9e7cd529e8a5d5c82271505dc4edfa891e3f9a6688a",
+    "secret_hash": "5734bca0e832b5a48c9afe74787f0d64b7871f01f3c89b300db3cd0f2e7c2eb9",
+    "batch": "20260514",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260514_y6w0yi",
+    "device_type": "CAMERA",
+    "secret": "a1163f59c19f0b874f1b2adc6c0a08398f4638748890183dcbb8ccfb63b4f91b",
+    "secret_hash": "516db842ace84ad157758646969455c2182a41a08f9a24dbc296cb33c4a18863",
+    "batch": "20260514",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260514_btksk0",
+    "device_type": "CAMERA",
+    "secret": "05f6304f78b519f1dafccfde3adeb21432a7521a6ac39e3119d90c1f46e5280e",
+    "secret_hash": "d1c17f48ea694a1454518c3af61d212d27b8b581e8d9047145f4ef8e2e1065fa",
+    "batch": "20260514",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260514_8a5kdv",
+    "device_type": "CAMERA",
+    "secret": "fb7524d2b368f572babca66999ac0937cc6cf11fe8bc9233c3ef73a5b7c74c36",
+    "secret_hash": "751201e1bce60f143896ae87d96276f4db0411d879a6e4795511caa2a1ae07d0",
+    "batch": "20260514",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260514_5069a2",
+    "device_type": "LIGHT",
+    "secret": "14a7c93fb9046fdd1021c8c9156d87b382e83de890d3203a4405a269038a6068",
+    "secret_hash": "533215e4e9d6b38f6bb45c255667d428527069122226fa39284c26492b521d84",
+    "batch": "20260514",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260514_8w9em8",
+    "device_type": "LIGHT",
+    "secret": "b50feb26493c68e1f16973fcc40a03e5d3f28bc301f8a6a99f08a65a64a6a438",
+    "secret_hash": "98798c1cd040a33768b3b4c49e87a76d673b8a491553b81e8dd8a4bc08ca5897",
+    "batch": "20260514",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260514_wdvoys",
+    "device_type": "LIGHT",
+    "secret": "d6285f9f822d06151721f557ec9b1cb621b7c82868c4979fa97b22b38aebcdc6",
+    "secret_hash": "a8f926e96a4d2d2885374518b3fc5baca1000b5266ace680171456806f7c62ea",
+    "batch": "20260514",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260514_9f7eri",
+    "device_type": "LIGHT",
+    "secret": "804e804c2fad22a89600aad7e24f4c7de7e2ee6be664d85688dbbc37e62b23a5",
+    "secret_hash": "730fc0a6bc4e6c0617887bed30b2e80718cc78eb97f75a184e50cd2f1b2b1873",
+    "batch": "20260514",
+    "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260514_uaj2j0",
+    "device_type": "CAMERA",
+    "secret": "729bfb249d78e9d37a1d4eb842c0c8a0ceba8374de3d66f1a48ce230473638c4",
+    "secret_hash": "224d0a78735dd8dd5d903aa4c254b1b6007eb71a47d18c67d2795e4cbdb63d5d",
+    "batch": "20260514",
+    "claimed": false
   }
 ]

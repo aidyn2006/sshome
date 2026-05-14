@@ -11,6 +11,15 @@ import { API_BASE_URL } from "../config/api";
 import { Alert } from "react-native";
 
 import {
+  listAdminUsers as listAdminUsersRequest,
+  listAuditLogs as listAuditLogsRequest,
+  generateManufacturedDevices as generateManufacturedDevicesRequest,
+  updateAdminUserRole as updateAdminUserRoleRequest,
+  type AdminUser,
+  type AuditLogEntry,
+  type ManufacturedDevice
+} from "../api/admin";
+import {
   getAuthContext,
   getCurrentUser,
   login as loginRequest,
@@ -68,6 +77,7 @@ type SmartHomeContextValue = {
   events: Event[];
   scenarios: Scenario[];
   favoriteDeviceIds: string[];
+  isAdmin: boolean;
   login: (payload: LoginPayload) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
@@ -81,6 +91,10 @@ type SmartHomeContextValue = {
   addDevice: (name: string, type: Device["type"], roomId: string, hardwareId?: string) => Promise<boolean>;
   removeDevice: (deviceId: string) => Promise<boolean>;
   toggleFavorite: (deviceId: string) => void;
+  generateManufacturedDevices: (count: number, deviceType: Device["type"]) => Promise<ManufacturedDevice[]>;
+  listAdminUsers: () => Promise<AdminUser[]>;
+  updateAdminUserRole: (userId: string, role: UserOut["role"]) => Promise<AdminUser>;
+  listAuditLogs: (limit?: number) => Promise<AuditLogEntry[]>;
 };
 
 type SessionTokens = {
@@ -540,7 +554,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
                 email: tokens.email,
                 name: `${tokens.firstName} ${tokens.lastName}`.trim(),
                 phone: null,
-                role: tokens.role || "USER",
+                role: tokens.role === "ADMIN" ? "ADMIN" : "USER",
                 is_active: true,
                 created_at: new Date().toISOString()
               }
@@ -865,6 +879,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     () => ({
       authStatus,
       user,
+      isAdmin: user?.role === "ADMIN",
       ownerId,
       authError,
       isAuthSubmitting,
@@ -887,12 +902,29 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       addRoom,
       addDevice,
       removeDevice,
-      toggleFavorite
+      toggleFavorite,
+      generateManufacturedDevices: async (count: number, deviceType: Device["type"]) => {
+        const result = await runWithSession((accessToken) =>
+          generateManufacturedDevicesRequest(accessToken, {
+            count,
+            deviceType
+          })
+        );
+
+        return result.devices;
+      },
+      listAdminUsers: async () =>
+        runWithSession((accessToken) => listAdminUsersRequest(accessToken)),
+      updateAdminUserRole: async (userId: string, role: UserOut["role"]) =>
+        runWithSession((accessToken) => updateAdminUserRoleRequest(accessToken, userId, { role })),
+      listAuditLogs: async (limit = 20) =>
+        runWithSession((accessToken) => listAuditLogsRequest(accessToken, limit))
     }),
     [
       addDevice,
       addHome,
       addRoom,
+      runWithSession,
       removeDevice,
       authError,
       authStatus,

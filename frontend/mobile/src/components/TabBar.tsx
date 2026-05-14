@@ -11,6 +11,7 @@ const iconMap: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive
   Devices:  { active: "grid",        inactive: "grid-outline" },
   Scenes:   { active: "flash",       inactive: "flash-outline" },
   Activity: { active: "pulse",       inactive: "pulse-outline" },
+  Admin:    { active: "shield-checkmark", inactive: "shield-checkmark-outline" },
 };
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {

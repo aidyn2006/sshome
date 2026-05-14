@@ -5,6 +5,12 @@ from app.schemas.auth import (
     RefreshRequest,
     TokenPairResponse,
 )
+from app.schemas.admin import (
+    GenerateManufacturedDevicesRequest,
+    GenerateManufacturedDevicesResponse,
+    ManufacturedDeviceOut,
+    UpdateUserRoleRequest,
+)
 from app.schemas.device import DeviceCreate, DeviceRead
 from app.schemas.event import EventRead
 from app.schemas.log import AuditLogOut
@@ -23,6 +29,10 @@ __all__ = [
     "RefreshRequest",
     "LogoutRequest",
     "AuditLogOut",
+    "GenerateManufacturedDevicesRequest",
+    "GenerateManufacturedDevicesResponse",
+    "ManufacturedDeviceOut",
+    "UpdateUserRoleRequest",
     "DeviceCreate",
     "DeviceRead",
     "EventRead",

@@ -29,15 +29,15 @@ function getHostFromExpo(): string | null {
 
 function getDefaultApiBaseUrl(): string {
   if (Platform.OS === "web") {
-    return "http://localhost:8099";
+    return "http://localhost:8000";
   }
 
   const lanHost = getHostFromExpo();
   if (lanHost) {
-    return `http://${lanHost}:8099`;
+    return `http://${lanHost}:8000`;
   }
 
-  return Platform.OS === "android" ? "http://10.0.2.2:8099" : "http://localhost:8099";
+  return Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://localhost:8000";
 }
 
 export const API_BASE_URL = trimTrailingSlash(envApiBaseUrl || getDefaultApiBaseUrl());

@@ -298,6 +298,32 @@ Relevant files:
 - `tests/api/test_device_routes.py`
 - `tests/api/test_home_room_routes.py`
 - `tests/api/test_scenario_routes.py`
+
+## 13. Admin Governance and Audit Trail
+
+Administrative operations are separated from normal user flows and recorded explicitly.
+
+Implemented features:
+
+- admin-only device generation endpoint
+- admin-only user list endpoint
+- admin-only role update endpoint
+- audit log records for device generation and role changes
+- protection against self-role changes
+- protection against removing the last admin account
+
+Security value:
+
+- makes privileged changes visible and traceable
+- reduces the chance of silent privilege escalation or accidental lockout
+- keeps administrative control inside a clearly scoped workflow
+
+Relevant files:
+
+- `app/routes/admin.py`
+- `app/services/audit_service.py`
+- `app/models/audit_log.py`
+- `app/schemas/admin.py`
 - `tests/api/test_websocket_routes.py`
 - `tests/unit/test_auth.py`
 

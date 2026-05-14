@@ -36,7 +36,7 @@ export type UserOut = {
   email: string;
   name: string;
   phone: string | null;
-  role: string;
+  role: "USER" | "ADMIN";
   is_active: boolean;
   created_at: string;
 };

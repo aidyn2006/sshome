@@ -27,7 +27,7 @@ Before launch, make sure you have:
 
 - Docker Desktop installed
 - Docker Compose available
-- ports `8000` and `19006` free
+- ports `8888` and `19006` free
 
 Check quickly:
 
@@ -53,8 +53,8 @@ docker compose up --build -d
 After startup, open:
 
 - Frontend: `http://localhost:19006`
-- Backend health: `http://localhost:8000/health`
-- Backend root: `http://localhost:8000/`
+- Backend health: `http://localhost:8888/health`
+- Backend root: `http://localhost:8888/`
 
 Expected health response:
 
@@ -142,7 +142,7 @@ docker compose restart frontend
 
 ## Ports
 
-- `8000` -> backend
+- `8888` -> backend
 - `19006` -> frontend
 
 If one of these ports is already busy, Docker will fail to start that service. Free the port or change the mapping in [docker-compose.yml](./docker-compose.yml).
@@ -174,6 +174,9 @@ Protected API:
 - `GET /api/v1/events`
 - `GET /api/v1/scenarios`
 - `POST /api/v1/scenarios/{id}/run`
+- `POST /api/v1/admin/devices/generate`  - admin-only factory endpoint for `manufactured_devices.json`
+
+Admin users also get an `Admin` tab in the mobile app for generating factory device batches.
 
 Health:
 
@@ -240,7 +243,7 @@ This removes the PostgreSQL volume and recreates the database from scratch.
 Check backend health first:
 
 ```powershell
-Invoke-RestMethod http://localhost:8000/health
+Invoke-RestMethod http://localhost:8888/health
 ```
 
 Then inspect logs:
@@ -262,7 +265,7 @@ docker compose logs -f
 Common reasons:
 
 - Docker Desktop is not running
-- port `8000` or `19006` is already used
+- port `8888` or `19006` is already used
 - previous broken containers are still present
 
 ### Need to wipe the database

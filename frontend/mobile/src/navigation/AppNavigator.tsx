@@ -7,6 +7,7 @@ import { useState } from "react";
 import { TabBar } from "../components/TabBar";
 import { ActivityScreen } from "../screens/ActivityScreen";
 import { AddDeviceModalScreen } from "../screens/AddDeviceModalScreen";
+import { AdminScreen } from "../screens/AdminScreen";
 import { AddLocationModalScreen } from "../screens/AddLocationModalScreen";
 import { AllRoomsModalScreen } from "../screens/AllRoomsModalScreen";
 import { DevicesScreen } from "../screens/DevicesScreen";
@@ -92,6 +93,8 @@ function AuthGateway() {
 }
 
 function TabsNavigator() {
+  const { isAdmin } = useSmartHome();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -104,6 +107,7 @@ function TabsNavigator() {
       <Tab.Screen name="Room3D" component={Room3DScreen} options={{ title: "Room" }} />
       <Tab.Screen name="Scenes" component={ScenesScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />
+      {isAdmin && <Tab.Screen name="Admin" component={AdminScreen} options={{ title: "Admin" }} />}
     </Tab.Navigator>
   );
 }

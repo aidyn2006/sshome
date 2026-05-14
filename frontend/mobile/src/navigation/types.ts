@@ -12,4 +12,5 @@ export type TabParamList = {
   Devices: undefined;
   Scenes: undefined;
   Activity: undefined;
+  Admin: undefined;
 };
