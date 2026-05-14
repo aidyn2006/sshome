@@ -1,131 +1,117 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors, gradients } from "../theme/colors";
+import { colors } from "../theme/colors";
 import type { Device } from "../types/smartHome";
 import { getDeviceIconName, isDeviceActive } from "../utils/device";
 
 type Props = {
   device: Device;
   roomName: string;
-  onToggle: () => void;
+  onToggle?: () => void;
 };
 
 export function DeviceToggleRow({ device, roomName, onToggle }: Props) {
   const isActive = isDeviceActive(device.status);
-  const thumbX = useRef(new Animated.Value(isActive ? 22 : 2)).current;
+  const thumbX = useRef(new Animated.Value(isActive ? 20 : 2)).current;
 
   useEffect(() => {
     Animated.spring(thumbX, {
-      toValue: isActive ? 22 : 2,
+      toValue: isActive ? 20 : 2,
       useNativeDriver: true,
-      bounciness: 9,
-      speed: 16
+      bounciness: 8,
+      speed: 18,
     }).start();
   }, [isActive, thumbX]);
 
-  const content = (
-    <>
-      <View style={styles.leftZone}>
-        <View style={[styles.iconWrap, isActive && styles.iconWrapOn]}>
-          <Ionicons
-            name={getDeviceIconName(device.type, device.status) as keyof typeof Ionicons.glyphMap}
-            size={18}
-            color={isActive ? colors.accentBlue : colors.textSecondary}
-          />
-        </View>
-        <View>
-          <Text style={styles.deviceName}>{device.name}</Text>
-          <Text style={styles.roomName}>{roomName}</Text>
-        </View>
+  return (
+    <View style={styles.row}>
+      <View style={[styles.iconBox, isActive && styles.iconBoxActive]}>
+        <Ionicons
+          name={getDeviceIconName(device.type, device.status) as keyof typeof Ionicons.glyphMap}
+          size={17}
+          color={isActive ? colors.accent : colors.ink600}
+        />
+      </View>
+
+      <View style={styles.labels}>
+        <Text style={styles.name} numberOfLines={1}>{device.name}</Text>
+        <Text style={styles.status}>{device.status}</Text>
       </View>
 
       <Pressable
-        onPress={async () => {
+        onPress={onToggle ? async () => {
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onToggle();
-        }}
-        style={[styles.switchTrack, isActive && styles.switchTrackOn]}
+        } : undefined}
+        style={[styles.track, isActive && styles.trackActive, !onToggle && styles.trackReadOnly]}
       >
-        <Animated.View style={[styles.switchThumb, { transform: [{ translateX: thumbX }] }]} />
+        <Animated.View style={[styles.thumb, { transform: [{ translateX: thumbX }] }]} />
       </Pressable>
-    </>
+    </View>
   );
-
-  if (isActive) {
-    return (
-      <LinearGradient colors={gradients.toggleOn} style={[styles.card, styles.cardOn]}>
-        {content}
-      </LinearGradient>
-    );
-  }
-
-  return <View style={styles.card}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
-  card: {
-    height: 72,
-    borderRadius: 16,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  cardOn: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.accentBlue
-  },
-  leftZone: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12
-  },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  iconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.surface
+    backgroundColor: colors.ink100,
+    flexShrink: 0,
   },
-  iconWrapOn: {
-    backgroundColor: "rgba(74,144,226,0.15)"
+  iconBoxActive: {
+    backgroundColor: colors.accentTint,
   },
-  deviceName: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: "700"
+  labels: {
+    flex: 1,
+    minWidth: 0,
   },
-  roomName: {
-    color: colors.textSecondary,
-    fontSize: 12
+  name: {
+    color: colors.ink900,
+    fontSize: 14.5,
+    fontWeight: "500",
   },
-  switchTrack: {
-    width: 52,
-    height: 30,
-    borderRadius: 30,
-    backgroundColor: colors.inactiveGray,
-    justifyContent: "center"
+  status: {
+    fontFamily: "monospace",
+    fontSize: 10.5,
+    color: colors.ink500,
+    marginTop: 1,
   },
-  switchTrackOn: {
-    backgroundColor: colors.accentBlue,
-    shadowColor: colors.accentBlue,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8
+  track: {
+    width: 46,
+    height: 28,
+    borderRadius: 999,
+    backgroundColor: colors.ink200,
+    justifyContent: "center",
+    flexShrink: 0,
   },
-  switchThumb: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: colors.textOnAccent,
-    position: "absolute"
-  }
+  trackActive: {
+    backgroundColor: colors.accent,
+  },
+  trackReadOnly: {
+    opacity: 0.4,
+  },
+  thumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
 });

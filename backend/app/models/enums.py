@@ -6,6 +6,8 @@ class DeviceType(str, Enum):
     DOOR = "DOOR"
     AC = "AC"
     TEMP = "TEMP"
+    CAMERA = "CAMERA"
+    MOTION = "MOTION"
 
 
 class DeviceStatus(str, Enum):

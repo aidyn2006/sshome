@@ -8,58 +8,99 @@ type Props = {
   title: string;
   value: string;
   subtitle: string;
+  accent?: string;
+  trend?: number;
 };
 
-export function StatCard({ icon, title, value, subtitle }: Props) {
+export function StatCard({ icon, title, value, subtitle, accent = colors.accent, trend }: Props) {
+  const trendUp = trend != null && trend > 0;
+  const trendIcon: keyof typeof Ionicons.glyphMap = trendUp ? "trending-up" : "trending-down";
+
   return (
     <View style={styles.card}>
       <View style={styles.topRow}>
-        <View style={styles.iconCircle}>
-          <Ionicons name={icon} size={16} color={colors.accentBlue} />
+        <View style={[styles.iconBox, { backgroundColor: `${accent}18` }]}>
+          <Ionicons name={icon} size={14} color={accent} />
         </View>
-        <Text style={styles.title}>{title}</Text>
+        {trend != null && (
+          <View style={styles.trendBadge}>
+            <Ionicons
+              name={trendIcon}
+              size={11}
+              color={trendUp ? colors.success : colors.ink500}
+            />
+            <Text style={[styles.trendText, trendUp && styles.trendUp]}>
+              {Math.abs(trend)}
+            </Text>
+          </View>
+        )}
       </View>
-      <Text style={styles.value}>{value}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
+      <View>
+        <View style={styles.valueRow}>
+          <Text style={styles.value}>{value}</Text>
+        </View>
+        <Text style={styles.label}>{subtitle || title}</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    width: 180,
-    backgroundColor: colors.card,
-    borderRadius: 20,
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
     padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 8
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    gap: 10,
+    minHeight: 96,
+    shadowColor: colors.ink900,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
   },
   topRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 8
   },
-  iconCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  iconBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(74,144,226,0.18)"
   },
-  title: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: "500"
+  trendBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  trendText: {
+    fontFamily: "monospace",
+    fontSize: 10.5,
+    color: colors.ink500,
+  },
+  trendUp: {
+    color: colors.success,
+  },
+  valueRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 2,
   },
   value: {
-    color: colors.textPrimary,
-    fontSize: 24,
-    fontWeight: "700"
+    fontFamily: "monospace",
+    fontSize: 22,
+    color: colors.ink900,
+    fontWeight: "500",
+    letterSpacing: -0.5,
   },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: 12
-  }
+  label: {
+    fontSize: 11.5,
+    color: colors.ink500,
+    marginTop: 2,
+  },
 });

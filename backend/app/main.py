@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.http_security import configure_http_security
 from app.db.init_db import init_db
+from app.services import device_registry, mqtt_subscriber
 from app.routes.ai import router as ai_router
 from app.routes.auth import router as auth_router
 from app.routes.auth_context import router as auth_context_router
@@ -26,7 +27,10 @@ from app.websockets.router import router as websockets_router
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if settings.database_auto_init:
         init_db()
+    device_registry.load()
+    mqtt_subscriber.start()
     yield
+    mqtt_subscriber.stop()
 
 
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)

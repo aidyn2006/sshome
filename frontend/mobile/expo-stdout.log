@@ -1,2 +1,96 @@
 Starting project at C:\Users\a.dulat\PhpstormProjects\zhopa\sshome\frontend\mobile
 Starting Metro Bundler
+The following packages should be updated for best compatibility with the installed expo version:
+  expo@54.0.33 - expected version: ~54.0.34
+  expo-asset@55.0.16 - expected version: ~12.0.13
+  expo-gl@55.0.13 - expected version: ~16.0.10
+Your project may not work correctly until you install the expected versions of the packages.
+Waiting on http://localhost:8082
+Logs for your project will appear below.
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web .\index.ts ▓▓▓▓▓▓▓▓▓░░░░░░░ 62.3% (38/78)
+Web .\index.ts ▓▓▓▓▓▓▓▓▓░░░░░░░ 62.3% (274/575)
+Web .\index.ts ▓▓▓▓▓▓▓▓▓░░░░░░░ 62.3% ( 558/1063)
+Web .\index.ts ▓▓▓▓▓▓▓▓▓░░░░░░░ 62.3% ( 920/1197)
+Web .\index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.2% (1327/1339)
+Web Bundled 22495ms index.ts (1348 modules)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 162ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 349ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 180ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 189ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 160ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 188ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 233ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 225ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Unable to resolve "../screens/Room3DScreen" from "src\navigation\AppNavigator.tsx"
+[0m [90m 12 |[39m [36mimport[39m { [33mLoginScreen[39m } [36mfrom[39m [32m"../screens/LoginScreen"[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m { [33mRegisterScreen[39m } [36mfrom[39m [32m"../screens/RegisterScreen"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 14 |[39m [36mimport[39m { [33mRoom3DScreen[39m } [36mfrom[39m [32m"../screens/Room3DScreen"[39m[33m;[39m
+ [90m    |[39m                               [31m[1m^[22m[39m
+ [90m 15 |[39m [36mimport[39m { [33mScenesScreen[39m } [36mfrom[39m [32m"../screens/ScenesScreen"[39m[33m;[39m
+ [90m 16 |[39m [36mimport[39m { useSmartHome } [36mfrom[39m [32m"../store/SmartHomeContext"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { colors } [36mfrom[39m [32m"../theme/colors"[39m[33m;[39m[0m
+
+Import stack:
+
+ src\navigation\AppNavigator.tsx
+ | import "../screens/Room3DScreen"
+
+ App.tsx
+ | import "./src/navigation/AppNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 237ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Unable to resolve "../screens/Room3DScreen" from "src\navigation\AppNavigator.tsx"
+[0m [90m 12 |[39m [36mimport[39m { [33mLoginScreen[39m } [36mfrom[39m [32m"../screens/LoginScreen"[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m { [33mRegisterScreen[39m } [36mfrom[39m [32m"../screens/RegisterScreen"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 14 |[39m [36mimport[39m { [33mRoom3DScreen[39m } [36mfrom[39m [32m"../screens/Room3DScreen"[39m[33m;[39m
+ [90m    |[39m                               [31m[1m^[22m[39m
+ [90m 15 |[39m [36mimport[39m { [33mScenesScreen[39m } [36mfrom[39m [32m"../screens/ScenesScreen"[39m[33m;[39m
+ [90m 16 |[39m [36mimport[39m { useSmartHome } [36mfrom[39m [32m"../store/SmartHomeContext"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { colors } [36mfrom[39m [32m"../theme/colors"[39m[33m;[39m[0m
+
+Import stack:
+
+ src\navigation\AppNavigator.tsx
+ | import "../screens/Room3DScreen"
+
+ App.tsx
+ | import "./src/navigation/AppNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 255ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 229ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console

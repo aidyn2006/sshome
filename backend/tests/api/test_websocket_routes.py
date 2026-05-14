@@ -93,6 +93,7 @@ def test_device_action_broadcasts_realtime_update(client, monkeypatch) -> None:
             "name": "Main Light",
             "type": "LIGHT",
             "status": "ON",
+            "hardware_id": None,
             "room_id": str(room_id),
             "owner_id": owner_id,
             "created_at": created_at.isoformat().replace("+00:00", "Z"),

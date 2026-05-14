@@ -1,62 +1,100 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet, Text, View } from "react-native";
 
-import { colors, gradients } from "../theme/colors";
+import { colors } from "../theme/colors";
 
 type Props = {
   emoji: string;
   name: string;
   deviceCount: number;
   isActive: boolean;
+  activeCount?: number;
 };
 
-export function RoomCard({ emoji, name, deviceCount, isActive }: Props) {
+export function RoomCard({ emoji, name, deviceCount, isActive, activeCount = 0 }: Props) {
+  const countLabel = `${activeCount}/${deviceCount}`;
+
   return (
-    <LinearGradient colors={gradients.roomCard} style={styles.card}>
-      <Text style={styles.emoji}>{emoji}</Text>
-      <Text style={styles.name}>{name}</Text>
-      <View style={styles.bottomRow}>
-        <Text style={styles.count}>{deviceCount} devices</Text>
-        <View style={[styles.dot, isActive && styles.dotActive]} />
+    <View style={styles.card}>
+      <View style={styles.topRow}>
+        <View style={styles.iconBox}>
+          <Text style={styles.emoji}>{emoji}</Text>
+        </View>
+        <View style={[styles.countBadge, activeCount > 0 && styles.countBadgeActive]}>
+          <Text style={[styles.countText, activeCount > 0 && styles.countTextActive]}>
+            {countLabel}
+          </Text>
+        </View>
       </View>
-    </LinearGradient>
+      <View>
+        <Text style={styles.name}>{name}</Text>
+        <Text style={styles.sub}>
+          {activeCount === 0 ? "All quiet" : `${activeCount} device${activeCount === 1 ? "" : "s"} active`}
+        </Text>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    width: 140,
-    height: 160,
-    borderRadius: 20,
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
     padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: "space-between"
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    minHeight: 124,
+    justifyContent: "space-between",
+    shadowColor: colors.ink900,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  iconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: colors.ink100,
+    alignItems: "center",
+    justifyContent: "center",
   },
   emoji: {
-    fontSize: 36
+    fontSize: 18,
+  },
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: colors.ink100,
+  },
+  countBadgeActive: {
+    backgroundColor: colors.accentTint,
+  },
+  countText: {
+    fontFamily: "monospace",
+    fontSize: 11,
+    color: colors.ink400,
+    fontWeight: "500",
+  },
+  countTextActive: {
+    color: colors.accent,
   },
   name: {
-    color: colors.textPrimary,
-    fontWeight: "700",
-    fontSize: 16
+    fontSize: 18,
+    fontWeight: "600",
+    color: colors.ink900,
+    letterSpacing: -0.3,
+    lineHeight: 22,
   },
-  bottomRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between"
+  sub: {
+    fontSize: 11.5,
+    color: colors.ink500,
+    marginTop: 4,
   },
-  count: {
-    color: colors.textSecondary,
-    fontSize: 12
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.inactiveGray
-  },
-  dotActive: {
-    backgroundColor: colors.activeGreen
-  }
 });

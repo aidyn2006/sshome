@@ -38,6 +38,17 @@ class Settings(BaseSettings):
     security_scenario_run_rate_limit: int = 10
     security_websocket_connect_rate_limit: int = 20
     security_enable_hsts: bool = False
+    mqtt_enabled: bool = False
+    mqtt_host: str = "localhost"
+    mqtt_port: int = 1883
+    mqtt_username: str | None = None
+    mqtt_password: str | None = None
+    mqtt_tls: bool = False
+    mqtt_client_id: str = "sshome-backend"
+    hivemq_cluster_url: str | None = None
+    hivemq_username: str | None = None
+    hivemq_password: str | None = None
+    hivemq_port: int = 8883
     scenario_max_actions: int = 20
     cors_allow_origins: str = (
         "http://localhost:19006,"

@@ -5,16 +5,20 @@ export function getDeviceIconName(deviceType: DeviceType, status: DeviceStatus):
     return status === "OPEN" ? "lock-open-outline" : "lock-closed-outline";
   }
 
-  if (deviceType === "WINDOW") {
-    return status === "OPEN" ? "scan-outline" : "square-outline";
-  }
-
   if (deviceType === "AC") {
     return "snow-outline";
   }
 
   if (deviceType === "TEMP") {
     return "thermometer-outline";
+  }
+
+  if (deviceType === "CAMERA") {
+    return status === "ON" ? "videocam" : "videocam-outline";
+  }
+
+  if (deviceType === "MOTION") {
+    return status === "ON" ? "walk" : "walk-outline";
   }
 
   return status === "ON" ? "bulb" : "bulb-outline";
@@ -26,13 +30,19 @@ export function getDeviceTypeLabel(deviceType: DeviceType): string {
       return "Lights";
     case "DOOR":
       return "Doors";
-    case "WINDOW":
-      return "Windows";
     case "AC":
       return "AC";
     case "TEMP":
       return "Sensors";
+    case "CAMERA":
+      return "Cameras";
+    case "MOTION":
+      return "Motion";
   }
+}
+
+export function isControllableDeviceType(deviceType: DeviceType): boolean {
+  return deviceType === "LIGHT" || deviceType === "DOOR" || deviceType === "AC";
 }
 
 export function isDeviceActive(status: DeviceStatus): boolean {
@@ -52,8 +62,10 @@ export function mapActionToStatus(action: DeviceAction): DeviceStatus {
   }
 }
 
-export function getToggledAction(device: Device): DeviceAction {
-  if (device.type === "DOOR" || device.type === "WINDOW") {
+export function getToggledAction(device: Device): DeviceAction | null {
+  if (!isControllableDeviceType(device.type)) return null;
+
+  if (device.type === "DOOR") {
     return device.status === "OPEN" ? "CLOSE" : "OPEN";
   }
 
@@ -62,18 +74,13 @@ export function getToggledAction(device: Device): DeviceAction {
 
 export function mapFilterTypeToDeviceType(filterType: FilterType): DeviceType | null {
   switch (filterType) {
-    case "LIGHT":
-      return "LIGHT";
-    case "DOOR":
-      return "DOOR";
-    case "WINDOW":
-      return "WINDOW";
-    case "AC":
-      return "AC";
-    case "TEMP":
-      return "TEMP";
-    case "ALL":
-      return null;
+    case "LIGHT":   return "LIGHT";
+    case "DOOR":    return "DOOR";
+    case "AC":      return "AC";
+    case "TEMP":    return "TEMP";
+    case "CAMERA":  return "CAMERA";
+    case "MOTION":  return "MOTION";
+    case "ALL":     return null;
   }
 }
 

@@ -108,6 +108,7 @@ When a device changes state through `POST /api/v1/devices/{id}/action`, the sock
     "name": "Main Light",
     "type": "LIGHT",
     "status": "ON",
+    "hardware_id": "esp8266_ali_001",
     "room_id": "4fd0fa6d-4b66-4d73-844f-8a1f2d443f58",
     "owner_id": "550e8400-e29b-41d4-a716-446655440000",
     "created_at": "2026-04-15T12:00:00Z",
@@ -166,6 +167,66 @@ socket.onclose = () => {
 - updates are scoped by `owner_id`, so each user receives only their own device changes
 - realtime messages are emitted after successful REST actions and scenario execution
 - if you already use `EXPO_PUBLIC_API_BASE_URL`, derive the socket URL from the same base address by replacing `http` with `ws`
+
+## ESP8266 Device Claiming
+
+Physical devices from the SSHome firmware are linked by `hardware_id`.
+
+Accepted IDs are normalized to lowercase and must look like:
+
+```text
+esp8266_ali_001
+sshome_esp8266_ab12cd
+```
+
+When a user creates a device, the API stores both:
+
+- `owner_id` - the account that claimed it
+- `hardware_id` - the ID compiled into the ESP8266 firmware
+
+`hardware_id` is globally unique, so the same physical board cannot be claimed by two accounts.
+
+## HiveMQ Cloud MQTT
+
+Create a free HiveMQ Cloud cluster, then copy its Cluster URL into `HIVEMQ_CLUSTER_URL`.
+You do not need to include a protocol; both formats work:
+
+```text
+abc123.s1.eu.hivemq.cloud
+mqtts://abc123.s1.eu.hivemq.cloud:8883
+```
+
+Minimum local setup:
+
+```powershell
+$env:HIVEMQ_CLUSTER_URL="abc123.s1.eu.hivemq.cloud"
+$env:HIVEMQ_USERNAME="your-hivemq-access-username"
+$env:HIVEMQ_PASSWORD="your-hivemq-access-password"
+```
+
+When `HIVEMQ_CLUSTER_URL` is set, the backend automatically uses TLS and port `8883`.
+
+For Docker Compose, put the same variables in a root `.env` file:
+
+```text
+HIVEMQ_CLUSTER_URL=abc123.s1.eu.hivemq.cloud
+HIVEMQ_USERNAME=your-hivemq-access-username
+HIVEMQ_PASSWORD=your-hivemq-access-password
+```
+
+For a device with `hardware_id=esp8266_ali_001`, commands are published to:
+
+```text
+devices/esp8266_ali_001/commands
+```
+
+The NodeMCU firmware should subscribe to that topic and publish telemetry to:
+
+```text
+devices/esp8266_ali_001/telemetry
+```
+
+HiveMQ topics are implicit: the device or backend does not need to create them first.
 
 ## Enhanced Security
 

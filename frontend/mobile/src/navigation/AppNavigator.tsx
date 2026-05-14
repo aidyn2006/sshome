@@ -6,10 +6,13 @@ import { useState } from "react";
 
 import { TabBar } from "../components/TabBar";
 import { ActivityScreen } from "../screens/ActivityScreen";
+import { AddDeviceModalScreen } from "../screens/AddDeviceModalScreen";
 import { AddLocationModalScreen } from "../screens/AddLocationModalScreen";
+import { AllRoomsModalScreen } from "../screens/AllRoomsModalScreen";
 import { DevicesScreen } from "../screens/DevicesScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { LoginScreen } from "../screens/LoginScreen";
+import { ManageFavoritesModalScreen } from "../screens/ManageFavoritesModalScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
 import { Room3DScreen } from "../screens/Room3DScreen";
 import { ScenesScreen } from "../screens/ScenesScreen";
@@ -97,8 +100,8 @@ function TabsNavigator() {
       tabBar={(props) => <TabBar {...props} />}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Room3D" component={Room3DScreen} options={{ title: "3D Room" }} />
       <Tab.Screen name="Devices" component={DevicesScreen} />
+      <Tab.Screen name="Room3D" component={Room3DScreen} options={{ title: "Room" }} />
       <Tab.Screen name="Scenes" component={ScenesScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />
     </Tab.Navigator>
@@ -124,6 +127,30 @@ export function AppNavigator() {
         <Stack.Screen
           name="AddLocationModal"
           component={AddLocationModalScreen}
+          options={{
+            presentation: "modal",
+            animation: "slide_from_bottom"
+          }}
+        />
+        <Stack.Screen
+          name="AddDeviceModal"
+          component={AddDeviceModalScreen}
+          options={{
+            presentation: "modal",
+            animation: "slide_from_bottom"
+          }}
+        />
+        <Stack.Screen
+          name="AllRoomsModal"
+          component={AllRoomsModalScreen}
+          options={{
+            presentation: "modal",
+            animation: "slide_from_bottom"
+          }}
+        />
+        <Stack.Screen
+          name="ManageFavoritesModal"
+          component={ManageFavoritesModalScreen}
           options={{
             presentation: "modal",
             animation: "slide_from_bottom"

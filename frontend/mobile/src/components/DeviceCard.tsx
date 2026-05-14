@@ -5,77 +5,71 @@ import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { colors } from "../theme/colors";
 import type { Device } from "../types/smartHome";
-import { getDeviceIconName, getStatusLabel, isDeviceActive } from "../utils/device";
+import { getDeviceIconName, isDeviceActive } from "../utils/device";
 
 type Props = {
   device: Device;
   roomName: string;
-  onToggle: () => void;
+  onToggle?: () => void;
 };
-
-function getTypeColor(type: Device["type"]): string {
-  switch (type) {
-    case "LIGHT":
-      return "rgba(245,166,35,0.25)";
-    case "DOOR":
-      return "rgba(74,144,226,0.25)";
-    case "WINDOW":
-      return "rgba(106,193,255,0.24)";
-    case "AC":
-      return "rgba(40,198,200,0.25)";
-    case "TEMP":
-      return "rgba(255,107,107,0.25)";
-  }
-}
 
 export function DeviceCard({ device, roomName, onToggle }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
   const active = isDeviceActive(device.status);
 
   const animateTo = (toValue: number) => {
-    Animated.spring(scale, {
-      toValue,
-      useNativeDriver: true,
-      speed: 16,
-      bounciness: 8
-    }).start();
+    Animated.spring(scale, { toValue, useNativeDriver: true, speed: 18, bounciness: 6 }).start();
   };
 
+  const statusLabel = device.status;
+
   return (
-    <Animated.View style={[styles.card, { transform: [{ scale }] }]}> 
+    <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
       <Pressable
-        onPressIn={() => animateTo(0.96)}
+        onPressIn={() => animateTo(0.97)}
         onPressOut={() => animateTo(1)}
         style={styles.inner}
       >
-        <View style={[styles.iconCircle, { backgroundColor: getTypeColor(device.type) }]}>
-          <Ionicons
-            name={getDeviceIconName(device.type, device.status) as keyof typeof Ionicons.glyphMap}
-            size={24}
-            color={colors.textPrimary}
-          />
+        {/* top row */}
+        <View style={styles.topRow}>
+          <View style={[styles.iconBox, active && styles.iconBoxActive]}>
+            <Ionicons
+              name={getDeviceIconName(device.type, device.status) as keyof typeof Ionicons.glyphMap}
+              size={20}
+              color={active ? colors.accent : colors.ink600}
+            />
+          </View>
+
+          {onToggle ? (
+            <Pressable
+              onPress={async () => {
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onToggle();
+              }}
+              style={[styles.powerBtn, active && styles.powerBtnOn]}
+            >
+              <Ionicons name="power" size={14} color={active ? colors.cream50 : colors.ink500} />
+            </Pressable>
+          ) : (
+            <View style={[styles.powerBtn, styles.powerBtnReadOnly]}>
+              <Ionicons name="eye-outline" size={14} color={colors.ink400} />
+            </View>
+          )}
         </View>
 
-        <Text numberOfLines={1} style={styles.name}>
-          {device.name}
-        </Text>
-        <Text style={styles.room}>{roomName}</Text>
-
-        <View style={[styles.badge, active ? styles.badgeOn : styles.badgeOff]}>
-          <Text style={[styles.badgeText, active ? styles.badgeTextOn : styles.badgeTextOff]}>
-            {getStatusLabel(device.status)}
-          </Text>
+        {/* name + room */}
+        <View style={styles.meta}>
+          <Text numberOfLines={1} style={styles.name}>{device.name}</Text>
+          {device.hardware_id && (
+            <Text numberOfLines={1} style={styles.hardwareId}>{device.hardware_id}</Text>
+          )}
+          <View style={styles.statusRow}>
+            <Text style={styles.room}>{roomName}</Text>
+            <Text style={styles.dot}>·</Text>
+            <View style={[styles.statusDot, active && styles.statusDotActive]} />
+            <Text style={[styles.status, active && styles.statusActive]}>{statusLabel}</Text>
+          </View>
         </View>
-
-        <Pressable
-          onPress={async () => {
-            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onToggle();
-          }}
-          style={[styles.powerButton, active && styles.powerButtonOn]}
-        >
-          <Ionicons name="power" size={18} color={colors.textOnAccent} />
-        </Pressable>
       </Pressable>
     </Animated.View>
   );
@@ -84,65 +78,97 @@ export function DeviceCard({ device, roomName, onToggle }: Props) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    minHeight: 160,
-    maxWidth: "100%"
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    minHeight: 152,
+    shadowColor: colors.ink900,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
   },
   inner: {
-    padding: 12,
-    gap: 8,
-    flex: 1
+    padding: 14,
+    gap: 12,
+    flex: 1,
+    justifyContent: "space-between",
   },
-  iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  iconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    backgroundColor: colors.ink100,
+  },
+  iconBoxActive: {
+    backgroundColor: colors.accentTint,
+  },
+  powerBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.ink100,
+  },
+  powerBtnOn: {
+    backgroundColor: colors.ink900,
+  },
+  powerBtnReadOnly: {
+    backgroundColor: colors.ink50 ?? colors.ink100,
+    opacity: 0.6,
+  },
+  meta: {
+    gap: 4,
   },
   name: {
-    color: colors.textPrimary,
+    color: colors.ink900,
     fontSize: 15,
-    fontWeight: "700"
+    fontWeight: "500",
+    letterSpacing: -0.1,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
   },
   room: {
-    color: colors.textSecondary,
-    fontSize: 12
+    color: colors.ink500,
+    fontSize: 12,
   },
-  badge: {
-    alignSelf: "flex-start",
-    borderRadius: 50,
-    paddingHorizontal: 10,
-    paddingVertical: 4
+  hardwareId: {
+    color: colors.ink400,
+    fontFamily: "monospace",
+    fontSize: 10.5,
   },
-  badgeOn: {
-    backgroundColor: "rgba(46,204,113,0.2)"
+  dot: {
+    color: colors.ink300,
+    fontSize: 12,
   },
-  badgeOff: {
-    backgroundColor: "rgba(148,163,184,0.22)"
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.ink300,
   },
-  badgeText: {
+  statusDotActive: {
+    backgroundColor: colors.success,
+  },
+  status: {
+    fontFamily: "monospace",
     fontSize: 11,
-    fontWeight: "700"
+    color: colors.ink500,
+    fontWeight: "500",
   },
-  badgeTextOn: {
-    color: colors.activeGreen
+  statusActive: {
+    color: colors.accent,
   },
-  badgeTextOff: {
-    color: colors.textSecondary
-  },
-  powerButton: {
-    marginTop: "auto",
-    height: 38,
-    borderRadius: 14,
-    backgroundColor: colors.inactiveGray,
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  powerButtonOn: {
-    backgroundColor: colors.accentBlue
-  }
 });

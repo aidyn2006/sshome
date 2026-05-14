@@ -47,8 +47,63 @@ def test_create_device_persists_owned_device_with_default_status(monkeypatch) ->
     assert device.name == "Front Door"
     assert device.type == DeviceType.DOOR
     assert device.status == DeviceStatus.CLOSED
+    assert device.hardware_id is None
     assert device.room_id == room_id
     assert device.owner_id == owner_id
+
+
+def test_create_device_persists_normalized_hardware_id(monkeypatch) -> None:
+    db = MagicMock()
+    owner_id = uuid4()
+    room_id = uuid4()
+    owned_room = SimpleNamespace(id=room_id)
+    db.scalar.return_value = None
+
+    monkeypatch.setattr("app.services.device_service._get_owned_room", lambda *args, **kwargs: owned_room)
+
+    device = device_service.create_device(
+        db,
+        owner_id=owner_id,
+        payload=DeviceCreate(
+            name="Diploma ESP",
+            type=DeviceType.LIGHT,
+            room_id=room_id,
+            hardware_id=" ESP8266_ALI_001 ",
+        ),
+    )
+
+    assert device.hardware_id == "esp8266_ali_001"
+    db.add.assert_called_once_with(device)
+    db.commit.assert_called_once()
+    db.refresh.assert_called_once_with(device)
+
+
+def test_create_device_rejects_already_claimed_hardware_id(monkeypatch) -> None:
+    db = MagicMock()
+    owner_id = uuid4()
+    room_id = uuid4()
+    owned_room = SimpleNamespace(id=room_id)
+    db.scalar.return_value = SimpleNamespace(id=uuid4(), hardware_id="esp8266_ali_001")
+
+    monkeypatch.setattr("app.services.device_service._get_owned_room", lambda *args, **kwargs: owned_room)
+
+    with pytest.raises(HTTPException) as exc_info:
+        device_service.create_device(
+            db,
+            owner_id=owner_id,
+            payload=DeviceCreate(
+                name="Diploma ESP",
+                type=DeviceType.LIGHT,
+                room_id=room_id,
+                hardware_id="esp8266_ali_001",
+            ),
+        )
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail == "Device ID is already linked to an account"
+    db.add.assert_not_called()
+    db.commit.assert_not_called()
+    db.refresh.assert_not_called()
 
 
 def test_create_device_raises_404_when_room_is_not_owned(monkeypatch) -> None:

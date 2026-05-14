@@ -7,4 +7,6 @@
 *.pyc
 .env
 .venv/
+**/.env
 backend/.venv/
+manufactured_secrets.txt
