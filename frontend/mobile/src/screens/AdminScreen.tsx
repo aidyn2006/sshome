@@ -40,15 +40,24 @@ export function AdminScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [adminLoadError, setAdminLoadError] = useState<string | null>(null);
 
   const loadAdminData = useCallback(async () => {
     setIsLoading(true);
+    setAdminLoadError(null);
     try {
-      const [nextUsers, nextLogs] = await Promise.all([listAdminUsers(), listAuditLogs(20)]);
-      setUsers(nextUsers);
-      setAuditLogs(nextLogs);
-    } catch (error) {
-      Alert.alert("Admin", getErrorMessage(error));
+      const [usersResult, logsResult] = await Promise.allSettled([listAdminUsers(), listAuditLogs(20)]);
+
+      if (usersResult.status === "fulfilled") {
+        setUsers(usersResult.value);
+      } else {
+        setUsers([]);
+        setAdminLoadError(getErrorMessage(usersResult.reason));
+      }
+
+      if (logsResult.status === "fulfilled") {
+        setAuditLogs(logsResult.value);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -183,6 +192,15 @@ export function AdminScreen() {
             </View>
             {isLoading ? <ActivityIndicator color={colors.accent} /> : null}
           </View>
+
+          {adminLoadError ? (
+            <View style={styles.noticeBox}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.ink600} />
+              <Text style={styles.noticeText}>
+                Admin data is partially unavailable: {adminLoadError}
+              </Text>
+            </View>
+          ) : null}
 
           {users.map((item) => {
             const isCurrentUser = item.id === user?.id;
@@ -360,6 +378,22 @@ const styles = StyleSheet.create({
     borderTopColor: colors.hairline,
     paddingTop: 6,
     gap: 8
+  },
+  noticeBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: colors.cream100,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong
+  },
+  noticeText: {
+    flex: 1,
+    color: colors.ink600,
+    fontSize: 12.5,
+    lineHeight: 18
   },
   generatedRow: {
     flexDirection: "row",
