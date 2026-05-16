@@ -31,7 +31,7 @@ def test_create_device_persists_owned_device_with_default_status(monkeypatch) ->
 
     monkeypatch.setattr("app.services.device_service._get_owned_room", lambda *args, **kwargs: owned_room)
 
-    device = device_service.create_device(
+    device, secret = device_service.create_device(
         db,
         owner_id=owner_id,
         payload=DeviceCreate(
@@ -44,6 +44,7 @@ def test_create_device_persists_owned_device_with_default_status(monkeypatch) ->
     db.add.assert_called_once_with(device)
     db.commit.assert_called_once()
     db.refresh.assert_called_once_with(device)
+    assert secret is None
     assert device.name == "Front Door"
     assert device.type == DeviceType.DOOR
     assert device.status == DeviceStatus.CLOSED
@@ -60,8 +61,12 @@ def test_create_device_persists_normalized_hardware_id(monkeypatch) -> None:
     db.scalar.return_value = None
 
     monkeypatch.setattr("app.services.device_service._get_owned_room", lambda *args, **kwargs: owned_room)
+    monkeypatch.setattr("app.services.device_service.device_registry.is_known_device", lambda hardware_id: True)
+    monkeypatch.setattr("app.services.device_service.device_registry.is_claimed", lambda hardware_id: False)
+    monkeypatch.setattr("app.services.device_service.device_registry.get_secret_hash", lambda hardware_id: "secret-hash")
+    monkeypatch.setattr("app.services.device_service.device_registry.mark_claimed", lambda hardware_id: None)
 
-    device = device_service.create_device(
+    device, secret = device_service.create_device(
         db,
         owner_id=owner_id,
         payload=DeviceCreate(
@@ -72,7 +77,9 @@ def test_create_device_persists_normalized_hardware_id(monkeypatch) -> None:
         ),
     )
 
+    assert secret is None
     assert device.hardware_id == "esp8266_ali_001"
+    assert device.device_secret_hash == "secret-hash"
     db.add.assert_called_once_with(device)
     db.commit.assert_called_once()
     db.refresh.assert_called_once_with(device)
