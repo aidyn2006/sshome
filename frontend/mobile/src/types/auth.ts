@@ -18,6 +18,7 @@ export type RegisterPayload = {
   phone: string;
   password: string;
   confirmPassword: string;
+  role?: "USER" | "ADMIN";
 };
 
 export type TokenPairResponse = {

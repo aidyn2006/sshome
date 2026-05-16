@@ -17,6 +17,7 @@ def test_auth_workflow_registers_logs_in_refreshes_and_logs_out(integration_clie
     )
     assert register_response.status_code == 201
     assert register_response.json()["email"] == "auth-flow@example.com"
+    assert register_response.json()["role"] == "USER"
     assert register_response.json()["is_active"] is True
 
     duplicate_register_response = integration_client.client.post(
@@ -88,6 +89,38 @@ def test_auth_workflow_registers_logs_in_refreshes_and_logs_out(integration_clie
     )
     assert refresh_after_logout_response.status_code == 401
     assert refresh_after_logout_response.json()["detail"] == "Invalid or expired refresh token"
+
+
+def test_auth_workflow_registers_admin_when_role_is_requested(integration_client) -> None:
+    register_response = integration_client.client.post(
+        "/auth/register",
+        json={
+            "email": "admin-flow@example.com",
+            "password": "StrongPass123!",
+            "name": "Admin Flow",
+            "phone": "+77000000001",
+            "role": "ADMIN",
+        },
+    )
+
+    assert register_response.status_code == 201
+    assert register_response.json()["role"] == "ADMIN"
+
+    login_response = integration_client.client.post(
+        "/auth/login",
+        json={
+            "email": "admin-flow@example.com",
+            "password": "StrongPass123!",
+        },
+    )
+    assert login_response.status_code == 200
+
+    auth_context_response = integration_client.client.get(
+        "/api/v1/auth-context/me",
+        headers=integration_client.auth_headers(login_response.json()["access_token"]),
+    )
+    assert auth_context_response.status_code == 200
+    assert auth_context_response.json()["roles"] == ["ADMIN"]
 
 
 def test_auth_workflow_rejects_invalid_password(integration_client) -> None:

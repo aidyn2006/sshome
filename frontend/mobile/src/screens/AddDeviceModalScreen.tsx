@@ -49,7 +49,7 @@ export function AddDeviceModalScreen({ navigation }: Props) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const canSave = name.trim().length > 0 && hardwareId.trim().length > 0 && selectedRoomId.length > 0;
+  const canSave = name.trim().length > 0 && selectedRoomId.length > 0;
 
   const save = async () => {
     if (!canSave) return;
@@ -115,13 +115,13 @@ export function AddDeviceModalScreen({ navigation }: Props) {
 
         {/* Firmware ID */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>FIRMWARE ID</Text>
+          <Text style={styles.fieldLabel}>FIRMWARE ID (OPTIONAL)</Text>
           <View style={[styles.inputWrap, hardwareFocused && styles.inputWrapFocused]}>
             <Ionicons name="barcode-outline" size={18} color={colors.ink500} />
             <TextInput
               value={hardwareId}
               onChangeText={setHardwareId}
-              placeholder="sshome_20260513_a3f2"
+              placeholder="Leave blank for a manual device"
               placeholderTextColor={colors.ink400}
               style={styles.input}
               onFocus={() => setHardwareFocused(true)}
@@ -131,6 +131,9 @@ export function AddDeviceModalScreen({ navigation }: Props) {
               returnKeyType="next"
             />
           </View>
+          <Text style={styles.helperText}>
+            Use a firmware ID only if this is a physical board from the device registry.
+          </Text>
         </View>
 
         {/* Device name */}
@@ -321,6 +324,11 @@ const styles = StyleSheet.create({
     height: "100%",
     color: colors.ink900,
     fontSize: 16,
+  },
+  helperText: {
+    color: colors.ink500,
+    fontSize: 12.5,
+    lineHeight: 17,
   },
   roomList: {
     backgroundColor: colors.surface,

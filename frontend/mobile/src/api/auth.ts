@@ -33,7 +33,8 @@ export async function register(payload: RegisterPayload): Promise<UserOut> {
       email: payload.email.trim(),
       password: payload.password,
       name,
-      phone: phone || null
+      phone: phone || null,
+      role: payload.role || "USER"
     }
   });
 }

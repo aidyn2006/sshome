@@ -49,6 +49,7 @@ export function RegisterScreen({
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<"USER" | "ADMIN">("USER");
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
@@ -134,6 +135,28 @@ export function RegisterScreen({
           </Field>
 
           <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>ROLE</Text>
+            <View style={styles.roleRow}>
+              <Pressable
+                onPress={() => setRole("USER")}
+                style={[styles.roleChip, role === "USER" && styles.roleChipActive]}
+              >
+                <Text style={[styles.roleChipText, role === "USER" && styles.roleChipTextActive]}>
+                  USER
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setRole("ADMIN")}
+                style={[styles.roleChip, role === "ADMIN" && styles.roleChipActive]}
+              >
+                <Text style={[styles.roleChipText, role === "ADMIN" && styles.roleChipTextActive]}>
+                  ADMIN
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>PASSWORD</Text>
             <View style={[styles.inputWrap, pwFocused && styles.inputWrapFocused]}>
               <Ionicons name="lock-closed-outline" size={18} color={colors.ink500} />
@@ -207,7 +230,7 @@ export function RegisterScreen({
 
           <Pressable
             style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
-            onPress={() => onSubmit({ name, email, phone, password, confirmPassword })}
+            onPress={() => onSubmit({ name, email, phone, password, confirmPassword, role })}
             disabled={isSubmitting}
           >
             <Text style={styles.submitText}>
@@ -472,6 +495,33 @@ const styles = StyleSheet.create({
     color: colors.ink500,
     fontSize: 13,
     lineHeight: 18,
+  },
+  roleRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  roleChip: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.hairlineStrong,
+    backgroundColor: colors.surface,
+  },
+  roleChipActive: {
+    backgroundColor: colors.ink900,
+    borderColor: colors.ink900,
+  },
+  roleChipText: {
+    color: colors.ink700,
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: 0.4,
+  },
+  roleChipTextActive: {
+    color: "#fff",
   },
   submitBtn: {
     flexDirection: "row",

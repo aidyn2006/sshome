@@ -81,6 +81,63 @@ def test_create_device_sets_owner_scope_and_serializes_response(client, monkeypa
     }
 
 
+def test_create_device_allows_missing_hardware_id(client, monkeypatch) -> None:
+    owner_id = UUID("550e8400-e29b-41d4-a716-446655440000")
+    fake_db = object()
+    room_id = uuid4()
+    device_id = uuid4()
+    created_at = datetime(2026, 4, 15, 12, 0, tzinfo=UTC)
+    updated_at = datetime(2026, 4, 15, 12, 5, tzinfo=UTC)
+
+    _override_dependencies(client, owner_id, fake_db)
+
+    def fake_create_device(db, *, owner_id, payload):
+        assert db is fake_db
+        assert owner_id == owner_id_value
+        assert payload.name == "Manual Light"
+        assert payload.room_id == room_id
+        assert payload.type == DeviceType.LIGHT
+        assert payload.hardware_id is None
+        return SimpleNamespace(
+            id=device_id,
+            name=payload.name,
+            type=payload.type,
+            status="OFF",
+            hardware_id=None,
+            room_id=payload.room_id,
+            owner_id=owner_id,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    owner_id_value = owner_id
+    monkeypatch.setattr("app.routes.devices.device_service.create_device", fake_create_device)
+
+    response = client.post(
+        "/api/v1/devices",
+        json={
+            "name": "Manual Light",
+            "type": "LIGHT",
+            "room_id": str(room_id),
+        },
+    )
+
+    _clear_overrides(client)
+
+    assert response.status_code == 201
+    assert response.json() == {
+        "id": str(device_id),
+        "name": "Manual Light",
+        "type": "LIGHT",
+        "status": "OFF",
+        "hardware_id": None,
+        "room_id": str(room_id),
+        "owner_id": str(owner_id),
+        "created_at": _iso_utc(created_at),
+        "updated_at": _iso_utc(updated_at),
+    }
+
+
 def test_list_devices_supports_home_filter(client, monkeypatch) -> None:
     owner_id = UUID("550e8400-e29b-41d4-a716-446655440000")
     fake_db = object()

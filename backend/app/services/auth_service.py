@@ -26,6 +26,7 @@ def register_user(payload: RegisterRequest, db: Session, ip_address: str | None)
         password_hash=hash_password(payload.password),
         name=payload.name,
         phone=payload.phone,
+        role=payload.role,
     )
     db.add(user)
     db.commit()

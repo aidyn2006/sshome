@@ -47,15 +47,20 @@ class IntegrationApiClient:
         password: str = "StrongPass123!",
         name: str = "Test User",
         phone: str | None = None,
+        role: str | None = None,
     ) -> dict:
+        payload: dict[str, str | None] = {
+            "email": email,
+            "password": password,
+            "name": name,
+            "phone": phone,
+        }
+        if role is not None:
+            payload["role"] = role
+
         response = self.client.post(
             "/auth/register",
-            json={
-                "email": email,
-                "password": password,
-                "name": name,
-                "phone": phone,
-            },
+            json=payload,
         )
         assert response.status_code == 201, response.text
         return response.json()
