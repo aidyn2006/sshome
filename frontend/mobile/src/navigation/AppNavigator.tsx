@@ -2,7 +2,7 @@ import { NavigationContainer, type Theme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { TabBar } from "../components/TabBar";
 import { ActivityScreen } from "../screens/ActivityScreen";
@@ -15,7 +15,6 @@ import { HomeScreen } from "../screens/HomeScreen";
 import { LoginScreen } from "../screens/LoginScreen";
 import { ManageFavoritesModalScreen } from "../screens/ManageFavoritesModalScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
-import { Room3DScreen } from "../screens/Room3DScreen";
 import { ScenesScreen } from "../screens/ScenesScreen";
 import { useSmartHome } from "../store/SmartHomeContext";
 import { colors } from "../theme/colors";
@@ -104,12 +103,60 @@ function TabsNavigator() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Devices" component={DevicesScreen} />
-      <Tab.Screen name="Room3D" component={Room3DScreen} options={{ title: "Room" }} />
+      <Tab.Screen name="Room3D" component={Room3DRoute} options={{ title: "Room" }} />
       <Tab.Screen name="Scenes" component={ScenesScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />
       {isAdmin && <Tab.Screen name="Admin" component={AdminScreen} options={{ title: "Admin" }} />}
     </Tab.Navigator>
   );
+}
+
+function Room3DRoute() {
+  const [Room3DScreen, setRoom3DScreen] = useState<React.ComponentType | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void import("../screens/Room3DScreen")
+      .then((module) => {
+        if (!cancelled) {
+          setRoom3DScreen(() => module.Room3DScreen);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setLoadError(error instanceof Error ? error.message : "Failed to load 3D room view");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loadError) {
+    return (
+      <View style={styles.room3DFallback}>
+        <Text style={styles.room3DFallbackTitle}>3D room view unavailable</Text>
+        <Text style={styles.room3DFallbackText}>
+          Expo Go on this device does not provide the native `ExpoGL` module. Open this screen in a custom dev
+          client or a build that includes the GL runtime.
+        </Text>
+      </View>
+    );
+  }
+
+  if (!Room3DScreen) {
+    return (
+      <View style={styles.room3DFallback}>
+        <ActivityIndicator color={colors.accentBlue} />
+        <Text style={styles.room3DFallbackText}>Loading 3D room view...</Text>
+      </View>
+    );
+  }
+
+  return <Room3DScreen />;
 }
 
 export function AppNavigator() {
@@ -183,5 +230,25 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 14,
     textAlign: "center"
+  },
+  room3DFallback: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.background,
+    paddingHorizontal: 24,
+    gap: 10
+  },
+  room3DFallbackTitle: {
+    color: colors.textPrimary,
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center"
+  },
+  room3DFallbackText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20
   }
 });

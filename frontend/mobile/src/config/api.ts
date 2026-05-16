@@ -1,5 +1,4 @@
 import { Platform } from "react-native";
-import Constants from "expo-constants";
 
 function trimTrailingSlash(url: string): string {
   return url.replace(/\/+$/, "");
@@ -7,37 +6,27 @@ function trimTrailingSlash(url: string): string {
 
 const envApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 
-function getHostFromExpo(): string | null {
-  const constantsAny = Constants as unknown as {
-    expoConfig?: { hostUri?: string };
-    manifest?: { debuggerHost?: string };
-    manifest2?: { extra?: { expoGo?: { debuggerHost?: string } } };
-  };
-
-  const hostUri =
-    constantsAny.expoConfig?.hostUri ||
-    constantsAny.manifest2?.extra?.expoGo?.debuggerHost ||
-    constantsAny.manifest?.debuggerHost;
-
-  if (!hostUri) {
-    return null;
-  }
-
-  const [host] = hostUri.split(":");
-  return host || null;
-}
-
 function getDefaultApiBaseUrl(): string {
   if (Platform.OS === "web") {
-    return "http://localhost:8000";
+    return "http://localhost:8888";
   }
 
-  const lanHost = getHostFromExpo();
-  if (lanHost) {
-    return `http://${lanHost}:8000`;
-  }
-
-  return Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://localhost:8000";
+  return "https://sshome.almatherm.kz/api";
 }
 
-export const API_BASE_URL = trimTrailingSlash(envApiBaseUrl || getDefaultApiBaseUrl());
+function resolveApiBaseUrl(): string {
+  if (!envApiBaseUrl) {
+    return getDefaultApiBaseUrl();
+  }
+
+  if (Platform.OS !== "web" && /^http:\/\//i.test(envApiBaseUrl)) {
+    const insecureHost = /^http:\/\/(?:localhost|127\.0\.0\.1|10\.0\.2\.2)(?::\d+)?(?:\/|$)/i;
+    if (!insecureHost.test(envApiBaseUrl)) {
+      return getDefaultApiBaseUrl();
+    }
+  }
+
+  return envApiBaseUrl;
+}
+
+export const API_BASE_URL = trimTrailingSlash(resolveApiBaseUrl());

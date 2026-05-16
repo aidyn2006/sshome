@@ -97,7 +97,11 @@ const REQUEST_TIMEOUT_MS = 8000;
 
 function joinApiUrl(baseUrl: string, path: string): string {
   if (/^https?:\/\//i.test(baseUrl)) {
-    return new URL(path, baseUrl).toString();
+    const base = new URL(baseUrl);
+    const basePath = base.pathname.replace(/\/+$/, "");
+    const requestPath = path.startsWith("/") ? path : `/${path}`;
+    base.pathname = `${basePath}${requestPath}`;
+    return base.toString();
   }
 
   const normalizedBase = baseUrl.replace(/\/+$/, "") || "";
