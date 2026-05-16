@@ -32,7 +32,10 @@ def _find_registry_file() -> Path:
 
 def _secrets_file() -> Path:
     registry_file = _find_registry_file()
-    return registry_file.with_name("manufactured_secrets.txt")
+    path = registry_file.with_name("manufactured_secrets.txt")
+    if path.is_dir():
+        return path / "generated_secrets.txt"
+    return path
 
 
 def _load_registry() -> list[dict]:
