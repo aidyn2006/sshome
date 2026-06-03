@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { colors } from "../theme/colors";
 
@@ -10,14 +10,15 @@ type Props = {
   subtitle: string;
   accent?: string;
   trend?: number;
+  onPress?: () => void;
 };
 
-export function StatCard({ icon, title, value, subtitle, accent = colors.accent, trend }: Props) {
+export function StatCard({ icon, title, value, subtitle, accent = colors.accent, trend, onPress }: Props) {
   const trendUp = trend != null && trend > 0;
   const trendIcon: keyof typeof Ionicons.glyphMap = trendUp ? "trending-up" : "trending-down";
 
   return (
-    <View style={styles.card}>
+    <Pressable style={styles.card} onPress={onPress} disabled={!onPress}>
       <View style={styles.topRow}>
         <View style={[styles.iconBox, { backgroundColor: `${accent}18` }]}>
           <Ionicons name={icon} size={14} color={accent} />
@@ -41,7 +42,7 @@ export function StatCard({ icon, title, value, subtitle, accent = colors.accent,
         </View>
         <Text style={styles.label}>{subtitle || title}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

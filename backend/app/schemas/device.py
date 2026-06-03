@@ -71,3 +71,7 @@ class DeviceUpdate(BaseModel):
 
 class DeviceActionRequest(BaseModel):
     action: DeviceAction
+
+
+class DeviceTypeUpdateRequest(BaseModel):
+    type: DeviceType

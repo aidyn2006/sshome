@@ -168,6 +168,19 @@ export async function deleteDevice(token: string, deviceId: string): Promise<voi
   return apiRequest<void>(`/api/v1/devices/${deviceId}`, { method: "DELETE", token });
 }
 
+export async function updateDeviceType(
+  token: string,
+  payload: { deviceId: string; type: DeviceType }
+): Promise<ApiDevice> {
+  return apiRequest<ApiDevice>(`/api/v1/devices/${payload.deviceId}/type`, {
+    method: "PATCH",
+    token,
+    body: {
+      type: payload.type
+    }
+  });
+}
+
 export async function listEvents(token: string): Promise<ApiEvent[]> {
   return apiRequest<ApiEvent[]>("/api/v1/events", { method: "GET", token });
 }

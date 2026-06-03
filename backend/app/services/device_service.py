@@ -233,3 +233,18 @@ def delete_device(db: Session, *, device_id: UUID, owner_id: UUID) -> None:
     if hardware_id:
         # Release the factory id so the physical device can be claimed again.
         device_registry.mark_unclaimed(hardware_id)
+
+
+def update_device_type(
+    db: Session,
+    *,
+    device_id: UUID,
+    owner_id: UUID,
+    device_type: DeviceType,
+) -> Device:
+    device = get_device_or_404(db, device_id=device_id, owner_id=owner_id)
+    device.type = device_type
+    device.status = _default_status_for_device_type(device_type)
+    db.commit()
+    db.refresh(device)
+    return device

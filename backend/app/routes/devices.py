@@ -8,6 +8,7 @@ from app.core.rate_limit import enforce_device_action_rate_limit
 from app.db.session import get_db
 from app.models.enums import DeviceAction, DeviceStatus
 from app.schemas.device import DeviceActionRequest, DeviceCreate, DeviceRead, DeviceUpdate
+from app.schemas.device import DeviceActionRequest, DeviceCreate, DeviceRead, DeviceTypeUpdateRequest
 from app.services import device_service
 from app.services.mqtt_service import publish_device_command
 from app.websockets.publisher import publish_device_update_from_sync
@@ -102,6 +103,22 @@ def delete_device(
     db: Session = Depends(get_db),
 ) -> None:
     device_service.delete_device(db, device_id=device_id, owner_id=owner_id)
+
+
+@router.patch("/{device_id}/type", response_model=DeviceRead)
+def update_device_type(
+    device_id: UUID,
+    payload: DeviceTypeUpdateRequest,
+    owner_id: CurrentOwnerId,
+    db: Session = Depends(get_db),
+) -> DeviceRead:
+    device = device_service.update_device_type(
+        db,
+        device_id=device_id,
+        owner_id=owner_id,
+        device_type=payload.type,
+    )
+    return DeviceRead.model_validate(device)
 
 
 @router.post("/{device_id}/toggle", response_model=DeviceRead)

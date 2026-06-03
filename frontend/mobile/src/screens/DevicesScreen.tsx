@@ -13,7 +13,7 @@ import { SkeletonBlock } from "../components/SkeletonBlock";
 import { useSmartHome } from "../store/SmartHomeContext";
 import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
-import type { FilterType } from "../types/smartHome";
+import type { DeviceType, FilterType } from "../types/smartHome";
 import { mapFilterTypeToDeviceType } from "../utils/device";
 
 const FILTERS: Array<{ key: FilterType; label: string }> = [
@@ -28,7 +28,7 @@ const FILTERS: Array<{ key: FilterType; label: string }> = [
 
 export function DevicesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { devices, rooms, isDataLoading, toggleDevice } = useSmartHome();
+  const { devices, rooms, isDataLoading, toggleDevice, removeDevice, updateDeviceType } = useSmartHome();
   const [activeFilter, setActiveFilter] = useState<FilterType>("ALL");
   const [query, setQuery] = useState("");
   const [editMode, setEditMode] = useState(false);
@@ -82,6 +82,17 @@ export function DevicesScreen() {
             </Pressable>
             <Pressable style={styles.headerBtn} onPress={() => navigation.navigate("AddDeviceModal")}>
               <Ionicons name="add" size={20} color={colors.ink700} />
+            </Pressable>
+          </View>
+          <View style={styles.headerBtns}>
+            <Pressable style={styles.headerBtn} onPress={() => navigation.navigate("AddDeviceModal")}>
+              <Ionicons name="add" size={20} color={colors.ink700} />
+            </Pressable>
+            <Pressable
+              style={[styles.headerBtn, editMode && styles.headerBtnActive]}
+              onPress={() => setEditMode((v) => !v)}
+            >
+              <Ionicons name="options-outline" size={18} color={editMode ? colors.cream50 : colors.ink700} />
             </Pressable>
           </View>
         }
@@ -178,6 +189,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: spacing.md,
   },
+  headerBtns: {
+    flexDirection: "row",
+    gap: 8,
+  },
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
@@ -215,6 +230,10 @@ const styles = StyleSheet.create({
     borderColor: colors.hairlineStrong,
     alignItems: "center",
     justifyContent: "center",
+  },
+  headerBtnActive: {
+    backgroundColor: colors.ink900,
+    borderColor: colors.ink900,
   },
   searchBox: {
     flexDirection: "row",

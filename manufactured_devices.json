@@ -166,5 +166,68 @@
     "secret_hash": "224d0a78735dd8dd5d903aa4c254b1b6007eb71a47d18c67d2795e4cbdb63d5d",
     "batch": "20260514",
     "claimed": false
+  },
+  {
+    "hardware_id": "sshome_20260516_ad74dk",
+    "device_type": "TEMP",
+    "secret_hash": "e0e1f5d7808affd6ab3061f98d4c4f479290262f0879c311f8d9d202ae8644db",
+    "batch": "20260516",
+    "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260516_lbqwet",
+    "device_type": "TEMP",
+    "secret_hash": "dd9c2621831d26023399ad060e479d5bb3029a7520c62e0a76f111c5c2934ac5",
+    "batch": "20260516",
+    "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260516_w49izo",
+    "device_type": "TEMP",
+    "secret_hash": "f61ddc7448209f270ab2711c044c95ca1cdb01dd7655fbcbd54ce78dc5194feb",
+    "batch": "20260516",
+    "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260516_0e8a11",
+    "device_type": "TEMP",
+    "secret_hash": "555df41499333fcefd933bca65a6cbd7e79bd3083dac23a8529be49a3bb2e4cb",
+    "batch": "20260516",
+    "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260516_x0i5n0",
+    "device_type": "LIGHT",
+    "secret_hash": "e1002b0ce75f45a53adb8a2bdd9fb9bd3d82ed2b4a49abdeb15fb68c14ff80f0",
+    "batch": "20260516",
+    "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260516_80xcwy",
+    "device_type": "TEMP",
+    "secret_hash": "7915611ba3e96ccf84201d0c92f29ef1851df15eeb6a6f7897e6ae5b16f46ed0",
+    "batch": "20260516",
+    "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260523_zpulz0",
+    "device_type": "TEMP",
+    "secret_hash": "9c9b6d5903e1a421d4e72ca37d87edcefcbafa9e9e36fa889a02fc92791cd25e",
+    "batch": "20260523",
+    "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260523_tnthu5",
+    "device_type": "LIGHT",
+    "secret_hash": "80c9a6077bc762afd94a536c815b8b5bb9348f1c6056abd51f01afa81063d53a",
+    "batch": "20260523",
+    "claimed": true
+  },
+  {
+    "hardware_id": "sshome_20260523_yv28vx",
+    "device_type": "DOOR",
+    "secret_hash": "cba37202d7d1e58aa0fa9fa7667cec7ef3ea7b3571b2e642270a58d86b840305",
+    "batch": "20260523",
+    "claimed": true
   }
 ]

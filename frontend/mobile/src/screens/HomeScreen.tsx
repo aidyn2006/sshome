@@ -17,10 +17,13 @@ import { spacing } from "../theme/spacing";
 import { isDeviceActive } from "../utils/device";
 
 const STATIC_STAT_CONFIG = [
-  { id: "temperature", icon: "thermometer-outline" as const,    title: "Temperature", accent: "#C8674A" },
-  { id: "humidity",    icon: "water-outline" as const,          title: "Humidity",    accent: "#2A6FDB" },
-  { id: "active",      icon: "flash-outline" as const,          title: "Active",      accent: "#B45309" },
-  { id: "battery",     icon: "battery-half-outline" as const,   title: "Battery",     accent: "#1F8A5B" },
+  { id: "temperature", icon: "thermometer-outline" as const, title: "Temperature", accent: "#C8674A" },
+  { id: "humidity",    icon: "water-outline" as const,       title: "Humidity",    accent: "#2A6FDB" },
+  { id: "energy",      icon: "flash-outline" as const,       title: "Energy",      accent: "#B45309" },
+  { id: "air",         icon: "leaf-outline" as const,        title: "Air Quality", accent: "#1F8A5B" },
+    { id: "active",      icon: "flash-outline" as const,          title: "Active",      accent: "#B45309" },
+    { id: "battery",     icon: "battery-half-outline" as const,   title: "Battery",     accent: "#1F8A5B" },
+
 ];
 
 function greeting(): string {
@@ -53,12 +56,13 @@ export function HomeScreen() {
 
   const roomNameMap = useMemo(() => new Map(rooms.map((r) => [r.id, r.name])), [rooms]);
 
-  const tempDevice = useMemo(
-    () => devices.find((d) => d.type === "TEMP" && d.telemetry),
-    [devices]
-  );
-
   const statConfig = useMemo(() => {
+    const sensors = devices.filter((d) => d.type === "TEMP" && d.telemetry);
+    const temps = sensors.map((d) => d.telemetry?.temp).filter((v): v is number => v != null);
+    const humids = sensors.map((d) => d.telemetry?.humidity).filter((v): v is number => v != null);
+    const avg = (arr: number[]) => Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10;
+    const sensorLabel = sensors.length === 0 ? "No sensor" : sensors.length === 1 ? sensors[0].name : `${sensors.length} sensors`;
+    const hasSensors = sensors.length > 0;
     const temp = tempDevice?.telemetry?.temp;
     const humidity = tempDevice?.telemetry?.humidity;
     const batteries = devices
@@ -69,14 +73,18 @@ export function HomeScreen() {
     return [
       {
         ...STATIC_STAT_CONFIG[0],
-        value: temp != null ? `${temp} °C` : "— °C",
-        subtitle: tempDevice ? tempDevice.name : "No sensor",
+        value: temps.length > 0 ? `${avg(temps)} °C` : "— °C",
+        subtitle: sensorLabel,
+        tappable: hasSensors,
       },
       {
         ...STATIC_STAT_CONFIG[1],
-        value: humidity != null ? `${humidity} %` : "— %",
-        subtitle: tempDevice ? tempDevice.name : "No sensor",
+        value: humids.length > 0 ? `${avg(humids)} %` : "— %",
+        subtitle: sensorLabel,
+        tappable: hasSensors,
       },
+      { ...STATIC_STAT_CONFIG[2], value: "1.84", subtitle: "kWh · 1h", tappable: false },
+      { ...STATIC_STAT_CONFIG[3], value: "42 AQI", subtitle: "Air quality", tappable: false },
       {
         ...STATIC_STAT_CONFIG[2],
         value: `${activeDevicesCount}/${devices.length}`,
@@ -88,6 +96,7 @@ export function HomeScreen() {
         subtitle: lowestBattery != null ? "Lowest battery" : "No hardware",
       },
     ];
+  }, [devices]);
   }, [activeDevicesCount, devices, tempDevice]);
 
   const doors = useMemo(() => devices.filter((d) => d.type === "DOOR"), [devices]);
@@ -140,7 +149,15 @@ export function HomeScreen() {
                   <SkeletonBlock key={i} style={styles.statSkeleton} />
                 ))
               : statConfig.map((s) => (
-                  <StatCard key={s.id} icon={s.icon} title={s.title} value={s.value} subtitle={s.subtitle} accent={s.accent} />
+                  <StatCard
+                    key={s.id}
+                    icon={s.icon}
+                    title={s.title}
+                    value={s.value}
+                    subtitle={s.subtitle}
+                    accent={s.accent}
+                    onPress={s.tappable ? () => setSensorSheetOpen(true) : undefined}
+                  />
                 ))}
           </View>
         </Section>
@@ -234,6 +251,13 @@ export function HomeScreen() {
           </View>
         )}
       </View>
+
+      <SensorRoomsSheet
+        visible={sensorSheetOpen}
+        onClose={() => setSensorSheetOpen(false)}
+        rooms={rooms}
+        devices={devices}
+      />
     </ScrollView>
   );
 }

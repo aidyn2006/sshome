@@ -13,8 +13,10 @@ type Props = {
   onToggle?: () => void;
   editMode?: boolean;
   onEdit?: () => void;
+  onDelete?: () => void;
 };
 
+export function DeviceCard({ device, roomName, onToggle, onDelete }: Props) {
 export function DeviceCard({ device, roomName, onToggle, editMode = false, onEdit }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
   const active = isDeviceActive(device.status);
@@ -26,6 +28,18 @@ export function DeviceCard({ device, roomName, onToggle, editMode = false, onEdi
   };
 
   const statusLabel = device.status;
+
+  const battery = device.battery_level;
+  const batteryIcon: keyof typeof Ionicons.glyphMap =
+    battery == null ? "battery-dead-outline"
+    : battery > 60  ? "battery-full-outline"
+    : battery > 25  ? "battery-half-outline"
+    :                  "battery-dead-outline";
+  const batteryColor =
+    battery == null ? colors.ink300
+    : battery > 60  ? colors.success
+    : battery > 25  ? colors.warn
+    :                  colors.danger;
 
   return (
     <Animated.View style={[styles.card, offline && styles.cardOffline, { transform: [{ scale }] }]}>
@@ -50,6 +64,17 @@ export function DeviceCard({ device, roomName, onToggle, editMode = false, onEdi
               <Ionicons name="pencil-outline" size={14} color={colors.ink700} />
             </Pressable>
           ) : canToggle ? (
+          {onDelete ? (
+            <Pressable
+              onPress={async () => {
+                try { await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch {}
+                onDelete();
+              }}
+              style={styles.deleteBtn}
+            >
+              <Ionicons name="trash-outline" size={14} color={colors.cream50} />
+            </Pressable>
+          ) : onToggle ? (
             <Pressable
               onPress={async () => {
                 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -91,6 +116,15 @@ export function DeviceCard({ device, roomName, onToggle, editMode = false, onEdi
               </>
             )}
           </View>
+          {battery != null && (
+            <View style={styles.batteryRow}>
+              <Ionicons name={batteryIcon} size={13} color={batteryColor} />
+              <View style={styles.batteryTrack}>
+                <View style={[styles.batteryFill, { width: `${battery}%` as any, backgroundColor: batteryColor }]} />
+              </View>
+              <Text style={[styles.batteryPct, { color: batteryColor }]}>{battery}%</Text>
+            </View>
+          )}
         </View>
       </Pressable>
     </Animated.View>
@@ -156,6 +190,14 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: colors.hairlineStrong,
   },
+  deleteBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#EF4444",
+  },
   meta: {
     gap: 4,
   },
@@ -212,5 +254,29 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.ink400,
     fontWeight: "500",
+  },
+  batteryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 2,
+  },
+  batteryTrack: {
+    flex: 1,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.ink100,
+    overflow: "hidden",
+  },
+  batteryFill: {
+    height: "100%",
+    borderRadius: 2,
+  },
+  batteryPct: {
+    fontFamily: "monospace",
+    fontSize: 10,
+    fontWeight: "600",
+    minWidth: 28,
+    textAlign: "right",
   },
 });

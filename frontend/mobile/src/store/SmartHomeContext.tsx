@@ -51,6 +51,7 @@ import {
   updateHome,
   updateRoom,
   updateScenario as updateScenarioRequest,
+  updateDeviceType as updateDeviceTypeRequest,
   type ApiDevice,
   type ApiEvent,
   type ApiHome,
@@ -113,6 +114,7 @@ type SmartHomeContextValue = {
   addDevice: (name: string, type: Device["type"], roomId: string, hardwareId?: string) => Promise<boolean>;
   editDevice: (deviceId: string, payload: { name?: string; roomId?: string }) => Promise<boolean>;
   removeDevice: (deviceId: string) => Promise<boolean>;
+  updateDeviceType: (deviceId: string, type: Device["type"]) => Promise<boolean>;
   toggleFavorite: (deviceId: string) => void;
   changePassword: (payload: ChangePasswordPayload) => Promise<void>;
   generateManufacturedDevices: (count: number, deviceType: Device["type"]) => Promise<ManufacturedDevice[]>;
@@ -1119,6 +1121,22 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     [runWithSession]
   );
 
+  const updateDeviceType = useCallback(
+    async (deviceId: string, type: Device["type"]) => {
+      try {
+        const updated = await runWithSession((accessToken) =>
+          updateDeviceTypeRequest(accessToken, { deviceId, type })
+        );
+        setDevices((prev) => mergeUpdatedDeviceList(prev, [mapDevice(updated)]));
+        return true;
+      } catch (error) {
+        Alert.alert("Update failed", getErrorMessage(error, "Unable to change device type"));
+        return false;
+      }
+    },
+    [runWithSession]
+  );
+
   const addRoom = useCallback(
     async (name: string, homeId?: string) => {
       const trimmedName = name.trim();
@@ -1216,6 +1234,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       addDevice,
       editDevice,
       removeDevice,
+      updateDeviceType,
       toggleFavorite,
       changePassword,
       generateManufacturedDevices: async (count: number, deviceType: Device["type"]) => {
@@ -1250,6 +1269,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       changePassword,
       runWithSession,
       removeDevice,
+      updateDeviceType,
       authError,
       authStatus,
       devices,
