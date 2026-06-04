@@ -91,7 +91,9 @@ def test_auth_workflow_registers_logs_in_refreshes_and_logs_out(integration_clie
     assert refresh_after_logout_response.json()["detail"] == "Invalid or expired refresh token"
 
 
-def test_auth_workflow_registers_admin_when_role_is_requested(integration_client) -> None:
+def test_auth_workflow_ignores_requested_role_and_registers_user(integration_client) -> None:
+    # Self-registration must never grant ADMIN: the role field is ignored,
+    # admins are promoted via the admin endpoint only.
     register_response = integration_client.client.post(
         "/auth/register",
         json={
@@ -104,7 +106,7 @@ def test_auth_workflow_registers_admin_when_role_is_requested(integration_client
     )
 
     assert register_response.status_code == 201
-    assert register_response.json()["role"] == "ADMIN"
+    assert register_response.json()["role"] == "USER"
 
     login_response = integration_client.client.post(
         "/auth/login",
@@ -120,7 +122,7 @@ def test_auth_workflow_registers_admin_when_role_is_requested(integration_client
         headers=integration_client.auth_headers(login_response.json()["access_token"]),
     )
     assert auth_context_response.status_code == 200
-    assert auth_context_response.json()["roles"] == ["ADMIN"]
+    assert auth_context_response.json()["roles"] == ["USER"]
 
 
 def test_auth_workflow_rejects_invalid_password(integration_client) -> None:
