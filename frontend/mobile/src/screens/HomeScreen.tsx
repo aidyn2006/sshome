@@ -17,10 +17,10 @@ import { spacing } from "../theme/spacing";
 import { isDeviceActive } from "../utils/device";
 
 const STATIC_STAT_CONFIG = [
-  { id: "temperature", icon: "thermometer-outline" as const, title: "Temperature", accent: "#C8674A" },
-  { id: "humidity",    icon: "water-outline" as const,       title: "Humidity",    accent: "#2A6FDB" },
-  { id: "energy",      icon: "flash-outline" as const,       title: "Energy",      accent: "#B45309" },
-  { id: "air",         icon: "leaf-outline" as const,        title: "Air Quality", accent: "#1F8A5B" },
+  { id: "temperature", icon: "thermometer-outline" as const,    title: "Temperature", accent: "#C8674A" },
+  { id: "humidity",    icon: "water-outline" as const,          title: "Humidity",    accent: "#2A6FDB" },
+  { id: "active",      icon: "flash-outline" as const,          title: "Active",      accent: "#B45309" },
+  { id: "battery",     icon: "battery-half-outline" as const,   title: "Battery",     accent: "#1F8A5B" },
 ];
 
 function greeting(): string {
@@ -33,7 +33,7 @@ function greeting(): string {
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { rooms, devices, isDataLoading, toggleDevice, user } = useSmartHome();
+  const { homes, rooms, devices, isDataLoading, toggleDevice, user } = useSmartHome();
   const [backendStatus, setBackendStatus] = useState<"connected" | "checking" | "unavailable">("checking");
 
   const activeDevicesCount = useMemo(
@@ -61,6 +61,11 @@ export function HomeScreen() {
   const statConfig = useMemo(() => {
     const temp = tempDevice?.telemetry?.temp;
     const humidity = tempDevice?.telemetry?.humidity;
+    const batteries = devices
+      .map((d) => d.battery_level)
+      .filter((level): level is number => level != null);
+    const lowestBattery = batteries.length > 0 ? Math.min(...batteries) : null;
+
     return [
       {
         ...STATIC_STAT_CONFIG[0],
@@ -72,10 +77,22 @@ export function HomeScreen() {
         value: humidity != null ? `${humidity} %` : "— %",
         subtitle: tempDevice ? tempDevice.name : "No sensor",
       },
-      { ...STATIC_STAT_CONFIG[2], value: "1.84", subtitle: "kWh · 1h" },
-      { ...STATIC_STAT_CONFIG[3], value: "42 AQI", subtitle: "Air quality" },
+      {
+        ...STATIC_STAT_CONFIG[2],
+        value: `${activeDevicesCount}/${devices.length}`,
+        subtitle: "Devices on",
+      },
+      {
+        ...STATIC_STAT_CONFIG[3],
+        value: lowestBattery != null ? `${lowestBattery} %` : "—",
+        subtitle: lowestBattery != null ? "Lowest battery" : "No hardware",
+      },
     ];
-  }, [tempDevice]);
+  }, [activeDevicesCount, devices, tempDevice]);
+
+  const doors = useMemo(() => devices.filter((d) => d.type === "DOOR"), [devices]);
+  const openDoors = useMemo(() => doors.filter((d) => d.status === "OPEN"), [doors]);
+  const allDoorsLocked = doors.length > 0 && openDoors.length === 0;
   const { favoriteDeviceIds } = useSmartHome();
   const favoriteDevices = useMemo(
     () =>
@@ -102,7 +119,7 @@ export function HomeScreen() {
       contentContainerStyle={styles.content}
     >
       <ScreenHeader
-        eyebrow="LINDEN HOUSE"
+        eyebrow={(homes[0]?.name ?? "My Home").toUpperCase()}
         title={<Text style={styles.greetTitle}>{greeting()}, <Text style={styles.greetAccent}>{firstName}.</Text></Text>}
         subtitle={`${activeDevicesCount} of ${devices.length} devices active · ${rooms.length} rooms`}
         secure
@@ -186,17 +203,28 @@ export function HomeScreen() {
           </View>
         </Section>
 
-        {/* Security strip */}
-        <View style={styles.securityStrip}>
-          <View style={styles.secIconBox}>
-            <Ionicons name="shield-checkmark" size={22} color={colors.success} />
+        {/* Security strip — computed from real DOOR devices */}
+        {doors.length > 0 && (
+          <View style={styles.securityStrip}>
+            <View style={[styles.secIconBox, !allDoorsLocked && styles.secIconBoxWarn]}>
+              <Ionicons
+                name={allDoorsLocked ? "shield-checkmark" : "alert-circle-outline"}
+                size={22}
+                color={allDoorsLocked ? colors.success : colors.warn}
+              />
+            </View>
+            <View style={styles.secContent}>
+              <Text style={styles.secTitle}>
+                {allDoorsLocked
+                  ? "All doors locked"
+                  : `${openDoors.length} ${openDoors.length === 1 ? "door" : "doors"} open`}
+              </Text>
+              <Text style={styles.secMeta}>
+                {doors.length} {doors.length === 1 ? "DOOR" : "DOORS"} · {doors.length - openDoors.length} LOCKED
+              </Text>
+            </View>
           </View>
-          <View style={styles.secContent}>
-            <Text style={styles.secTitle}>All perimeter locked</Text>
-            <Text style={styles.secMeta}>4 DOORS · 4 WINDOWS · ARMED</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.ink400} />
-        </View>
+        )}
 
         {/* Loading hint */}
         {isDataLoading && (
@@ -383,6 +411,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
+  },
+  secIconBoxWarn: {
+    backgroundColor: "#fdf3e7",
   },
   secContent: {
     flex: 1,

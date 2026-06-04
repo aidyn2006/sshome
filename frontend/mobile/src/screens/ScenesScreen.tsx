@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { SceneCard } from "../components/SceneCard";
 import { ScreenHeader } from "../components/ScreenHeader";
@@ -18,13 +18,29 @@ const SCENE_ACCENTS = ["#E8A26C", "#7A5AE0", "#1F8A5B", "#2A6FDB", "#C8674A", "#
 
 export function ScenesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { scenarios, isDataLoading, runScenario } = useSmartHome();
+  const { scenarios, isDataLoading, runScenario, removeScenario } = useSmartHome();
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [editMode, setEditMode] = useState(false);
 
   const sorted = useMemo(() => [...scenarios], [scenarios]);
-  const featured = sorted[0] as Scenario | undefined;
-  const rest = sorted.slice(1);
+  const featured = !editMode ? (sorted[0] as Scenario | undefined) : undefined;
+  const rest = editMode ? sorted : sorted.slice(1);
+
+  const confirmDelete = (scene: Scenario) => {
+    if (Platform.OS === "web") {
+      // Alert with buttons is a no-op on web; use the browser confirm instead.
+      if (window.confirm(`Delete "${scene.name}"?`)) {
+        void removeScenario(scene.id);
+      }
+      return;
+    }
+
+    Alert.alert("Delete scene", `Delete "${scene.name}"? This cannot be undone.`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => void removeScenario(scene.id) },
+    ]);
+  };
 
   return (
     <View style={styles.screen}>
@@ -41,11 +57,20 @@ export function ScenesScreen() {
         secure
         right={
           <View style={styles.headerActions}>
-            <Pressable style={styles.editBtn}>
-              <Ionicons name="pencil-outline" size={15} color={colors.ink700} />
-              <Text style={styles.editText}>Edit</Text>
+            <Pressable
+              style={[styles.editBtn, editMode && styles.editBtnActive]}
+              onPress={() => setEditMode((v) => !v)}
+            >
+              <Ionicons
+                name={editMode ? "checkmark" : "pencil-outline"}
+                size={15}
+                color={editMode ? colors.cream50 : colors.ink700}
+              />
+              <Text style={[styles.editText, editMode && styles.editTextActive]}>
+                {editMode ? "Done" : "Edit"}
+              </Text>
             </Pressable>
-            <Pressable style={styles.addBtn} onPress={() => navigation.navigate("AddLocationModal")}>
+            <Pressable style={styles.addBtn} onPress={() => navigation.navigate("AddScenarioModal")}>
               <Ionicons name="add" size={18} color={colors.cream50} />
             </Pressable>
           </View>
@@ -68,7 +93,7 @@ export function ScenesScreen() {
               <Ionicons name="flash-outline" size={26} color={colors.ink500} />
             </View>
             <Text style={styles.emptyTitle}>No automations yet</Text>
-            <Text style={styles.emptyText}>Scene cards will appear here after they are created on the backend.</Text>
+            <Text style={styles.emptyText}>Tap + to build your first scene from your devices.</Text>
           </View>
         ) : (
           <>
@@ -91,7 +116,7 @@ export function ScenesScreen() {
             {rest.length > 0 && (
               <View style={styles.librarySection}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.eyebrow}>ALL SCENES</Text>
+                  <Text style={styles.eyebrow}>{editMode ? "EDIT MODE" : "ALL SCENES"}</Text>
                   <Text style={styles.sectionTitle}>Library</Text>
                 </View>
                 <View style={styles.list}>
@@ -99,7 +124,10 @@ export function ScenesScreen() {
                     <SceneCard
                       key={scene.id}
                       scene={scene}
-                      colorIndex={i + 1}
+                      colorIndex={editMode ? i : i + 1}
+                      editMode={editMode}
+                      onEdit={() => navigation.navigate("AddScenarioModal", { scenarioId: scene.id })}
+                      onDelete={() => confirmDelete(scene)}
                       onRun={() => {
                         void runScenario(scene.id).then((s) => {
                           if (!s) return;
@@ -112,17 +140,6 @@ export function ScenesScreen() {
                 </View>
               </View>
             )}
-
-            {/* Suggestion strip */}
-            <View style={styles.suggestion}>
-              <View style={styles.suggestionIcon}>
-                <Ionicons name="flash-outline" size={18} color={colors.accent} />
-              </View>
-              <View style={styles.suggestionText}>
-                <Text style={styles.suggestionTitle}>Build a scene from your habits</Text>
-                <Text style={styles.suggestionSub}>We notice you turn off lights at 23:30 — wrap that in a scene?</Text>
-              </View>
-            </View>
           </>
         )}
       </ScrollView>
@@ -201,6 +218,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
     color: colors.ink700,
+  },
+  editBtnActive: {
+    backgroundColor: colors.ink900,
+    borderColor: colors.ink900,
+  },
+  editTextActive: {
+    color: colors.cream50,
   },
   addBtn: {
     width: 38,
@@ -321,43 +345,6 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: spacing.md,
-  },
-  // suggestion
-  suggestion: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: colors.cream100,
-    borderWidth: 0.5,
-    borderColor: colors.hairlineStrong,
-    borderStyle: "dashed",
-  },
-  suggestionIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    borderWidth: 0.5,
-    borderColor: colors.hairline,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  suggestionText: {
-    flex: 1,
-  },
-  suggestionTitle: {
-    color: colors.ink900,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  suggestionSub: {
-    color: colors.ink500,
-    fontSize: 12,
-    marginTop: 2,
-    lineHeight: 17,
   },
   // empty
   emptyState: {

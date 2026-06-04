@@ -142,6 +142,22 @@ export async function createScenario(
   });
 }
 
+export async function updateScenario(
+  token: string,
+  scenarioId: string,
+  payload: { name: string; description: string | null; actions: ApiScenarioAction[] }
+): Promise<ApiScenario> {
+  return apiRequest<ApiScenario>(`/api/v1/scenarios/${scenarioId}`, {
+    method: "PUT",
+    token,
+    body: payload
+  });
+}
+
+export async function deleteScenario(token: string, scenarioId: string): Promise<void> {
+  return apiRequest<void>(`/api/v1/scenarios/${scenarioId}`, { method: "DELETE", token });
+}
+
 export async function runScenario(token: string, scenarioId: string): Promise<ApiScenarioRunResult> {
   return apiRequest<ApiScenarioRunResult>(`/api/v1/scenarios/${scenarioId}/run`, {
     method: "POST",

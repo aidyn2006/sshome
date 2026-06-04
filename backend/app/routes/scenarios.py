@@ -31,6 +31,25 @@ def list_scenarios(
     return scenario_service.list_scenarios(db, owner_id=owner_id)
 
 
+@router.put("/{scenario_id}", response_model=ScenarioRead)
+def update_scenario(
+    scenario_id: UUID,
+    payload: ScenarioCreate,
+    owner_id: CurrentOwnerId,
+    db: Session = Depends(get_db),
+) -> ScenarioRead:
+    return scenario_service.update_scenario(db, scenario_id=scenario_id, owner_id=owner_id, payload=payload)
+
+
+@router.delete("/{scenario_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_scenario(
+    scenario_id: UUID,
+    owner_id: CurrentOwnerId,
+    db: Session = Depends(get_db),
+) -> None:
+    scenario_service.delete_scenario(db, scenario_id=scenario_id, owner_id=owner_id)
+
+
 @router.post("/{scenario_id}/run", response_model=ScenarioRunResult)
 def run_scenario(
     scenario_id: UUID,

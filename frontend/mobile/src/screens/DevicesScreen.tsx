@@ -62,17 +62,12 @@ export function DevicesScreen() {
       <ScreenHeader
         eyebrow="INVENTORY"
         title="Devices"
-        subtitle={`${activeCount} active · all responding`}
+        subtitle={`${activeCount} of ${devices.length} active`}
         secure
         right={
-          <View style={styles.headerBtns}>
-            <Pressable style={styles.headerBtn} onPress={() => navigation.navigate("AddDeviceModal")}>
-              <Ionicons name="add" size={20} color={colors.ink700} />
-            </Pressable>
-            <View style={styles.headerBtn}>
-              <Ionicons name="options-outline" size={18} color={colors.ink700} />
-            </View>
-          </View>
+          <Pressable style={styles.headerBtn} onPress={() => navigation.navigate("AddDeviceModal")}>
+            <Ionicons name="add" size={20} color={colors.ink700} />
+          </Pressable>
         }
       />
 
@@ -164,10 +159,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     gap: spacing.md,
-  },
-  headerBtns: {
-    flexDirection: "row",
-    gap: 8,
   },
   headerBtn: {
     width: 38,

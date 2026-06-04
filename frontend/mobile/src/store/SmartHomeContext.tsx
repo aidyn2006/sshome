@@ -36,12 +36,14 @@ import {
   createRoom,
   createScenario,
   deleteDevice,
+  deleteScenario,
   listDevices,
   listEvents,
   listHomes,
   listRooms,
   listScenarios,
   runScenario as runScenarioRequest,
+  updateScenario as updateScenarioRequest,
   type ApiDevice,
   type ApiEvent,
   type ApiHome,
@@ -60,9 +62,15 @@ import type {
 } from "../types/smartHome";
 import { mapActionToStatus } from "../utils/device";
 import { requestGoogleAccessToken } from "../utils/googleAuth";
-import { clearTokens, loadTokens, saveTokens } from "../utils/storage";
+import { clearTokens, loadFavorites, loadTokens, saveFavorites, saveTokens } from "../utils/storage";
 
 type AuthStatus = "anonymous" | "loading" | "authenticated";
+
+export type ScenarioPayload = {
+  name: string;
+  description: string | null;
+  actions: Array<{ device_id: string; action: DeviceAction }>;
+};
 
 type SmartHomeContextValue = {
   authStatus: AuthStatus;
@@ -86,6 +94,9 @@ type SmartHomeContextValue = {
   toggleDevice: (deviceId: string) => Promise<void>;
   setDeviceStatus: (deviceId: string, nextStatus: DeviceStatus) => Promise<void>;
   runScenario: (scenarioId: string) => Promise<Scenario | null>;
+  addScenario: (payload: ScenarioPayload) => Promise<boolean>;
+  editScenario: (scenarioId: string, payload: ScenarioPayload) => Promise<boolean>;
+  removeScenario: (scenarioId: string) => Promise<boolean>;
   addHome: (name: string) => Promise<void>;
   addRoom: (name: string, homeId?: string) => Promise<void>;
   addDevice: (name: string, type: Device["type"], roomId: string, hardwareId?: string) => Promise<boolean>;
@@ -333,6 +344,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [favoriteDeviceIds, setFavoriteDeviceIds] = useState<string[]>([]);
   const favoritesInitialized = useRef(false);
+  const favoritesKeyRef = useRef<string | null>(null);
 
   const sessionRef = useRef<SessionTokens | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -340,9 +352,9 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
   const setSessionTokens = useCallback((tokens: SessionTokens | null) => {
     sessionRef.current = tokens;
     if (tokens) {
-      saveTokens(tokens.accessToken, tokens.refreshToken);
+      void saveTokens(tokens.accessToken, tokens.refreshToken);
     } else {
-      clearTokens();
+      void clearTokens();
     }
   }, []);
 
@@ -357,6 +369,8 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     setDeviceEvents([]);
     setSceneEvents([]);
     setScenarios([]);
+    favoritesInitialized.current = false;
+    setFavoriteDeviceIds([]);
   }, [setSessionTokens]);
 
   const hydrateState = useCallback(async (accessToken: string) => {
@@ -493,12 +507,15 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    const stored = loadTokens();
-    if (!stored) {
-      setAuthStatus("anonymous");
-      return;
-    }
-    completeAuthentication(stored).catch(() => setAuthStatus("anonymous"));
+    loadTokens()
+      .then((stored) => {
+        if (!stored) {
+          setAuthStatus("anonymous");
+          return;
+        }
+        return completeAuthentication(stored);
+      })
+      .catch(() => setAuthStatus("anonymous"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -745,6 +762,50 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     [runWithSession, scenarios]
   );
 
+  const addScenario = useCallback(
+    async (payload: ScenarioPayload) => {
+      try {
+        const created = await runWithSession((accessToken) => createScenario(accessToken, payload));
+        setScenarios((prev) => [mapScenario(created), ...prev]);
+        return true;
+      } catch (error) {
+        Alert.alert("Create scene failed", getErrorMessage(error, "Unable to create the scene"));
+        return false;
+      }
+    },
+    [runWithSession]
+  );
+
+  const editScenario = useCallback(
+    async (scenarioId: string, payload: ScenarioPayload) => {
+      try {
+        const updated = await runWithSession((accessToken) =>
+          updateScenarioRequest(accessToken, scenarioId, payload)
+        );
+        setScenarios((prev) => prev.map((item) => (item.id === scenarioId ? mapScenario(updated) : item)));
+        return true;
+      } catch (error) {
+        Alert.alert("Update scene failed", getErrorMessage(error, "Unable to update the scene"));
+        return false;
+      }
+    },
+    [runWithSession]
+  );
+
+  const removeScenario = useCallback(
+    async (scenarioId: string) => {
+      try {
+        await runWithSession((accessToken) => deleteScenario(accessToken, scenarioId));
+        setScenarios((prev) => prev.filter((item) => item.id !== scenarioId));
+        return true;
+      } catch (error) {
+        Alert.alert("Delete scene failed", getErrorMessage(error, "Unable to delete the scene"));
+        return false;
+      }
+    },
+    [runWithSession]
+  );
+
   const addHome = useCallback(
     async (name: string) => {
       const trimmedName = name.trim();
@@ -763,12 +824,37 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     [runWithSession]
   );
 
+  // Restore the user's saved favorites once their identity is known.
+  useEffect(() => {
+    const key = user?.id ?? ownerId;
+    if (!key) {
+      return;
+    }
+
+    favoritesKeyRef.current = key;
+    void loadFavorites(key).then((stored) => {
+      if (stored) {
+        favoritesInitialized.current = true;
+        setFavoriteDeviceIds(stored);
+      }
+    });
+  }, [user?.id, ownerId]);
+
+  // Default to the first few devices only when nothing was saved before.
   useEffect(() => {
     if (!favoritesInitialized.current && devices.length > 0) {
       favoritesInitialized.current = true;
       setFavoriteDeviceIds(devices.slice(0, 4).map((d) => d.id));
     }
   }, [devices]);
+
+  // Persist favorites so they survive app restarts.
+  useEffect(() => {
+    if (!favoritesInitialized.current || !favoritesKeyRef.current) {
+      return;
+    }
+    void saveFavorites(favoritesKeyRef.current, favoriteDeviceIds);
+  }, [favoriteDeviceIds]);
 
   useEffect(() => {
     if (authStatus !== "authenticated" || !sessionRef.current) {
@@ -955,6 +1041,9 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       toggleDevice,
       setDeviceStatus,
       runScenario,
+      addScenario,
+      editScenario,
+      removeScenario,
       addHome,
       addRoom,
       addDevice,
@@ -981,6 +1070,9 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       addDevice,
       addHome,
       addRoom,
+      addScenario,
+      editScenario,
+      removeScenario,
       runWithSession,
       removeDevice,
       authError,

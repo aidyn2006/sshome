@@ -16,7 +16,7 @@ const DATE_FILTERS: Array<{ key: DateFilter; label: string }> = [
   { key: "month", label: "Month" },
 ];
 
-const SOURCE_FILTERS = ["ALL", "MANUAL", "SCENARIO", "SYSTEM"] as const;
+const SOURCE_FILTERS = ["ALL", "MANUAL", "SCENARIO"] as const;
 
 type Section = { title: string; data: Event[] };
 type SourceFilter = typeof SOURCE_FILTERS[number];
@@ -71,7 +71,6 @@ export function ActivityScreen() {
     total:    events.length,
     manual:   events.filter((e) => getEventSource(e) === "MANUAL").length,
     scenario: events.filter((e) => getEventSource(e) === "SCENARIO").length,
-    system:   0,
   }), [events]);
 
   return (
@@ -79,13 +78,8 @@ export function ActivityScreen() {
       <ScreenHeader
         eyebrow="AUDIT LOG"
         title="Activity"
-        subtitle="A signed, append-only record of every action on this home."
+        subtitle="A record of every action on this home."
         secure
-        right={
-          <View style={styles.filterBtn}>
-            <Ionicons name="filter-outline" size={17} color={colors.ink700} />
-          </View>
-        }
       />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -108,8 +102,6 @@ export function ActivityScreen() {
           <LogStat label="Manual"   value={counts.manual}   accent={colors.accent} />
           <View style={styles.statDiv} />
           <LogStat label="Scenario" value={counts.scenario} accent={colors.info} />
-          <View style={styles.statDiv} />
-          <LogStat label="System"   value={counts.system}   accent={colors.success} />
         </View>
 
         {/* Source filter pills */}
@@ -154,13 +146,6 @@ export function ActivityScreen() {
           ))
         )}
 
-        {/* Console footer */}
-        <View style={styles.console}>
-          <Text style={styles.consoleDim}>$ sshome audit verify --tail 24h</Text>
-          <Text style={styles.consoleOk}>✓ {counts.total}/{counts.total} events signed</Text>
-          <Text style={styles.consoleOk}>✓ ledger head 0xa3f1…b29c</Text>
-          <Text style={styles.consoleDim}>EOF</Text>
-        </View>
       </ScrollView>
     </View>
   );
@@ -184,16 +169,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 120,
     gap: spacing.md,
-  },
-  filterBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 999,
-    backgroundColor: colors.surface,
-    borderWidth: 0.5,
-    borderColor: colors.hairlineStrong,
-    alignItems: "center",
-    justifyContent: "center",
   },
   segment: {
     flexDirection: "row",
@@ -290,25 +265,6 @@ const styles = StyleSheet.create({
     fontFamily: "monospace",
     fontSize: 10.5,
     color: colors.ink400,
-  },
-  console: {
-    marginTop: 8,
-    padding: 14,
-    backgroundColor: colors.ink900,
-    borderRadius: 10,
-    gap: 2,
-  },
-  consoleDim: {
-    fontFamily: "monospace",
-    fontSize: 11,
-    color: "rgba(244, 245, 247, 0.5)",
-    lineHeight: 18,
-  },
-  consoleOk: {
-    fontFamily: "monospace",
-    fontSize: 11,
-    color: colors.success,
-    lineHeight: 18,
   },
   emptyState: {
     paddingTop: 48,

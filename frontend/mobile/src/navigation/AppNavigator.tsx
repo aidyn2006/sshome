@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { TabBar } from "../components/TabBar";
 import { ActivityScreen } from "../screens/ActivityScreen";
 import { AddDeviceModalScreen } from "../screens/AddDeviceModalScreen";
+import { AddScenarioModalScreen } from "../screens/AddScenarioModalScreen";
 import { AdminScreen } from "../screens/AdminScreen";
 import { AddLocationModalScreen } from "../screens/AddLocationModalScreen";
 import { AllRoomsModalScreen } from "../screens/AllRoomsModalScreen";
@@ -189,6 +190,14 @@ export function AppNavigator() {
         <Stack.Screen
           name="AddDeviceModal"
           component={AddDeviceModalScreen}
+          options={{
+            presentation: "modal",
+            animation: "slide_from_bottom"
+          }}
+        />
+        <Stack.Screen
+          name="AddScenarioModal"
+          component={AddScenarioModalScreen}
           options={{
             presentation: "modal",
             animation: "slide_from_bottom"

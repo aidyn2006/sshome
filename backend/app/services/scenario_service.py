@@ -59,6 +59,24 @@ def create_scenario(db: Session, *, owner_id: UUID, payload: ScenarioCreate) -> 
     return scenario
 
 
+def update_scenario(db: Session, *, scenario_id: UUID, owner_id: UUID, payload: ScenarioCreate) -> Scenario:
+    scenario = get_scenario_or_404(db, scenario_id=scenario_id, owner_id=owner_id)
+    _validate_scenario_actions(db, owner_id=owner_id, actions=payload.actions)
+
+    scenario.name = payload.name
+    scenario.description = payload.description
+    scenario.actions = [_serialize_action(action) for action in payload.actions]
+    db.commit()
+    db.refresh(scenario)
+    return scenario
+
+
+def delete_scenario(db: Session, *, scenario_id: UUID, owner_id: UUID) -> None:
+    scenario = get_scenario_or_404(db, scenario_id=scenario_id, owner_id=owner_id)
+    db.delete(scenario)
+    db.commit()
+
+
 def list_scenarios(db: Session, *, owner_id: UUID) -> list[Scenario]:
     statement = select(Scenario).where(Scenario.owner_id == owner_id).order_by(Scenario.created_at.desc(), Scenario.id.desc())
     return list(db.scalars(statement))

@@ -24,9 +24,12 @@ type Props = {
   scene: Scenario;
   colorIndex: number;
   onRun: () => void;
+  editMode?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 };
 
-export function SceneCard({ scene, colorIndex, onRun }: Props) {
+export function SceneCard({ scene, colorIndex, onRun, editMode = false, onEdit, onDelete }: Props) {
   const [running, setRunning] = useState(false);
   const scale = useRef(new Animated.Value(1)).current;
   const accent = accentColors[colorIndex % accentColors.length];
@@ -58,13 +61,24 @@ export function SceneCard({ scene, colorIndex, onRun }: Props) {
         <Text style={styles.actions}>{scene.actions.length} ACTIONS</Text>
       </View>
 
-      <Pressable onPress={run} style={[styles.runBtn, running && { backgroundColor: accent }]}>
-        {running ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <Ionicons name="play" size={14} color="#fff" />
-        )}
-      </Pressable>
+      {editMode ? (
+        <View style={styles.editActions}>
+          <Pressable onPress={onEdit} style={styles.editBtn}>
+            <Ionicons name="pencil-outline" size={15} color={colors.ink700} />
+          </Pressable>
+          <Pressable onPress={onDelete} style={[styles.editBtn, styles.deleteBtn]}>
+            <Ionicons name="trash-outline" size={15} color="#c53030" />
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable onPress={run} style={[styles.runBtn, running && { backgroundColor: accent }]}>
+          {running ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Ionicons name="play" size={14} color="#fff" />
+          )}
+        </Pressable>
+      )}
     </Animated.View>
   );
 }
@@ -124,5 +138,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
+  },
+  editActions: {
+    flexDirection: "row",
+    gap: 8,
+    flexShrink: 0,
+  },
+  editBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    backgroundColor: colors.cream100,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteBtn: {
+    backgroundColor: "#fff1f1",
+    borderColor: "#f5c6c6",
   },
 });
