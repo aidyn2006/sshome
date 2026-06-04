@@ -49,7 +49,6 @@ export function RegisterScreen({
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<"USER" | "ADMIN">("USER");
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
@@ -135,28 +134,6 @@ export function RegisterScreen({
           </Field>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>ROLE</Text>
-            <View style={styles.roleRow}>
-              <Pressable
-                onPress={() => setRole("USER")}
-                style={[styles.roleChip, role === "USER" && styles.roleChipActive]}
-              >
-                <Text style={[styles.roleChipText, role === "USER" && styles.roleChipTextActive]}>
-                  USER
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setRole("ADMIN")}
-                style={[styles.roleChip, role === "ADMIN" && styles.roleChipActive]}
-              >
-                <Text style={[styles.roleChipText, role === "ADMIN" && styles.roleChipTextActive]}>
-                  ADMIN
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-
-          <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>PASSWORD</Text>
             <View style={[styles.inputWrap, pwFocused && styles.inputWrapFocused]}>
               <Ionicons name="lock-closed-outline" size={18} color={colors.ink500} />
@@ -220,17 +197,9 @@ export function RegisterScreen({
             </Pressable>
           </Field>
 
-          {/* Info box */}
-          <View style={styles.infoBox}>
-            <Ionicons name="server-outline" size={16} color={colors.ink500} />
-            <Text style={styles.infoText}>
-              Your data lives on your home server. We never see your credentials.
-            </Text>
-          </View>
-
           <Pressable
             style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
-            onPress={() => onSubmit({ name, email, phone, password, confirmPassword, role })}
+            onPress={() => onSubmit({ name, email, phone, password, confirmPassword })}
             disabled={isSubmitting}
           >
             <Text style={styles.submitText}>
@@ -245,9 +214,6 @@ export function RegisterScreen({
               <Text style={styles.footerLink}>Sign in</Text>
             </Pressable>
           </View>
-          <Text style={styles.termsText}>
-            By continuing you agree to the Terms of Service{"\n"}and the Local-First Privacy Notice.
-          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -310,99 +276,8 @@ const styles = StyleSheet.create({
     color: colors.ink500,
     lineHeight: 19,
   },
-  hero: {
-    position: "relative",
-    overflow: "hidden",
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 28,
-    backgroundColor: colors.cream100,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.hairline,
-  },
-  blob1: {
-    position: "absolute",
-    top: -80,
-    right: -60,
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: colors.accentTint,
-    opacity: 0.6,
-  },
-  blobRing: {
-    position: "absolute",
-    top: 40,
-    right: 60,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 0.5,
-    borderColor: colors.hairlineStrong,
-  },
-  brandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    position: "relative",
-  },
-  brandMark: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
-    backgroundColor: colors.ink900,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  brandLabel: {
-    fontFamily: "monospace",
-    fontSize: 12,
-    color: colors.ink700,
-    letterSpacing: 0.8,
-  },
-  heroTitle: {
-    fontSize: 36,
-    fontWeight: "700",
-    color: colors.ink900,
-    letterSpacing: -1,
-    lineHeight: 42,
-    marginTop: 28,
-    position: "relative",
-  },
   heroAccent: {
     color: colors.accent,
-  },
-  heroSub: {
-    marginTop: 8,
-    fontSize: 14,
-    color: colors.ink500,
-    lineHeight: 20,
-    position: "relative",
-  },
-  pillRow: {
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 16,
-    position: "relative",
-  },
-  secPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: colors.ink100,
-  },
-  secPillSuccess: {
-    backgroundColor: colors.successSoft,
-  },
-  secPillText: {
-    fontFamily: "monospace",
-    fontSize: 10,
-    fontWeight: "500",
-    color: colors.ink500,
-    letterSpacing: 0.3,
   },
   form: {
     flex: 1,
@@ -480,49 +355,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     letterSpacing: 0.5,
   },
-  infoBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: colors.cream100,
-    borderWidth: 0.5,
-    borderColor: colors.hairlineStrong,
-  },
-  infoText: {
-    flex: 1,
-    color: colors.ink500,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  roleRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  roleChip: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 46,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.hairlineStrong,
-    backgroundColor: colors.surface,
-  },
-  roleChipActive: {
-    backgroundColor: colors.ink900,
-    borderColor: colors.ink900,
-  },
-  roleChipText: {
-    color: colors.ink700,
-    fontSize: 14,
-    fontWeight: "600",
-    letterSpacing: 0.4,
-  },
-  roleChipTextActive: {
-    color: "#fff",
-  },
   submitBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -556,11 +388,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     textDecorationLine: "underline",
-  },
-  termsText: {
-    color: colors.ink500,
-    fontSize: 11,
-    lineHeight: 16,
-    textAlign: "center",
   },
 });

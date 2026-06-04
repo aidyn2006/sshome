@@ -1,7 +1,7 @@
 import { NavigationContainer, type Theme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
 import { useEffect, useState } from "react";
 
 import { TabBar } from "../components/TabBar";
@@ -103,7 +103,10 @@ function TabsNavigator() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Devices" component={DevicesScreen} />
-      <Tab.Screen name="Room3D" component={Room3DRoute} options={{ title: "Room" }} />
+      {/* 3D-комната доступна только в веб-версии (ноутбук); на телефоне таб скрыт */}
+      {Platform.OS === "web" && (
+        <Tab.Screen name="Room3D" component={Room3DRoute} options={{ title: "Room" }} />
+      )}
       <Tab.Screen name="Scenes" component={ScenesScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />
       {isAdmin && <Tab.Screen name="Admin" component={AdminScreen} options={{ title: "Admin" }} />}

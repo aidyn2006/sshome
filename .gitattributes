@@ -1,0 +1,2 @@
+# Shell-скрипты всегда с LF — CRLF ломает bash (\r попадает в команды)
+*.sh text eol=lf

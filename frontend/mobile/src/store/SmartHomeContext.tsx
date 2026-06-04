@@ -594,11 +594,6 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (!payload.phone.trim()) {
-        setAuthError("Phone number is required");
-        return;
-      }
-
       if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}/.test(payload.password)) {
         setAuthError("Password must be 8+ chars and include upper, lower, and number");
         return;

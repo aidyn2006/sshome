@@ -7,11 +7,12 @@ from app.models.user import UserRole
 
 
 class RegisterRequest(BaseModel):
+    # role intentionally not accepted here: new accounts are always USER,
+    # admins are promoted via the admin endpoint.
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     name: str = Field(min_length=1, max_length=255)
     phone: str | None = Field(default=None, max_length=50)
-    role: UserRole = Field(default=UserRole.USER)
 
 
 class UserOut(BaseModel):

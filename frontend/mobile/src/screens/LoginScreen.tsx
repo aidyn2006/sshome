@@ -69,17 +69,6 @@ export function LoginScreen({
 
           <Text style={styles.heroTitle}>Welcome{"\n"}<Text style={styles.heroAccent}>home.</Text></Text>
           <Text style={styles.heroSub}>Sign in to control your house, your way.</Text>
-
-          {/* security pills */}
-          <View style={styles.pillRow}>
-            <View style={[styles.secPill, styles.secPillSuccess]}>
-              <Ionicons name="lock-closed" size={11} color={colors.success} />
-              <Text style={[styles.secPillText, { color: colors.success }]}>ENCRYPTED · TLS 1.3</Text>
-            </View>
-            <View style={styles.secPill}>
-              <Text style={styles.secPillText}>JWT · REFRESH ROTATE</Text>
-            </View>
-          </View>
         </View>
 
         {/* Form */}
@@ -131,17 +120,6 @@ export function LoginScreen({
             </View>
           </View>
 
-          {/* Remember + Forgot row */}
-          <View style={styles.optionsRow}>
-            <View style={styles.checkRow}>
-              <View style={styles.checkBox}>
-                <Ionicons name="checkmark" size={12} color={colors.accent} />
-              </View>
-              <Text style={styles.checkLabel}>Remember this device</Text>
-            </View>
-            <Text style={styles.forgotLink}>Forgot?</Text>
-          </View>
-
           {/* CTA */}
           <Pressable
             style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
@@ -151,25 +129,6 @@ export function LoginScreen({
             <Text style={styles.submitText}>{isSubmitting ? "Authorizing…" : "Sign In"}</Text>
             {!isSubmitting && <Ionicons name="chevron-forward" size={18} color="#fff" />}
           </Pressable>
-
-          {/* Divider */}
-          <View style={styles.divider}>
-            <View style={styles.divLine} />
-            <Text style={styles.divText}>OR</Text>
-            <View style={styles.divLine} />
-          </View>
-
-          {/* Alt sign-in */}
-          <View style={styles.altRow}>
-            <Pressable style={styles.altBtn}>
-              <Ionicons name="finger-print-outline" size={18} color={colors.ink700} />
-              <Text style={styles.altText}>Face ID</Text>
-            </Pressable>
-            <Pressable style={styles.altBtn}>
-              <Ionicons name="key-outline" size={18} color={colors.ink700} />
-              <Text style={styles.altText}>Single Sign-On</Text>
-            </Pressable>
-          </View>
 
           <View style={styles.divider}>
             <View style={styles.divLine} />
@@ -278,31 +237,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     position: "relative",
   },
-  pillRow: {
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 16,
-    position: "relative",
-  },
-  secPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: colors.ink100,
-  },
-  secPillSuccess: {
-    backgroundColor: colors.successSoft,
-  },
-  secPillText: {
-    fontFamily: "monospace",
-    fontSize: 10,
-    fontWeight: "500",
-    color: colors.ink500,
-    letterSpacing: 0.3,
-  },
   // form
   form: {
     flex: 1,
@@ -358,36 +292,6 @@ const styles = StyleSheet.create({
   eyeBtn: {
     padding: 4,
   },
-  optionsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 2,
-  },
-  checkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  checkBox: {
-    width: 18,
-    height: 18,
-    borderRadius: 5,
-    borderWidth: 0.5,
-    borderColor: colors.hairlineStrong,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkLabel: {
-    fontSize: 13,
-    color: colors.ink700,
-  },
-  forgotLink: {
-    fontSize: 13,
-    color: colors.ink700,
-    textDecorationLine: "underline",
-  },
   submitBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -421,27 +325,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.ink400,
     letterSpacing: 1,
-  },
-  altRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  altBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    height: 48,
-    borderRadius: 999,
-    backgroundColor: colors.surface,
-    borderWidth: 0.5,
-    borderColor: colors.hairlineStrong,
-  },
-  altText: {
-    color: colors.ink700,
-    fontSize: 14,
-    fontWeight: "500",
   },
   socialRow: {
     flexDirection: "row",
