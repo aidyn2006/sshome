@@ -5,7 +5,6 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
-    AccessTokenResponse,
     GoogleLoginRequest,
     LoginRequest,
     LogoutRequest,
@@ -26,6 +25,7 @@ def register(payload: RegisterRequest, request: Request, db: Session = Depends(g
 
 @router.post("/login", response_model=TokenPairResponse)
 def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)) -> TokenPairResponse:
+    enforce_login_rate_limit(request, email=payload.email)
     return login_user(payload=payload, db=db, ip_address=request.client.host if request.client else None)
 
 
@@ -38,10 +38,9 @@ async def google_login(
     return await login_with_google(payload=payload, db=db, ip_address=request.client.host if request.client else None)
 
 
-@router.post("/refresh", response_model=AccessTokenResponse)
-def refresh(payload: RefreshRequest, db: Session = Depends(get_db)) -> AccessTokenResponse:
-    access_token = refresh_access_token(payload=payload, db=db)
-    return AccessTokenResponse(access_token=access_token)
+@router.post("/refresh", response_model=TokenPairResponse)
+def refresh(payload: RefreshRequest, db: Session = Depends(get_db)) -> TokenPairResponse:
+    return refresh_access_token(payload=payload, db=db)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

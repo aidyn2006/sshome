@@ -1,6 +1,9 @@
 from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_DEFAULT_JWT_SECRET = "super-secret-key"
 
 
 class Settings(BaseSettings):
@@ -13,7 +16,7 @@ class Settings(BaseSettings):
     database_echo: bool = False
     database_auto_init: bool = False
     auth_mode: Literal["jwt", "introspection"] = "jwt"
-    auth_jwt_secret_key: str = "super-secret-key"
+    auth_jwt_secret_key: str = _DEFAULT_JWT_SECRET
     auth_jwt_algorithm: str = "HS256"
     auth_jwt_issuer: str | None = None
     auth_jwt_audience: str | None = None
@@ -37,6 +40,7 @@ class Settings(BaseSettings):
     security_device_action_rate_limit: int = 30
     security_scenario_run_rate_limit: int = 10
     security_websocket_connect_rate_limit: int = 20
+    security_login_rate_limit: int = 10
     security_enable_hsts: bool = False
     mqtt_enabled: bool = False
     mqtt_host: str = "localhost"
@@ -65,6 +69,14 @@ class Settings(BaseSettings):
     @property
     def cors_allow_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_allow_origins.split(",") if origin.strip()]
+
+    @model_validator(mode="after")
+    def _forbid_default_secret_in_production(self) -> "Settings":
+        if self.environment.lower() == "production" and self.auth_jwt_secret_key == _DEFAULT_JWT_SECRET:
+            raise ValueError(
+                "AUTH_JWT_SECRET_KEY must be set to a strong non-default value when ENVIRONMENT=production"
+            )
+        return self
 
 
 settings = Settings()

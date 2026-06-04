@@ -782,31 +782,93 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const token = sessionRef.current.accessToken;
-    const wsBase = API_BASE_URL.replace(/^http/, "ws");
-    const url = `${wsBase}/ws/devices?token=${token}`;
-    console.log("[WS] connecting to", url);
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
+    let disposed = false;
+    let reconnectAttempt = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let pingTimer: ReturnType<typeof setInterval> | null = null;
 
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data as string) as { type: string; device?: ApiDevice };
-        if (msg.type === "device.updated" && msg.device) {
-          setDevices((prev) => mergeUpdatedDeviceList(prev, [mapDevice(msg.device!)]));
-        }
-      } catch {
-        // ignore malformed messages
+    const connect = () => {
+      const session = sessionRef.current;
+      if (disposed || !session) {
+        return;
       }
+
+      const wsBase = API_BASE_URL.replace(/^http/, "ws");
+      const url = `${wsBase}/ws/devices?token=${session.accessToken}`;
+      console.log("[WS] connecting to", url);
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        const isReconnect = reconnectAttempt > 0;
+        reconnectAttempt = 0;
+
+        // Keep proxies/load balancers from dropping the idle connection.
+        pingTimer = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send("ping");
+          }
+        }, 30000);
+
+        // Catch up on device updates that were broadcast while we were offline.
+        if (isReconnect) {
+          runWithSession((accessToken) => listDevices(accessToken))
+            .then((nextDevices) => {
+              if (!disposed) {
+                setDevices(nextDevices.map(mapDevice));
+              }
+            })
+            .catch(() => {
+              // The next successful poll or user action will resync.
+            });
+        }
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data as string) as { type: string; device?: ApiDevice };
+          if (msg.type === "device.updated" && msg.device) {
+            setDevices((prev) => mergeUpdatedDeviceList(prev, [mapDevice(msg.device!)]));
+          }
+        } catch {
+          // ignore malformed messages
+        }
+      };
+
+      ws.onerror = () => {};
+
+      ws.onclose = () => {
+        if (pingTimer) {
+          clearInterval(pingTimer);
+          pingTimer = null;
+        }
+
+        if (disposed) {
+          return;
+        }
+
+        // Reconnect with exponential backoff so live updates survive network blips.
+        const delay = Math.min(30000, 1000 * 2 ** reconnectAttempt);
+        reconnectAttempt += 1;
+        console.log(`[WS] disconnected, retrying in ${delay}ms`);
+        reconnectTimer = setTimeout(connect, delay);
+      };
     };
 
-    ws.onerror = () => {};
+    connect();
 
     return () => {
-      ws.close();
+      disposed = true;
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+      }
+      if (pingTimer) {
+        clearInterval(pingTimer);
+      }
+      wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [authStatus]);
+  }, [authStatus, runWithSession]);
 
   const toggleFavorite = useCallback((deviceId: string) => {
     setFavoriteDeviceIds((prev) =>

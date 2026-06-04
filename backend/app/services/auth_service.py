@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.jwt import create_access_token, create_refresh_token
-from app.core.security import hash_password, verify_password
+from app.core.security import hash_password, hash_refresh_token, verify_password
 from app.integrations.google_oauth import verify_google_access_token, verify_google_id_token
 from app.models.audit_log import AuditLogAction
 from app.models.refresh_token import RefreshToken
@@ -45,7 +45,7 @@ def _issue_token_pair(user: User, db: Session) -> TokenPairResponse:
 
     refresh_entity = RefreshToken(
         user_id=user.id,
-        token=refresh_token,
+        token=hash_refresh_token(refresh_token),
         expires_at=datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days),
     )
     db.add(refresh_entity)
@@ -95,8 +95,9 @@ async def login_with_google(payload: GoogleLoginRequest, db: Session, ip_address
     return token_pair
 
 
-def refresh_access_token(payload: RefreshRequest, db: Session) -> str:
-    token_entity = db.query(RefreshToken).filter(RefreshToken.token == payload.refresh_token).first()
+def refresh_access_token(payload: RefreshRequest, db: Session) -> TokenPairResponse:
+    token_hash = hash_refresh_token(payload.refresh_token)
+    token_entity = db.query(RefreshToken).filter(RefreshToken.token == token_hash).first()
 
     if not token_entity or token_entity.expires_at < datetime.now(UTC):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
@@ -105,7 +106,11 @@ def refresh_access_token(payload: RefreshRequest, db: Session) -> str:
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
 
-    return create_access_token(subject=str(user.id), role=user.role.value)
+    # Rotate the refresh token: the presented one is single-use, so a leaked token
+    # cannot be replayed after the legitimate client has refreshed.
+    db.delete(token_entity)
+    db.flush()
+    return _issue_token_pair(user=user, db=db)
 
 
 def logout_user(
@@ -117,7 +122,7 @@ def logout_user(
     token_entity = (
         db.query(RefreshToken)
         .filter(
-            RefreshToken.token == payload.refresh_token,
+            RefreshToken.token == hash_refresh_token(payload.refresh_token),
             RefreshToken.user_id == current_user.id,
         )
         .first()
