@@ -11,9 +11,9 @@ const KEYS = {
 
 export async function saveTokens(accessToken: string, refreshToken: string): Promise<void> {
   try {
-    await AsyncStorage.multiSet([
-      [KEYS.ACCESS_TOKEN, accessToken],
-      [KEYS.REFRESH_TOKEN, refreshToken],
+    await Promise.all([
+      AsyncStorage.setItem(KEYS.ACCESS_TOKEN, accessToken),
+      AsyncStorage.setItem(KEYS.REFRESH_TOKEN, refreshToken),
     ]);
   } catch {
     // Persistence is best-effort; the in-memory session still works.
@@ -22,12 +22,14 @@ export async function saveTokens(accessToken: string, refreshToken: string): Pro
 
 export async function loadTokens(): Promise<{ accessToken: string; refreshToken: string } | null> {
   try {
-    const entries = await AsyncStorage.multiGet([KEYS.ACCESS_TOKEN, KEYS.REFRESH_TOKEN]);
-    const accessToken = entries[0]?.[1];
+    const [accessToken, refreshToken] = await Promise.all([
+      AsyncStorage.getItem(KEYS.ACCESS_TOKEN),
+      AsyncStorage.getItem(KEYS.REFRESH_TOKEN),
+    ]);
     if (!accessToken) {
       return null;
     }
-    return { accessToken, refreshToken: entries[1]?.[1] ?? "" };
+    return { accessToken, refreshToken: refreshToken ?? "" };
   } catch {
     return null;
   }
@@ -35,7 +37,10 @@ export async function loadTokens(): Promise<{ accessToken: string; refreshToken:
 
 export async function clearTokens(): Promise<void> {
   try {
-    await AsyncStorage.multiRemove([KEYS.ACCESS_TOKEN, KEYS.REFRESH_TOKEN]);
+    await Promise.all([
+      AsyncStorage.removeItem(KEYS.ACCESS_TOKEN),
+      AsyncStorage.removeItem(KEYS.REFRESH_TOKEN),
+    ]);
   } catch {
     // ignore
   }

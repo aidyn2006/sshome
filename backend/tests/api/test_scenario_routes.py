@@ -119,6 +119,81 @@ def test_list_scenarios_returns_serialized_rows(client, monkeypatch) -> None:
     ]
 
 
+def test_update_scenario_passes_owner_scope_and_payload(client, monkeypatch) -> None:
+    owner_id = UUID("550e8400-e29b-41d4-a716-446655440000")
+    fake_db = object()
+    scenario_id = uuid4()
+    light_id = uuid4()
+    created_at = datetime(2026, 4, 15, 12, 0, tzinfo=UTC)
+
+    _override_dependencies(client, owner_id, fake_db)
+
+    def fake_update_scenario(db, *, scenario_id, owner_id, payload):
+        assert db is fake_db
+        assert scenario_id == scenario_id_value
+        assert owner_id == owner_id_value
+        assert payload.name == "Leave Home v2"
+        assert payload.description is None
+        assert len(payload.actions) == 1
+        assert payload.actions[0].device_id == light_id
+        assert payload.actions[0].action.value == "TURN_ON"
+        return SimpleNamespace(
+            id=scenario_id,
+            name=payload.name,
+            description=payload.description,
+            actions=[{"device_id": str(light_id), "action": "TURN_ON"}],
+            owner_id=owner_id,
+            created_at=created_at,
+        )
+
+    scenario_id_value = scenario_id
+    owner_id_value = owner_id
+    monkeypatch.setattr("app.routes.scenarios.scenario_service.update_scenario", fake_update_scenario)
+
+    response = client.put(
+        f"/api/v1/scenarios/{scenario_id}",
+        json={
+            "name": "Leave Home v2",
+            "actions": [{"device_id": str(light_id), "action": "TURN_ON"}],
+        },
+    )
+
+    _clear_overrides(client)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": str(scenario_id),
+        "name": "Leave Home v2",
+        "description": None,
+        "actions": [{"device_id": str(light_id), "action": "TURN_ON"}],
+        "owner_id": str(owner_id),
+        "created_at": _iso_utc(created_at),
+    }
+
+
+def test_delete_scenario_returns_no_content(client, monkeypatch) -> None:
+    owner_id = UUID("550e8400-e29b-41d4-a716-446655440000")
+    fake_db = object()
+    scenario_id = uuid4()
+
+    _override_dependencies(client, owner_id, fake_db)
+
+    calls: list[tuple[UUID, UUID]] = []
+
+    def fake_delete_scenario(db, *, scenario_id, owner_id):
+        assert db is fake_db
+        calls.append((scenario_id, owner_id))
+
+    monkeypatch.setattr("app.routes.scenarios.scenario_service.delete_scenario", fake_delete_scenario)
+
+    response = client.delete(f"/api/v1/scenarios/{scenario_id}")
+
+    _clear_overrides(client)
+
+    assert response.status_code == 204
+    assert calls == [(scenario_id, owner_id)]
+
+
 def test_run_scenario_returns_execution_result(client, monkeypatch) -> None:
     owner_id = UUID("550e8400-e29b-41d4-a716-446655440000")
     fake_db = object()
@@ -182,6 +257,8 @@ def test_run_scenario_returns_execution_result(client, monkeypatch) -> None:
     [
         ("post", "/api/v1/scenarios", {"name": "Leave Home", "actions": [{"device_id": str(uuid4()), "action": "TURN_OFF"}]}),
         ("get", "/api/v1/scenarios", None),
+        ("put", f"/api/v1/scenarios/{uuid4()}", {"name": "Leave Home", "actions": [{"device_id": str(uuid4()), "action": "TURN_OFF"}]}),
+        ("delete", f"/api/v1/scenarios/{uuid4()}", None),
         ("post", f"/api/v1/scenarios/{uuid4()}/run", None),
     ],
 )
