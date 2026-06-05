@@ -12,9 +12,12 @@ import paho.mqtt.client as mqtt
 from sqlalchemy import select
 
 from app.core.config import settings
+from app.core.mqtt_defense import replay_guard, telemetry_rate_limiter
 from app.db.session import SessionLocal
 from app.models.device import Device
+from app.models.security_event import AttackType, SecuritySeverity
 from app.schemas.device import DeviceRead
+from app.services import security_event_service
 from app.services.device_service import verify_device_secret
 from app.services.device_registry import get_secret_hash
 
@@ -62,6 +65,7 @@ def _on_message(client: mqtt.Client, userdata: object, msg: mqtt.MQTTMessage) ->
         logger.info("[MQTT] secret check: registry_hash_present=%s", bool(registry_hash))
         if registry_hash and not verify_device_secret(str(received_secret), registry_hash):
             logger.info("[MQTT] invalid secret from device %s — message dropped", hardware_id)
+            _record_spoofing(hardware_id, sim_id=payload.get("sim_id") if isinstance(payload, dict) else None)
             return
 
     db = SessionLocal()
