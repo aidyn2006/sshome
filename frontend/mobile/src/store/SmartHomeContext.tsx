@@ -295,12 +295,21 @@ function sortEventsByNewest(events: Event[]): Event[] {
   return [...events].sort((left, right) => right.timestamp - left.timestamp);
 }
 
+function sortDevicesStable(devices: Device[]): Device[] {
+  // Tie-break by id so devices with equal names never swap places between renders.
+  return [...devices].sort(
+    (left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id)
+  );
+}
+
 function mergeUpdatedDeviceList(currentDevices: Device[], updatedDevices: Device[]): Device[] {
-  const updatedIds = new Set(updatedDevices.map(d => d.id));
-  const result = [
-    ...currentDevices.map(d => updatedIds.has(d.id) ? updatedDevices.find(u => u.id === d.id)! : d),
-  ].sort((left, right) => left.name.localeCompare(right.name));
-  return result;
+  // Replace devices in place WITHOUT reordering: a toggle must never make the
+  // grid jump, otherwise the user ends up pressing a different device.
+  const updatedById = new Map(updatedDevices.map(d => [d.id, d]));
+  const merged = currentDevices.map(d => updatedById.get(d.id) ?? d);
+  const knownIds = new Set(currentDevices.map(d => d.id));
+  const appended = updatedDevices.filter(d => !knownIds.has(d.id));
+  return appended.length > 0 ? sortDevicesStable([...merged, ...appended]) : merged;
 }
 
 function buildDeviceEvent(deviceId: string, action: DeviceAction, timestamp = Date.now()): Event {
@@ -401,7 +410,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
 
       setHomes(nextHomes.map(mapHome));
       setRooms(nextRooms.map(mapRoom));
-      setDevices(nextDevices.map(mapDevice));
+      setDevices(sortDevicesStable(nextDevices.map(mapDevice)));
       setDeviceEvents(sortEventsByNewest(nextEvents.map(mapEvent)));
       setScenarios(nextScenarios.map(mapScenario));
     } finally {
@@ -890,7 +899,10 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
 
   // Restore the user's saved favorites once their identity is known. The server
   // profile is the source of truth; AsyncStorage is only an offline fallback.
-  const serverFavorites = user?.favorite_device_ids ?? null;
+  // Runs only when the identity changes — re-running on every profile update
+  // would overwrite the local selection while a sync request is in flight.
+  const serverFavoritesRef = useRef<string[] | null>(null);
+  serverFavoritesRef.current = user?.favorite_device_ids ?? null;
   useEffect(() => {
     const key = user?.id ?? ownerId;
     if (!key) {
@@ -899,6 +911,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
 
     favoritesKeyRef.current = key;
 
+    const serverFavorites = serverFavoritesRef.current;
     if (serverFavorites) {
       favoritesInitialized.current = true;
       setFavoriteDeviceIds(serverFavorites);
@@ -912,7 +925,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
         setFavoriteDeviceIds(stored);
       }
     });
-  }, [user?.id, ownerId, serverFavorites]);
+  }, [user?.id, ownerId]);
 
   // Default to the first few devices only when nothing was saved before.
   useEffect(() => {
@@ -970,7 +983,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
           runWithSession((accessToken) => listDevices(accessToken))
             .then((nextDevices) => {
               if (!disposed) {
-                setDevices(nextDevices.map(mapDevice));
+                setDevices(sortDevicesStable(nextDevices.map(mapDevice)));
               }
             })
             .catch(() => {
@@ -1034,13 +1047,13 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
 
         // Sync the new selection to the backend; AsyncStorage is handled by the
         // persistence effect below. Failures fall back to the offline cache.
+        // NOTE: we intentionally do NOT setUser() from the response — out-of-order
+        // responses during rapid taps would overwrite the local selection.
         void runWithSession((accessToken) =>
           updateCurrentUserRequest(accessToken, { favorite_device_ids: next })
-        )
-          .then((updatedUser) => setUser(updatedUser))
-          .catch(() => {
-            // Offline or transient error: the AsyncStorage cache still holds it.
-          });
+        ).catch(() => {
+          // Offline or transient error: the AsyncStorage cache still holds it.
+        });
 
         return next;
       });
