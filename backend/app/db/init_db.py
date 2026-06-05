@@ -2,6 +2,7 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import inspect, text
 
 from app.db.session import engine
@@ -134,6 +135,16 @@ def init_db() -> None:
         return
 
     if has_devices and (has_missing_device_columns or has_missing_user_columns or current_revision in LEGACY_PATCH_REVISIONS):
+        _patch_legacy_schema()
+        command.stamp(alembic_cfg, "head")
+        return
+
+    # The database may be stamped with a revision that no longer exists in the
+    # migration tree (e.g. an older deployment whose migrations were since
+    # reorganized). Reconcile by patching the schema idempotently and stamping
+    # head, instead of letting `upgrade` fail on an unknown revision.
+    known_revisions = {script.revision for script in ScriptDirectory.from_config(alembic_cfg).walk_revisions()}
+    if current_revision is not None and current_revision not in known_revisions:
         _patch_legacy_schema()
         command.stamp(alembic_cfg, "head")
         return

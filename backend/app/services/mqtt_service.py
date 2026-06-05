@@ -109,6 +109,11 @@ def _publish(*, connection: MqttConnectionSettings, topic: str, payload: dict[st
         logger.exception("Unable to publish MQTT command for device %s", device_id)
 
 
+def resolve_connection_settings() -> "MqttConnectionSettings | None":
+    """Public accessor for the resolved broker connection (used by the red-team module)."""
+    return _resolve_connection_settings()
+
+
 def publish_device_command(*, device: Device, action: DeviceAction) -> None:
     connection = _resolve_connection_settings()
     if connection is None or device.hardware_id is None:
