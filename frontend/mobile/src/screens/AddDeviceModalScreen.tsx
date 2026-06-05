@@ -125,7 +125,7 @@ export function AddDeviceModalScreen({ navigation }: Props) {
             />
           </View>
           <Text style={styles.helperText}>
-            Use a firmware ID only if this is a physical board from the device registry.
+            Use a firmware ID only if this is a physical board from the device registry!.
           </Text>
         </View>
 
