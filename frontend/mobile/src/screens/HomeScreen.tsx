@@ -7,6 +7,7 @@ import { AppPressable } from "../components/AppPressable";
 
 import { getBackendHealth } from "../api/system";
 import { DeviceToggleRow } from "../components/DeviceToggleRow";
+import { SensorRoomsSheet } from "../components/SensorRoomsSheet";
 import { RoomCard } from "../components/RoomCard";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { SkeletonBlock } from "../components/SkeletonBlock";
@@ -39,6 +40,7 @@ export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { homes, rooms, devices, isDataLoading, toggleDevice, user } = useSmartHome();
   const [backendStatus, setBackendStatus] = useState<"connected" | "checking" | "unavailable">("checking");
+  const [sensorSheetOpen, setSensorSheetOpen] = useState(false);
 
   const activeDevicesCount = useMemo(
     () => devices.filter((d) => isDeviceActive(d.status)).length,
@@ -64,8 +66,6 @@ export function HomeScreen() {
     const avg = (arr: number[]) => Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10;
     const sensorLabel = sensors.length === 0 ? "No sensor" : sensors.length === 1 ? sensors[0].name : `${sensors.length} sensors`;
     const hasSensors = sensors.length > 0;
-    const temp = tempDevice?.telemetry?.temp;
-    const humidity = tempDevice?.telemetry?.humidity;
     const batteries = devices
       .map((d) => d.battery_level)
       .filter((level): level is number => level != null);
@@ -97,8 +97,7 @@ export function HomeScreen() {
         subtitle: lowestBattery != null ? "Lowest battery" : "No hardware",
       },
     ];
-  }, [devices]);
-  }, [activeDevicesCount, devices, tempDevice]);
+  }, [activeDevicesCount, devices]);
 
   const doors = useMemo(() => devices.filter((d) => d.type === "DOOR"), [devices]);
   const openDoors = useMemo(() => doors.filter((d) => d.status === "OPEN"), [doors]);

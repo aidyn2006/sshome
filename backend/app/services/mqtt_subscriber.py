@@ -36,35 +36,32 @@ def _on_connect(client: mqtt.Client, userdata: object, flags: object, reason_cod
     if reason_code == 0:
         client.subscribe("devices/+/telemetry")
         client.subscribe("devices/+/errors")
-        logger.info("MQTT subscriber connected — listening for telemetry and errors")
+        logger.warning("MQTT subscriber connected — listening for telemetry and errors")
     else:
         logger.error("MQTT subscriber failed to connect, reason_code=%s", reason_code)
 
 
 def _on_message(client: mqtt.Client, userdata: object, msg: mqtt.MQTTMessage) -> None:
-    logger.info("[MQTT] message received: topic=%s payload=%s", msg.topic, msg.payload[:200])
+    logger.warning("[MQTT] message received: topic=%s payload=%s", msg.topic, msg.payload[:200])
 
     parts = msg.topic.split("/")
     if len(parts) != 3 or parts[0] != "devices":
-        logger.info("[MQTT] unexpected topic format, skipping: %s", msg.topic)
         return
 
     hardware_id = parts[1]
     msg_type = parts[2]
-    logger.info("[MQTT] hardware_id=%s msg_type=%s", hardware_id, msg_type)
 
     try:
         payload = json.loads(msg.payload.decode())
     except (json.JSONDecodeError, UnicodeDecodeError):
-        logger.info("[MQTT] non-JSON payload on topic %s", msg.topic)
+        logger.warning("[MQTT] non-JSON payload on topic %s", msg.topic)
         return
 
     received_secret = payload.get("secret") if isinstance(payload, dict) else None
     if received_secret:
         registry_hash = get_secret_hash(hardware_id)
-        logger.info("[MQTT] secret check: registry_hash_present=%s", bool(registry_hash))
         if registry_hash and not verify_device_secret(str(received_secret), registry_hash):
-            logger.info("[MQTT] invalid secret from device %s — message dropped", hardware_id)
+            logger.warning("[MQTT] invalid secret from device %s - dropped", hardware_id)
             _record_spoofing(hardware_id, sim_id=payload.get("sim_id") if isinstance(payload, dict) else None)
             return
 
@@ -72,18 +69,16 @@ def _on_message(client: mqtt.Client, userdata: object, msg: mqtt.MQTTMessage) ->
     try:
         device = db.scalar(select(Device).where(Device.hardware_id == hardware_id))
         if device is None:
-            logger.info("[MQTT] device not found in DB for hardware_id=%s — is it registered?", hardware_id)
+            logger.warning("[MQTT] device not found in DB: %s", hardware_id)
             return
 
-        logger.info("[MQTT] device found: id=%s name=%s secret_hash_set=%s", device.id, device.name, bool(device.device_secret_hash))
-
         if device.device_secret_hash and not received_secret:
-            logger.info("[MQTT] device %s requires secret but none provided — message dropped", hardware_id)
+            logger.warning("[MQTT] device %s requires secret but none provided - dropped", hardware_id)
             return
 
         if device.device_secret_hash and received_secret:
             if not verify_device_secret(str(received_secret), device.device_secret_hash):
-                logger.info("[MQTT] wrong secret from device %s — message dropped", hardware_id)
+                logger.warning("[MQTT] wrong secret from device %s - dropped", hardware_id)
                 _record_spoofing(hardware_id, sim_id=payload.get("sim_id"))
                 return
 
@@ -114,16 +109,16 @@ def _on_message(client: mqtt.Client, userdata: object, msg: mqtt.MQTTMessage) ->
             if "battery" in payload:
                 device.battery_level = max(0, min(100, int(payload["battery"])))
             device.last_error = None
-            logger.info("[MQTT] telemetry saved: %s", device.telemetry)
+            logger.warning("[MQTT] telemetry saved for %s: %s", hardware_id, device.telemetry)
 
         elif msg_type == "errors":
             error_msg = payload.get("message") or payload.get("error") or str(payload)
             device.last_error = str(error_msg)[:500]
-            logger.info("[MQTT] error saved: %s", device.last_error)
+            logger.warning("[MQTT] error saved for %s: %s", hardware_id, device.last_error)
 
         db.commit()
         db.refresh(device)
-        logger.info("[MQTT] DB commit ok, pushing WebSocket update (loop=%s running=%s)", _loop, _loop.is_running() if _loop else False)
+        logger.warning("[MQTT] DB commit ok, loop running=%s", _loop.is_running() if _loop else False)
         _push_device_update(device)
     except Exception:
         logger.exception("[MQTT] error handling message on topic %s", msg.topic)
@@ -146,7 +141,10 @@ def _push_device_update(device: Device) -> None:
             ),
             _loop,
         )
-        logger.info("[MQTT] WebSocket push scheduled, future=%s", future)
+        future.add_done_callback(
+            lambda f: logger.error("[MQTT] WebSocket push error: %s", f.exception()) if f.exception() else None
+        )
+        logger.warning("[MQTT] WebSocket push scheduled")
     except Exception:
         logger.exception("[MQTT] WebSocket push failed")
 
