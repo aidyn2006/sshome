@@ -332,7 +332,7 @@ export function RoomScene({
         {/* Floor */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow onClick={onLightPress}>
           <planeGeometry args={[6, 6]} />
-          <meshStandardMaterial color={palette.floor} roughness={0.72} />
+          <meshStandardMaterial color={palette.floor} roughness={0.62} metalness={0.06} />
         </mesh>
 
         {[-2, -1, 0, 1, 2].map((i) => (
@@ -365,6 +365,33 @@ export function RoomScene({
           <boxGeometry args={[6, 0.12, 0.04]} />
           <meshStandardMaterial color={palette.trim} roughness={0.6} />
         </mesh>
+
+        {/* Crown molding (ceiling trim) */}
+        <mesh position={[0, 3.08, -2.97]}>
+          <boxGeometry args={[6, 0.1, 0.07]} />
+          <meshStandardMaterial color={palette.trim} roughness={0.5} />
+        </mesh>
+        <mesh position={[-2.97, 3.08, 0]} rotation={[0, Math.PI / 2, 0]}>
+          <boxGeometry args={[6, 0.1, 0.07]} />
+          <meshStandardMaterial color={palette.trim} roughness={0.5} />
+        </mesh>
+
+        {/* Framed wall art on the back wall */}
+        <group position={[-0.7, 2.0, -2.94]}>
+          <mesh castShadow>
+            <boxGeometry args={[0.86, 0.62, 0.04]} />
+            <meshStandardMaterial color={palette.trim} roughness={0.45} />
+          </mesh>
+          <mesh position={[0, 0, 0.03]}>
+            <planeGeometry args={[0.7, 0.46]} />
+            <meshStandardMaterial
+              color={palette.accent}
+              emissive={palette.accentInner}
+              emissiveIntensity={lightOn ? 0.14 : 0.06}
+              roughness={0.7}
+            />
+          </mesh>
+        </group>
 
         {/* Pendant light */}
         <mesh position={[0, 2.97, 0]}>

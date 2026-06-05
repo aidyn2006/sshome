@@ -113,8 +113,10 @@ function TabsNavigator() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Devices" component={DevicesScreen} />
-      {/* Real WebGL 3D on web + dev/standalone builds; an honest notice in Expo Go. */}
-      <Tab.Screen name="Room3D" component={Room3DRoute} options={{ title: "Room" }} />
+      {/* 3D room needs WebGL — web only; hidden from the mobile tab bar. */}
+      {Platform.OS === "web" && (
+        <Tab.Screen name="Room3D" component={Room3DRoute} options={{ title: "Room" }} />
+      )}
       <Tab.Screen name="Scenes" component={ScenesScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />
       {isAdmin && <Tab.Screen name="Admin" component={AdminScreen} options={{ title: "Admin" }} />}

@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import type { RootStackParamList } from "../navigation/types";
 
+import { AppPressable } from "../components/AppPressable";
 import { DeviceCard } from "../components/DeviceCard";
 import { FilterPill } from "../components/FilterPill";
 import { ScreenHeader } from "../components/ScreenHeader";
@@ -67,15 +68,15 @@ export function DevicesScreen() {
         secure
         right={
           <View style={styles.headerBtns}>
-            <Pressable style={styles.headerBtn} onPress={() => navigation.navigate("AddDeviceModal")}>
+            <AppPressable style={styles.headerBtn} onPress={() => navigation.navigate("AddDeviceModal")}>
               <Ionicons name="add" size={20} color={colors.ink700} />
-            </Pressable>
-            <Pressable
+            </AppPressable>
+            <AppPressable
               style={[styles.headerBtn, editMode && styles.headerBtnActive]}
               onPress={() => setEditMode((v) => !v)}
             >
               <Ionicons name="options-outline" size={18} color={editMode ? colors.cream50 : colors.ink700} />
-            </Pressable>
+            </AppPressable>
           </View>
         }
       />
@@ -92,7 +93,15 @@ export function DevicesScreen() {
             style={styles.searchInput}
           />
           {query.length > 0 && (
-            <Ionicons name="close-outline" size={18} color={colors.ink500} onPress={() => setQuery("")} />
+            <AppPressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+              hitSlop={8}
+              style={styles.searchClear}
+              onPress={() => setQuery("")}
+            >
+              <Ionicons name="close-outline" size={18} color={colors.ink500} />
+            </AppPressable>
           )}
         </View>
 
@@ -233,6 +242,12 @@ const styles = StyleSheet.create({
     height: "100%",
     color: colors.ink900,
     fontSize: 15,
+  },
+  searchClear: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
   pillRow: {
     gap: 8,

@@ -43,8 +43,14 @@ export const AppPressable = forwardRef<View, AppPressableProps>(function AppPres
   { onPress, onPressIn, onPressOut, style, disabled, ...rest },
   ref
 ) {
+  // Web polish: pointer cursor, no text selection on tap, no focus outline —
+  // the things that make RN-web buttons feel "off"/crooked by default.
   const cursorStyle: StyleProp<ViewStyle> = isWeb
-    ? ({ cursor: disabled ? "default" : "pointer" } as unknown as ViewStyle)
+    ? ({
+        cursor: disabled ? "default" : "pointer",
+        userSelect: "none",
+        outlineStyle: "none"
+      } as unknown as ViewStyle)
     : null;
 
   const mergedStyle: PressableProps["style"] =
