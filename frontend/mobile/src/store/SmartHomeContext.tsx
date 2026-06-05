@@ -32,6 +32,16 @@ import {
 } from "../api/auth";
 import { UnauthorizedError, isApiError } from "../api/client";
 import {
+  getSecurityStats as getSecurityStatsRequest,
+  listSecurityEvents as listSecurityEventsRequest,
+  simulateAttack as simulateAttackRequest,
+  type AttackType,
+  type SecurityEvent,
+  type SecurityStats,
+  type SimulateAttackPayload,
+  type SimulateAttackResult
+} from "../api/security";
+import {
   applyDeviceAction,
   createDevice,
   createHome,
@@ -121,6 +131,10 @@ type SmartHomeContextValue = {
   listAdminUsers: () => Promise<AdminUser[]>;
   updateAdminUserRole: (userId: string, role: UserOut["role"]) => Promise<AdminUser>;
   listAuditLogs: (limit?: number) => Promise<AuditLogEntry[]>;
+  simulateAttack: (payload: SimulateAttackPayload) => Promise<SimulateAttackResult>;
+  listSecurityEvents: (limit?: number, attackType?: AttackType) => Promise<SecurityEvent[]>;
+  getSecurityStats: () => Promise<SecurityStats>;
+  securityEvents: SecurityEvent[];
 };
 
 type SessionTokens = {
@@ -373,6 +387,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
 
   const sessionRef = useRef<SessionTokens | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
 
   const setSessionTokens = useCallback((tokens: SessionTokens | null) => {
     sessionRef.current = tokens;
@@ -996,9 +1011,20 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
 
       ws.onmessage = (event) => {
         try {
-          const msg = JSON.parse(event.data as string) as { type: string; device?: ApiDevice };
+          const msg = JSON.parse(event.data as string) as {
+            type: string;
+            device?: ApiDevice;
+          } & Partial<SecurityEvent>;
           if (msg.type === "device.updated" && msg.device) {
             setDevices((prev) => mergeUpdatedDeviceList(prev, [mapDevice(msg.device!)]));
+          } else if (msg.type === "security.event" && msg.id) {
+            const incoming = msg as unknown as SecurityEvent;
+            setSecurityEvents((prev) => {
+              if (prev.some((existing) => existing.id === incoming.id)) {
+                return prev;
+              }
+              return [incoming, ...prev].slice(0, 100);
+            });
           }
         } catch {
           // ignore malformed messages
@@ -1252,7 +1278,14 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       updateAdminUserRole: async (userId: string, role: UserOut["role"]) =>
         runWithSession((accessToken) => updateAdminUserRoleRequest(accessToken, userId, { role })),
       listAuditLogs: async (limit = 20) =>
-        runWithSession((accessToken) => listAuditLogsRequest(accessToken, limit))
+        runWithSession((accessToken) => listAuditLogsRequest(accessToken, limit)),
+      simulateAttack: async (payload: SimulateAttackPayload) =>
+        runWithSession((accessToken) => simulateAttackRequest(accessToken, payload)),
+      listSecurityEvents: async (limit = 50, attackType?: AttackType) =>
+        runWithSession((accessToken) => listSecurityEventsRequest(accessToken, limit, attackType)),
+      getSecurityStats: async () =>
+        runWithSession((accessToken) => getSecurityStatsRequest(accessToken)),
+      securityEvents
     }),
     [
       addDevice,
@@ -1290,6 +1323,7 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       setDeviceStatus,
       toggleDevice,
       toggleFavorite,
+      securityEvents,
       user
     ]
   );

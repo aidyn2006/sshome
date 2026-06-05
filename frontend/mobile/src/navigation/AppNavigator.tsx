@@ -9,6 +9,7 @@ import { ActivityScreen } from "../screens/ActivityScreen";
 import { AddDeviceModalScreen } from "../screens/AddDeviceModalScreen";
 import { AddScenarioModalScreen } from "../screens/AddScenarioModalScreen";
 import { AdminScreen } from "../screens/AdminScreen";
+import { AttackSimScreen } from "../screens/AttackSimScreen";
 import { AddLocationModalScreen } from "../screens/AddLocationModalScreen";
 import { AllRoomsModalScreen } from "../screens/AllRoomsModalScreen";
 import { ChangePasswordModalScreen } from "../screens/ChangePasswordModalScreen";
@@ -113,6 +114,9 @@ function TabsNavigator() {
       <Tab.Screen name="Scenes" component={ScenesScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />
       {isAdmin && <Tab.Screen name="Admin" component={AdminScreen} options={{ title: "Admin" }} />}
+      {isAdmin && (
+        <Tab.Screen name="AttackSim" component={AttackSimScreen} options={{ title: "Red Team" }} />
+      )}
     </Tab.Navigator>
   );
 }

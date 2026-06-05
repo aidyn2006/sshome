@@ -16,4 +16,5 @@ export type TabParamList = {
   Scenes: undefined;
   Activity: undefined;
   Admin: undefined;
+  AttackSim: undefined;
 };

@@ -7,7 +7,7 @@ from anyio import from_thread
 
 from app.models.enums import DeviceAction
 from app.schemas.device import DeviceRead
-from app.schemas.realtime import DeviceUpdatedMessage
+from app.schemas.realtime import DeviceUpdatedMessage, SecurityEventMessage
 from app.websockets.manager import websocket_manager
 
 logger = logging.getLogger(__name__)
@@ -54,3 +54,13 @@ def publish_device_update_from_sync(
             scenario_id=scenario_id,
         )
     )
+
+
+async def publish_security_event(*, message: SecurityEventMessage) -> None:
+    logger.info(
+        "[WS] broadcasting security.event attack=%s blocked=%s target=%s",
+        message.attack_type,
+        message.blocked,
+        message.target,
+    )
+    await websocket_manager.broadcast_all(message=message.model_dump(mode="json"))

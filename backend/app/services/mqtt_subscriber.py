@@ -12,9 +12,12 @@ import paho.mqtt.client as mqtt
 from sqlalchemy import select
 
 from app.core.config import settings
+from app.core.mqtt_defense import replay_guard, telemetry_rate_limiter
 from app.db.session import SessionLocal
 from app.models.device import Device
+from app.models.security_event import AttackType, SecuritySeverity
 from app.schemas.device import DeviceRead
+from app.services import security_event_service
 from app.services.device_service import verify_device_secret
 from app.services.device_registry import get_secret_hash
 
@@ -62,6 +65,7 @@ def _on_message(client: mqtt.Client, userdata: object, msg: mqtt.MQTTMessage) ->
         logger.info("[MQTT] secret check: registry_hash_present=%s", bool(registry_hash))
         if registry_hash and not verify_device_secret(str(received_secret), registry_hash):
             logger.info("[MQTT] invalid secret from device %s — message dropped", hardware_id)
+            _record_spoofing(hardware_id, sim_id=payload.get("sim_id") if isinstance(payload, dict) else None)
             return
 
     db = SessionLocal()
@@ -80,12 +84,33 @@ def _on_message(client: mqtt.Client, userdata: object, msg: mqtt.MQTTMessage) ->
         if device.device_secret_hash and received_secret:
             if not verify_device_secret(str(received_secret), device.device_secret_hash):
                 logger.info("[MQTT] wrong secret from device %s — message dropped", hardware_id)
+                _record_spoofing(hardware_id, sim_id=payload.get("sim_id"))
+                return
+
+        sim_id = payload.get("sim_id") if isinstance(payload, dict) else None
+
+        if msg_type == "telemetry":
+            # Anti-DDoS: throttle telemetry floods per device.
+            if not telemetry_rate_limiter.allow(device_id=hardware_id):
+                logger.info("[MQTT] telemetry rate limit hit for %s — message dropped", hardware_id)
+                _record_ddos(hardware_id, sim_id=sim_id)
+                return
+
+            # Anti-replay: reject reused nonces / stale timestamps.
+            accepted, reason = replay_guard.check(
+                device_id=hardware_id,
+                nonce=payload.get("nonce"),
+                ts=payload.get("ts"),
+            )
+            if not accepted:
+                logger.info("[MQTT] replay detected from %s (%s) — message dropped", hardware_id, reason)
+                _record_replay(hardware_id, reason=reason, sim_id=sim_id)
                 return
 
         device.last_seen_at = datetime.now(UTC)
 
         if msg_type == "telemetry":
-            device.telemetry = {k: v for k, v in payload.items() if k != "secret"}
+            device.telemetry = {k: v for k, v in payload.items() if k not in ("secret", "nonce", "ts", "sim_id")}
             if "battery" in payload:
                 device.battery_level = max(0, min(100, int(payload["battery"])))
             device.last_error = None
@@ -124,6 +149,45 @@ def _push_device_update(device: Device) -> None:
         logger.info("[MQTT] WebSocket push scheduled, future=%s", future)
     except Exception:
         logger.exception("[MQTT] WebSocket push failed")
+
+
+def _record_spoofing(hardware_id: str, *, sim_id: str | None = None) -> None:
+    security_event_service.record_event(
+        attack_type=AttackType.MQTT_SPOOFING,
+        blocked=True,
+        severity=SecuritySeverity.HIGH,
+        target=hardware_id,
+        source_ip="mqtt",
+        sim_id=sim_id,
+        message=f"Blocked spoofed telemetry for {hardware_id} — secret verification failed",
+    )
+
+
+def _record_replay(hardware_id: str, *, reason: str | None, sim_id: str | None = None) -> None:
+    security_event_service.record_event(
+        attack_type=AttackType.REPLAY,
+        blocked=True,
+        severity=SecuritySeverity.MEDIUM,
+        target=hardware_id,
+        source_ip="mqtt",
+        sim_id=sim_id,
+        message=f"Blocked replayed message for {hardware_id} ({reason or 'replay'})",
+        detail={"reason": reason},
+    )
+
+
+def _record_ddos(hardware_id: str, *, sim_id: str | None = None) -> None:
+    # alert=False: a flood produces many of these; the simulator sends one summary alert.
+    security_event_service.record_event(
+        attack_type=AttackType.DDOS,
+        blocked=True,
+        severity=SecuritySeverity.MEDIUM,
+        target=hardware_id,
+        source_ip="mqtt",
+        sim_id=sim_id,
+        message=f"Throttled telemetry flood from {hardware_id}",
+        alert=False,
+    )
 
 
 def _build_client() -> mqtt.Client | None:

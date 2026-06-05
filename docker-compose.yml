@@ -48,6 +48,8 @@ services:
       HIVEMQ_CLUSTER_URL: ${HIVEMQ_CLUSTER_URL:-}
       HIVEMQ_USERNAME: ${HIVEMQ_USERNAME:-}
       HIVEMQ_PASSWORD: ${HIVEMQ_PASSWORD:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     volumes:
       - ./manufactured_devices.json:/app/manufactured_devices.json
       - ./manufactured_secrets.txt:/app/manufactured_secrets.txt

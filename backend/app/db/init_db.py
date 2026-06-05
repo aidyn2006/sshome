@@ -2,6 +2,7 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import inspect, text
 
 from app.db.session import engine
@@ -66,6 +67,35 @@ def _patch_legacy_schema() -> None:
         "CREATE INDEX IF NOT EXISTS ix_password_reset_codes_user_id ON password_reset_codes (user_id)",
         "CREATE INDEX IF NOT EXISTS ix_password_reset_codes_code_hash ON password_reset_codes (code_hash)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS favorite_device_ids JSON",
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'attack_type') THEN
+                CREATE TYPE attack_type AS ENUM ('MQTT_SPOOFING', 'BRUTE_FORCE', 'REPLAY', 'DDOS');
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'security_severity') THEN
+                CREATE TYPE security_severity AS ENUM ('INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+            END IF;
+        END $$;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS security_events (
+            id UUID PRIMARY KEY,
+            attack_type attack_type NOT NULL,
+            blocked BOOLEAN NOT NULL DEFAULT TRUE,
+            severity security_severity NOT NULL DEFAULT 'INFO',
+            target VARCHAR(255),
+            source_ip VARCHAR(45),
+            message VARCHAR(500) NOT NULL,
+            sim_id VARCHAR(64),
+            user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            detail JSON,
+            created_at TIMESTAMPTZ NOT NULL
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS ix_security_events_attack_type ON security_events (attack_type)",
+        "CREATE INDEX IF NOT EXISTS ix_security_events_sim_id ON security_events (sim_id)",
+        "CREATE INDEX IF NOT EXISTS ix_security_events_created_at ON security_events (created_at)",
     ]
 
     with engine.begin() as connection:
@@ -105,6 +135,16 @@ def init_db() -> None:
         return
 
     if has_devices and (has_missing_device_columns or has_missing_user_columns or current_revision in LEGACY_PATCH_REVISIONS):
+        _patch_legacy_schema()
+        command.stamp(alembic_cfg, "head")
+        return
+
+    # The database may be stamped with a revision that no longer exists in the
+    # migration tree (e.g. an older deployment whose migrations were since
+    # reorganized). Reconcile by patching the schema idempotently and stamping
+    # head, instead of letting `upgrade` fail on an unknown revision.
+    known_revisions = {script.revision for script in ScriptDirectory.from_config(alembic_cfg).walk_revisions()}
+    if current_revision is not None and current_revision not in known_revisions:
         _patch_legacy_schema()
         command.stamp(alembic_cfg, "head")
         return
