@@ -10,7 +10,7 @@ from app.models.device import Device
 from app.models.enums import DeviceAction, DeviceStatus, DeviceType
 from app.models.home import Home
 from app.models.room import Room
-from app.schemas.device import DeviceCreate
+from app.schemas.device import DeviceCreate, DeviceUpdate
 from app.services import device_registry, event_service
 from app.services.home_service import get_home_or_404
 
@@ -211,7 +211,25 @@ def toggle_device(db: Session, *, device_id: UUID, owner_id: UUID) -> Device:
     return device
 
 
+def update_device(db: Session, *, device_id: UUID, owner_id: UUID, payload: DeviceUpdate) -> Device:
+    device = get_device_or_404(db, device_id=device_id, owner_id=owner_id)
+
+    if payload.name is not None:
+        device.name = payload.name
+    if payload.room_id is not None and payload.room_id != device.room_id:
+        _get_owned_room(db, room_id=payload.room_id, owner_id=owner_id)
+        device.room_id = payload.room_id
+
+    db.commit()
+    db.refresh(device)
+    return device
+
+
 def delete_device(db: Session, *, device_id: UUID, owner_id: UUID) -> None:
     device = get_device_or_404(db, device_id=device_id, owner_id=owner_id)
+    hardware_id = device.hardware_id
     db.delete(device)
     db.commit()
+    if hardware_id:
+        # Release the factory id so the physical device can be claimed again.
+        device_registry.mark_unclaimed(hardware_id)

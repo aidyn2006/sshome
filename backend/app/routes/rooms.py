@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import CurrentOwnerId
 from app.db.session import get_db
-from app.schemas.room import RoomCreate, RoomRead
+from app.schemas.room import RoomCreate, RoomRead, RoomUpdate
 from app.services import room_service
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
@@ -36,3 +36,22 @@ def get_room(
     db: Session = Depends(get_db),
 ) -> RoomRead:
     return room_service.get_room_or_404(db, room_id=room_id, owner_id=owner_id)
+
+
+@router.patch("/{room_id}", response_model=RoomRead)
+def update_room(
+    room_id: UUID,
+    payload: RoomUpdate,
+    owner_id: CurrentOwnerId,
+    db: Session = Depends(get_db),
+) -> RoomRead:
+    return room_service.update_room(db, room_id=room_id, owner_id=owner_id, payload=payload)
+
+
+@router.delete("/{room_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_room(
+    room_id: UUID,
+    owner_id: CurrentOwnerId,
+    db: Session = Depends(get_db),
+) -> None:
+    room_service.delete_room(db, room_id=room_id, owner_id=owner_id)

@@ -11,7 +11,7 @@
     "device_type": "LIGHT",
     "secret_hash": "0a7677cb586dd49c87ac3684dfdb19361d1f5fe4834a1aa465fce474a996fa88",
     "batch": "20260513",
-    "claimed": false
+    "claimed": true
   },
   {
     "hardware_id": "sshome_20260513_l56qs0",

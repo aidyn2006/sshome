@@ -20,13 +20,15 @@ import {
   type ManufacturedDevice
 } from "../api/admin";
 import {
+  changePassword as changePasswordRequest,
   getAuthContext,
   getCurrentUser,
   login as loginRequest,
   loginWithGoogle as loginWithGoogleRequest,
   logout as logoutRequest,
   refreshAccessToken,
-  register as registerRequest
+  register as registerRequest,
+  updateCurrentUser as updateCurrentUserRequest
 } from "../api/auth";
 import { UnauthorizedError, isApiError } from "../api/client";
 import {
@@ -36,6 +38,8 @@ import {
   createRoom,
   createScenario,
   deleteDevice,
+  deleteHome,
+  deleteRoom,
   deleteScenario,
   listDevices,
   listEvents,
@@ -43,6 +47,9 @@ import {
   listRooms,
   listScenarios,
   runScenario as runScenarioRequest,
+  updateDevice,
+  updateHome,
+  updateRoom,
   updateScenario as updateScenarioRequest,
   type ApiDevice,
   type ApiEvent,
@@ -50,7 +57,7 @@ import {
   type ApiRoom,
   type ApiScenario
 } from "../api/smartHome";
-import type { LoginPayload, RegisterPayload, UserOut } from "../types/auth";
+import type { ChangePasswordPayload, LoginPayload, RegisterPayload, UserOut } from "../types/auth";
 import type {
   Device,
   DeviceAction,
@@ -98,10 +105,16 @@ type SmartHomeContextValue = {
   editScenario: (scenarioId: string, payload: ScenarioPayload) => Promise<boolean>;
   removeScenario: (scenarioId: string) => Promise<boolean>;
   addHome: (name: string) => Promise<void>;
+  renameHome: (homeId: string, name: string) => Promise<boolean>;
+  removeHome: (homeId: string) => Promise<boolean>;
   addRoom: (name: string, homeId?: string) => Promise<void>;
+  renameRoom: (roomId: string, name: string) => Promise<boolean>;
+  removeRoom: (roomId: string) => Promise<boolean>;
   addDevice: (name: string, type: Device["type"], roomId: string, hardwareId?: string) => Promise<boolean>;
+  editDevice: (deviceId: string, payload: { name?: string; roomId?: string }) => Promise<boolean>;
   removeDevice: (deviceId: string) => Promise<boolean>;
   toggleFavorite: (deviceId: string) => void;
+  changePassword: (payload: ChangePasswordPayload) => Promise<void>;
   generateManufacturedDevices: (count: number, deviceType: Device["type"]) => Promise<ManufacturedDevice[]>;
   listAdminUsers: () => Promise<AdminUser[]>;
   updateAdminUserRole: (userId: string, role: UserOut["role"]) => Promise<AdminUser>;
@@ -252,6 +265,7 @@ function mapDevice(device: ApiDevice): Device {
     battery_level: device.battery_level,
     last_error: device.last_error,
     last_seen_at: device.last_seen_at,
+    isOnline: device.is_online,
     telemetry: device.telemetry,
     created_at: device.created_at,
     updated_at: device.updated_at
@@ -476,9 +490,9 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
         setOwnerId(authContext.owner_id);
         setUser(currentUser);
 
-        const existingHomes = await listHomes(tokens.accessToken);
-
-        if (options?.seedDemoData || existingHomes.length === 0) {
+        // Seed demo data only right after registration. An existing user with
+        // zero homes should land on an empty state, not regenerated demo data.
+        if (options?.seedDemoData) {
           await bootstrapDemoData(tokens.accessToken);
         }
 
@@ -573,7 +587,8 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
                 phone: null,
                 role: tokens.role === "ADMIN" ? "ADMIN" : "USER",
                 is_active: true,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                favorite_device_ids: null
               }
             : null;
 
@@ -633,7 +648,8 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
           phone: registerResponse.phone ?? payload.phone,
           role: registerResponse.role || "USER",
           is_active: registerResponse.is_active ?? true,
-          created_at: registerResponse.created_at || new Date().toISOString()
+          created_at: registerResponse.created_at || new Date().toISOString(),
+          favorite_device_ids: registerResponse.favorite_device_ids ?? null
         };
 
         await completeAuthentication(normalized, { seedDemoData: true, fallbackUser });
@@ -668,6 +684,13 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       setIsAuthSubmitting(false);
     }
   }, [clearSessionState]);
+
+  const changePassword = useCallback(
+    async (payload: ChangePasswordPayload) => {
+      await runWithSession((accessToken) => changePasswordRequest(accessToken, payload));
+    },
+    [runWithSession]
+  );
 
   const refreshData = useCallback(async () => {
     try {
@@ -824,7 +847,50 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     [runWithSession]
   );
 
-  // Restore the user's saved favorites once their identity is known.
+  const renameHome = useCallback(
+    async (homeId: string, name: string) => {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        return false;
+      }
+
+      try {
+        const home = await runWithSession((accessToken) => updateHome(accessToken, homeId, trimmedName));
+        setHomes((prev) => prev.map((item) => (item.id === homeId ? mapHome(home) : item)));
+        return true;
+      } catch (error) {
+        Alert.alert("Rename home failed", getErrorMessage(error, "Unable to rename the home"));
+        return false;
+      }
+    },
+    [runWithSession]
+  );
+
+  const removeHome = useCallback(
+    async (homeId: string) => {
+      try {
+        await runWithSession((accessToken) => deleteHome(accessToken, homeId));
+        // The backend cascades rooms + devices, so prune them locally too.
+        setRooms((prevRooms) => {
+          const removedRoomIds = new Set(
+            prevRooms.filter((room) => room.home_id === homeId).map((room) => room.id)
+          );
+          setDevices((prevDevices) => prevDevices.filter((d) => !removedRoomIds.has(d.room_id)));
+          return prevRooms.filter((room) => room.home_id !== homeId);
+        });
+        setHomes((prev) => prev.filter((item) => item.id !== homeId));
+        return true;
+      } catch (error) {
+        Alert.alert("Delete home failed", getErrorMessage(error, "Unable to delete the home"));
+        return false;
+      }
+    },
+    [runWithSession]
+  );
+
+  // Restore the user's saved favorites once their identity is known. The server
+  // profile is the source of truth; AsyncStorage is only an offline fallback.
+  const serverFavorites = user?.favorite_device_ids ?? null;
   useEffect(() => {
     const key = user?.id ?? ownerId;
     if (!key) {
@@ -832,13 +898,21 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     }
 
     favoritesKeyRef.current = key;
+
+    if (serverFavorites) {
+      favoritesInitialized.current = true;
+      setFavoriteDeviceIds(serverFavorites);
+      void saveFavorites(key, serverFavorites);
+      return;
+    }
+
     void loadFavorites(key).then((stored) => {
       if (stored) {
         favoritesInitialized.current = true;
         setFavoriteDeviceIds(stored);
       }
     });
-  }, [user?.id, ownerId]);
+  }, [user?.id, ownerId, serverFavorites]);
 
   // Default to the first few devices only when nothing was saved before.
   useEffect(() => {
@@ -951,11 +1025,28 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     };
   }, [authStatus, runWithSession]);
 
-  const toggleFavorite = useCallback((deviceId: string) => {
-    setFavoriteDeviceIds((prev) =>
-      prev.includes(deviceId) ? prev.filter((id) => id !== deviceId) : [...prev, deviceId]
-    );
-  }, []);
+  const toggleFavorite = useCallback(
+    (deviceId: string) => {
+      setFavoriteDeviceIds((prev) => {
+        const next = prev.includes(deviceId)
+          ? prev.filter((id) => id !== deviceId)
+          : [...prev, deviceId];
+
+        // Sync the new selection to the backend; AsyncStorage is handled by the
+        // persistence effect below. Failures fall back to the offline cache.
+        void runWithSession((accessToken) =>
+          updateCurrentUserRequest(accessToken, { favorite_device_ids: next })
+        )
+          .then((updatedUser) => setUser(updatedUser))
+          .catch(() => {
+            // Offline or transient error: the AsyncStorage cache still holds it.
+          });
+
+        return next;
+      });
+    },
+    [runWithSession]
+  );
 
   const addDevice = useCallback(
     async (name: string, type: Device["type"], roomId: string, hardwareId?: string) => {
@@ -973,6 +1064,30 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       );
       setDevices((prev) => mergeUpdatedDeviceList(prev, [mapDevice(device)]));
       return true;
+    },
+    [runWithSession]
+  );
+
+  const editDevice = useCallback(
+    async (deviceId: string, payload: { name?: string; roomId?: string }) => {
+      const trimmedName = payload.name?.trim();
+      if (payload.name !== undefined && !trimmedName) {
+        return false;
+      }
+
+      try {
+        const device = await runWithSession((accessToken) =>
+          updateDevice(accessToken, deviceId, {
+            name: trimmedName,
+            roomId: payload.roomId
+          })
+        );
+        setDevices((prev) => mergeUpdatedDeviceList(prev, [mapDevice(device)]));
+        return true;
+      } catch (error) {
+        Alert.alert("Update failed", getErrorMessage(error, "Unable to update the device"));
+        return false;
+      }
     },
     [runWithSession]
   );
@@ -1013,6 +1128,41 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     [homes, runWithSession]
   );
 
+  const renameRoom = useCallback(
+    async (roomId: string, name: string) => {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        return false;
+      }
+
+      try {
+        const room = await runWithSession((accessToken) => updateRoom(accessToken, roomId, trimmedName));
+        setRooms((prev) => prev.map((item) => (item.id === roomId ? mapRoom(room) : item)));
+        return true;
+      } catch (error) {
+        Alert.alert("Rename room failed", getErrorMessage(error, "Unable to rename the room"));
+        return false;
+      }
+    },
+    [runWithSession]
+  );
+
+  const removeRoom = useCallback(
+    async (roomId: string) => {
+      try {
+        await runWithSession((accessToken) => deleteRoom(accessToken, roomId));
+        // The backend cascades devices in the room, so prune them locally too.
+        setDevices((prev) => prev.filter((d) => d.room_id !== roomId));
+        setRooms((prev) => prev.filter((item) => item.id !== roomId));
+        return true;
+      } catch (error) {
+        Alert.alert("Delete room failed", getErrorMessage(error, "Unable to delete the room"));
+        return false;
+      }
+    },
+    [runWithSession]
+  );
+
   const events = useMemo(
     () => sortEventsByNewest([...sceneEvents, ...deviceEvents]),
     [deviceEvents, sceneEvents]
@@ -1045,10 +1195,16 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       editScenario,
       removeScenario,
       addHome,
+      renameHome,
+      removeHome,
       addRoom,
+      renameRoom,
+      removeRoom,
       addDevice,
+      editDevice,
       removeDevice,
       toggleFavorite,
+      changePassword,
       generateManufacturedDevices: async (count: number, deviceType: Device["type"]) => {
         const result = await runWithSession((accessToken) =>
           generateManufacturedDevicesRequest(accessToken, {
@@ -1068,11 +1224,17 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       addDevice,
+      editDevice,
       addHome,
+      renameHome,
+      removeHome,
       addRoom,
+      renameRoom,
+      removeRoom,
       addScenario,
       editScenario,
       removeScenario,
+      changePassword,
       runWithSession,
       removeDevice,
       authError,

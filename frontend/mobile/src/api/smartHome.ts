@@ -26,6 +26,7 @@ export type ApiDevice = {
   battery_level: number | null;
   last_error: string | null;
   last_seen_at: string | null;
+  is_online: boolean;
   telemetry: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
@@ -71,6 +72,18 @@ export async function createHome(token: string, name: string): Promise<ApiHome> 
   });
 }
 
+export async function updateHome(token: string, homeId: string, name: string): Promise<ApiHome> {
+  return apiRequest<ApiHome>(`/api/v1/homes/${homeId}`, {
+    method: "PATCH",
+    token,
+    body: { name }
+  });
+}
+
+export async function deleteHome(token: string, homeId: string): Promise<void> {
+  return apiRequest<void>(`/api/v1/homes/${homeId}`, { method: "DELETE", token });
+}
+
 export async function listRooms(token: string): Promise<ApiRoom[]> {
   return apiRequest<ApiRoom[]>("/api/v1/rooms", { method: "GET", token });
 }
@@ -84,6 +97,18 @@ export async function createRoom(token: string, name: string, homeId: string): P
       home_id: homeId
     }
   });
+}
+
+export async function updateRoom(token: string, roomId: string, name: string): Promise<ApiRoom> {
+  return apiRequest<ApiRoom>(`/api/v1/rooms/${roomId}`, {
+    method: "PATCH",
+    token,
+    body: { name }
+  });
+}
+
+export async function deleteRoom(token: string, roomId: string): Promise<void> {
+  return apiRequest<void>(`/api/v1/rooms/${roomId}`, { method: "DELETE", token });
 }
 
 export async function listDevices(token: string): Promise<ApiDevice[]> {
@@ -103,6 +128,26 @@ export async function createDevice(
       room_id: payload.roomId,
       hardware_id: payload.hardwareId ?? null
     }
+  });
+}
+
+export async function updateDevice(
+  token: string,
+  deviceId: string,
+  payload: { name?: string; roomId?: string }
+): Promise<ApiDevice> {
+  const body: { name?: string; room_id?: string } = {};
+  if (payload.name !== undefined) {
+    body.name = payload.name;
+  }
+  if (payload.roomId !== undefined) {
+    body.room_id = payload.roomId;
+  }
+
+  return apiRequest<ApiDevice>(`/api/v1/devices/${deviceId}`, {
+    method: "PATCH",
+    token,
+    body
   });
 }
 

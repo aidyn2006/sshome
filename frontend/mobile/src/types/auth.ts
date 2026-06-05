@@ -56,6 +56,18 @@ export type UserOut = {
   role: "USER" | "ADMIN";
   is_active: boolean;
   created_at: string;
+  favorite_device_ids: string[] | null;
+};
+
+export type UpdateUserPayload = {
+  name?: string;
+  phone?: string | null;
+  favorite_device_ids?: string[];
+};
+
+export type ChangePasswordPayload = {
+  current_password: string;
+  new_password: string;
 };
 
 export type AuthContextResponse = {

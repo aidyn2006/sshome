@@ -9,6 +9,10 @@ class RoomCreate(BaseModel):
     home_id: UUID
 
 
+class RoomUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+
+
 class RoomRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

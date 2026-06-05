@@ -2,9 +2,11 @@ export type RootStackParamList = {
   Tabs: undefined;
   AddLocationModal: undefined;
   AddDeviceModal: undefined;
+  EditDeviceModal: { deviceId: string };
   AddScenarioModal: { scenarioId?: string } | undefined;
   AllRoomsModal: undefined;
   ManageFavoritesModal: undefined;
+  ChangePasswordModal: undefined;
 };
 
 export type TabParamList = {

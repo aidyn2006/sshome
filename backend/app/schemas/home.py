@@ -8,6 +8,10 @@ class HomeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
 
 
+class HomeUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+
+
 class HomeRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

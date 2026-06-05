@@ -15,7 +15,7 @@ class ConnectionEstablishedMessage(BaseModel):
 class DeviceUpdatedMessage(BaseModel):
     type: Literal["device.updated"] = "device.updated"
     owner_id: UUID
-    source: Literal["device_action", "scenario_run", "telemetry"]
+    source: Literal["device_action", "device_update", "scenario_run", "telemetry"]
     device: DeviceRead
     action: DeviceAction | None = None
     scenario_id: UUID | None = None

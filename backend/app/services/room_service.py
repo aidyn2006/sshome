@@ -4,9 +4,11 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.device import Device
 from app.models.home import Home
 from app.models.room import Room
-from app.schemas.room import RoomCreate
+from app.schemas.room import RoomCreate, RoomUpdate
+from app.services import device_registry
 
 
 def _get_owned_home(db: Session, *, home_id: UUID, owner_id: UUID) -> Home:
@@ -58,3 +60,31 @@ def get_room_or_404(db: Session, *, room_id: UUID, owner_id: UUID) -> Room:
             detail="Room not found",
         )
     return room
+
+
+def update_room(db: Session, *, room_id: UUID, owner_id: UUID, payload: RoomUpdate) -> Room:
+    room = get_room_or_404(db, room_id=room_id, owner_id=owner_id)
+    room.name = payload.name
+    db.commit()
+    db.refresh(room)
+    return room
+
+
+def delete_room(db: Session, *, room_id: UUID, owner_id: UUID) -> None:
+    room = get_room_or_404(db, room_id=room_id, owner_id=owner_id)
+
+    # Devices are removed by the DB cascade; their factory ids must be released first.
+    hardware_ids = list(
+        db.scalars(
+            select(Device.hardware_id).where(
+                Device.room_id == room.id,
+                Device.hardware_id.is_not(None),
+            )
+        )
+    )
+
+    db.delete(room)
+    db.commit()
+
+    for hardware_id in hardware_ids:
+        device_registry.mark_unclaimed(hardware_id)

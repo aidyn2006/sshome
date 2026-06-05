@@ -16,6 +16,8 @@ type Props = {
 export function DeviceCard({ device, roomName, onToggle }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
   const active = isDeviceActive(device.status);
+  const offline = device.isOnline === false;
+  const canToggle = onToggle && !offline;
 
   const animateTo = (toValue: number) => {
     Animated.spring(scale, { toValue, useNativeDriver: true, speed: 18, bounciness: 6 }).start();
@@ -24,7 +26,7 @@ export function DeviceCard({ device, roomName, onToggle }: Props) {
   const statusLabel = device.status;
 
   return (
-    <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+    <Animated.View style={[styles.card, offline && styles.cardOffline, { transform: [{ scale }] }]}>
       <Pressable
         onPressIn={() => animateTo(0.97)}
         onPressOut={() => animateTo(1)}
@@ -40,7 +42,7 @@ export function DeviceCard({ device, roomName, onToggle }: Props) {
             />
           </View>
 
-          {onToggle ? (
+          {canToggle ? (
             <Pressable
               onPress={async () => {
                 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -52,7 +54,11 @@ export function DeviceCard({ device, roomName, onToggle }: Props) {
             </Pressable>
           ) : (
             <View style={[styles.powerBtn, styles.powerBtnReadOnly]}>
-              <Ionicons name="eye-outline" size={14} color={colors.ink400} />
+              <Ionicons
+                name={offline ? "cloud-offline-outline" : "eye-outline"}
+                size={14}
+                color={colors.ink400}
+              />
             </View>
           )}
         </View>
@@ -66,8 +72,17 @@ export function DeviceCard({ device, roomName, onToggle }: Props) {
           <View style={styles.statusRow}>
             <Text style={styles.room}>{roomName}</Text>
             <Text style={styles.dot}>·</Text>
-            <View style={[styles.statusDot, active && styles.statusDotActive]} />
-            <Text style={[styles.status, active && styles.statusActive]}>{statusLabel}</Text>
+            {offline ? (
+              <>
+                <View style={styles.offlineDot} />
+                <Text style={styles.offlineLabel}>OFFLINE</Text>
+              </>
+            ) : (
+              <>
+                <View style={[styles.statusDot, active && styles.statusDotActive]} />
+                <Text style={[styles.status, active && styles.statusActive]}>{statusLabel}</Text>
+              </>
+            )}
           </View>
         </View>
       </Pressable>
@@ -88,6 +103,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 1,
+  },
+  cardOffline: {
+    opacity: 0.55,
   },
   inner: {
     padding: 14,
@@ -170,5 +188,17 @@ const styles = StyleSheet.create({
   },
   statusActive: {
     color: colors.accent,
+  },
+  offlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.ink400,
+  },
+  offlineLabel: {
+    fontFamily: "monospace",
+    fontSize: 11,
+    color: colors.ink400,
+    fontWeight: "500",
   },
 });

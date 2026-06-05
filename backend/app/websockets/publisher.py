@@ -17,7 +17,7 @@ async def publish_device_update(
     *,
     owner_id: UUID,
     device: DeviceRead,
-    source: Literal["device_action", "scenario_run", "telemetry"],
+    source: Literal["device_action", "device_update", "scenario_run", "telemetry"],
     action: DeviceAction | None = None,
     scenario_id: UUID | None = None,
 ) -> None:
@@ -40,7 +40,7 @@ def publish_device_update_from_sync(
     *,
     owner_id: UUID,
     device: DeviceRead,
-    source: Literal["device_action", "scenario_run", "telemetry"],
+    source: Literal["device_action", "device_update", "scenario_run", "telemetry"],
     action: DeviceAction | None = None,
     scenario_id: UUID | None = None,
 ) -> None:

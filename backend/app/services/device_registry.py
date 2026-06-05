@@ -73,6 +73,14 @@ def mark_claimed(hardware_id: str) -> None:
         _save()
 
 
+def mark_unclaimed(hardware_id: str) -> None:
+    """Release a hardware_id so the physical device can be registered again."""
+    load()
+    if hardware_id in _registry and _registry[hardware_id].get("claimed"):
+        _registry[hardware_id]["claimed"] = False
+        _save()
+
+
 def _save() -> None:
     path = _find_registry_file()
     if path is None:

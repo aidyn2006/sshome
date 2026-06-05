@@ -1,6 +1,7 @@
 import { apiRequest } from "./client";
 import type {
   AuthContextResponse,
+  ChangePasswordPayload,
   GoogleLoginPayload,
   LoginPayload,
   PasswordResetConfirmPayload,
@@ -9,6 +10,7 @@ import type {
   PasswordResetVerifyPayload,
   RefreshPayload,
   TokenPairResponse,
+  UpdateUserPayload,
   UserOut,
   RegisterPayload
 } from "../types/auth";
@@ -98,5 +100,21 @@ export async function getCurrentUser(token: string): Promise<UserOut> {
   return apiRequest<UserOut>("/api/v1/users/me", {
     method: "GET",
     token
+  });
+}
+
+export async function updateCurrentUser(token: string, payload: UpdateUserPayload): Promise<UserOut> {
+  return apiRequest<UserOut>("/api/v1/users/me", {
+    method: "PUT",
+    token,
+    body: payload
+  });
+}
+
+export async function changePassword(token: string, payload: ChangePasswordPayload): Promise<void> {
+  return apiRequest<void>("/api/v1/users/me/password", {
+    method: "POST",
+    token,
+    body: payload
   });
 }

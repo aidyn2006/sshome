@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.user import UserOut, UserUpdateRequest
-from app.services.user_service import update_user_profile
+from app.schemas.user import ChangePasswordRequest, UserOut, UserUpdateRequest
+from app.services.user_service import change_password, update_user_profile
 
 router = APIRouter()
 
@@ -23,3 +23,12 @@ def update_me(
 ) -> UserOut:
     updated_user = update_user_profile(db=db, user=current_user, payload=payload)
     return UserOut.model_validate(updated_user)
+
+
+@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+def change_my_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    change_password(db=db, user=current_user, payload=payload)

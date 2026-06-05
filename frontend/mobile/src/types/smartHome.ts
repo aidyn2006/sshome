@@ -30,6 +30,7 @@ export type Device = {
   battery_level?: number | null;
   last_error?: string | null;
   last_seen_at?: string | null;
+  isOnline?: boolean;
   telemetry?: Record<string, unknown> | null;
   created_at?: string;
   updated_at?: string;

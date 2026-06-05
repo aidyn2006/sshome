@@ -7,7 +7,7 @@ from app.core.deps import CurrentOwnerId
 from app.core.rate_limit import enforce_device_action_rate_limit
 from app.db.session import get_db
 from app.models.enums import DeviceAction, DeviceStatus
-from app.schemas.device import DeviceActionRequest, DeviceCreate, DeviceRead
+from app.schemas.device import DeviceActionRequest, DeviceCreate, DeviceRead, DeviceUpdate
 from app.services import device_service
 from app.services.mqtt_service import publish_device_command
 from app.websockets.publisher import publish_device_update_from_sync
@@ -76,6 +76,23 @@ def apply_device_action(
     )
     publish_device_command(device=device, action=payload.action)
     return device
+
+
+@router.patch("/{device_id}", response_model=DeviceRead)
+def update_device(
+    device_id: UUID,
+    payload: DeviceUpdate,
+    owner_id: CurrentOwnerId,
+    db: Session = Depends(get_db),
+) -> DeviceRead:
+    device = device_service.update_device(db, device_id=device_id, owner_id=owner_id, payload=payload)
+    device_read = DeviceRead.model_validate(device)
+    publish_device_update_from_sync(
+        owner_id=owner_id,
+        device=device_read,
+        source="device_update",
+    )
+    return device_read
 
 
 @router.delete("/{device_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -15,6 +15,8 @@ type Props = {
 
 export function DeviceToggleRow({ device, roomName, onToggle }: Props) {
   const isActive = isDeviceActive(device.status);
+  const offline = device.isOnline === false;
+  const canToggle = onToggle && !offline;
   const thumbX = useRef(new Animated.Value(isActive ? 20 : 2)).current;
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function DeviceToggleRow({ device, roomName, onToggle }: Props) {
   }, [isActive, thumbX]);
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, offline && styles.rowOffline]}>
       <View style={[styles.iconBox, isActive && styles.iconBoxActive]}>
         <Ionicons
           name={getDeviceIconName(device.type, device.status) as keyof typeof Ionicons.glyphMap}
@@ -38,15 +40,19 @@ export function DeviceToggleRow({ device, roomName, onToggle }: Props) {
 
       <View style={styles.labels}>
         <Text style={styles.name} numberOfLines={1}>{device.name}</Text>
-        <Text style={styles.status}>{device.status}</Text>
+        <Text style={styles.status}>{offline ? "OFFLINE" : device.status}</Text>
       </View>
 
+      {offline && (
+        <Ionicons name="cloud-offline-outline" size={16} color={colors.ink400} style={styles.offlineIcon} />
+      )}
+
       <Pressable
-        onPress={onToggle ? async () => {
+        onPress={canToggle ? async () => {
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onToggle();
         } : undefined}
-        style={[styles.track, isActive && styles.trackActive, !onToggle && styles.trackReadOnly]}
+        style={[styles.track, isActive && styles.trackActive, !canToggle && styles.trackReadOnly]}
       >
         <Animated.View style={[styles.thumb, { transform: [{ translateX: thumbX }] }]} />
       </Pressable>
@@ -61,6 +67,12 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
+  },
+  rowOffline: {
+    opacity: 0.55,
+  },
+  offlineIcon: {
+    flexShrink: 0,
   },
   iconBox: {
     width: 32,
