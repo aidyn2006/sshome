@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     telegram_api_timeout_seconds: float = 5.0
     # Base URL the brute-force simulator uses to hit our OWN login endpoint over real HTTP.
     security_self_base_url: str = "http://localhost:8000"
+    # Comma-separated emails that should automatically be granted the ADMIN role
+    # (on registration and on login). Lets you bootstrap the first admin — who can
+    # then see the Red Team / Attack Simulation dashboard — without editing the DB.
+    bootstrap_admin_emails: str = ""
     # MQTT-side defenses (added specifically to defeat replay and telemetry-flood attacks).
     # Replay: reject a telemetry message whose timestamp is older than this many seconds.
     security_replay_max_age_seconds: int = 30
@@ -94,6 +98,10 @@ class Settings(BaseSettings):
     @property
     def cors_allow_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_allow_origins.split(",") if origin.strip()]
+
+    @property
+    def bootstrap_admin_emails_set(self) -> set[str]:
+        return {email.strip().lower() for email in self.bootstrap_admin_emails.split(",") if email.strip()}
 
     @model_validator(mode="after")
     def _forbid_default_secret_in_production(self) -> "Settings":

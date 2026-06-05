@@ -10,7 +10,7 @@ from app.core.security import hash_password, hash_refresh_token, verify_password
 from app.integrations.google_oauth import verify_google_access_token, verify_google_id_token
 from app.models.audit_log import AuditLogAction
 from app.models.refresh_token import RefreshToken
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.auth import GoogleLoginRequest, LoginRequest, LogoutRequest, RefreshRequest, TokenPairResponse
 from app.schemas.user import RegisterRequest
 from app.services.audit_service import log_action
@@ -31,13 +31,26 @@ def register_user(payload: RegisterRequest, db: Session, ip_address: str | None)
     db.commit()
     db.refresh(user)
 
+    _promote_if_bootstrap_admin(user, db)
+
     log_action(db, action=AuditLogAction.REGISTER, user_id=user.id, ip_address=ip_address)
     return user
+
+
+def _promote_if_bootstrap_admin(user: User, db: Session) -> None:
+    """Grant ADMIN to bootstrap emails — lets the first admin self-provision."""
+    if user.role != UserRole.ADMIN and user.email.lower() in settings.bootstrap_admin_emails_set:
+        user.role = UserRole.ADMIN
+        db.commit()
+        db.refresh(user)
 
 
 def _issue_token_pair(user: User, db: Session) -> TokenPairResponse:
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is inactive")
+
+    # Run before minting the access token so the JWT carries role=ADMIN.
+    _promote_if_bootstrap_admin(user, db)
 
     access_token = create_access_token(subject=str(user.id), role=user.role.value)
     refresh_token = create_refresh_token()

@@ -50,6 +50,7 @@ services:
       HIVEMQ_PASSWORD: ${HIVEMQ_PASSWORD:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      BOOTSTRAP_ADMIN_EMAILS: ${BOOTSTRAP_ADMIN_EMAILS:-}
     volumes:
       - ./manufactured_devices.json:/app/manufactured_devices.json
       - ./manufactured_secrets.txt:/app/manufactured_secrets.txt
