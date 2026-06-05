@@ -90,11 +90,13 @@ export function HomeScreen() {
         ...STATIC_STAT_CONFIG[2],
         value: `${activeDevicesCount}/${devices.length}`,
         subtitle: "Devices on",
+        tappable: false,
       },
       {
         ...STATIC_STAT_CONFIG[3],
         value: lowestBattery != null ? `${lowestBattery} %` : "—",
         subtitle: lowestBattery != null ? "Lowest battery" : "No hardware",
+        tappable: false,
       },
     ];
   }, [activeDevicesCount, devices]);
