@@ -111,6 +111,7 @@ export function DevicesScreen() {
           data={FILTERS}
           keyExtractor={(i) => i.key}
           showsHorizontalScrollIndicator={false}
+          style={styles.pillsList}
           contentContainerStyle={styles.pillRow}
           renderItem={({ item }) => (
             <FilterPill
@@ -135,6 +136,7 @@ export function DevicesScreen() {
             keyExtractor={(d) => d.id}
             numColumns={2}
             showsVerticalScrollIndicator={false}
+            style={styles.gridList}
             columnWrapperStyle={styles.colWrap}
             contentContainerStyle={styles.gridContent}
             ListEmptyComponent={
@@ -253,6 +255,12 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingBottom: 4,
   },
+  pillsList: {
+    flexGrow: 0,
+  },
+  gridList: {
+    flex: 1,
+  },
   gridContent: {
     gap: spacing.md,
     paddingBottom: 120,
@@ -262,6 +270,7 @@ const styles = StyleSheet.create({
   },
   cardWrap: {
     flex: 1,
+    maxWidth: "50%",
   },
   skeletonGrid: {
     flexDirection: "row",

@@ -468,6 +468,38 @@ export function RoomScene({
           </group>
         </group>
 
+        {/* Wall-mounted AC unit (left wall, near ceiling) */}
+        <group position={[-2.9, 2.5, 0.6]}>
+          <mesh castShadow>
+            <boxGeometry args={[0.2, 0.36, 1.15]} />
+            <meshStandardMaterial color={lightOn ? "#f4f6f8" : "#2a3344"} roughness={0.5} />
+          </mesh>
+          <mesh position={[0.06, -0.14, 0]}>
+            <boxGeometry args={[0.14, 0.05, 1.05]} />
+            <meshStandardMaterial color={lightOn ? "#cfd6de" : "#1b2330"} roughness={0.6} />
+          </mesh>
+          <mesh position={[0.11, 0.1, 0.52]}>
+            <sphereGeometry args={[0.022, 10, 10]} />
+            <meshStandardMaterial color="#1f8a5b" emissive="#1f8a5b" emissiveIntensity={1.4} />
+          </mesh>
+        </group>
+
+        {/* Ceiling security camera (back-right corner) */}
+        <group position={[2.45, 2.92, -2.45]}>
+          <mesh>
+            <cylinderGeometry args={[0.1, 0.12, 0.08, 16]} />
+            <meshStandardMaterial color={lightOn ? "#e7eaee" : "#2a3344"} roughness={0.5} />
+          </mesh>
+          <mesh position={[0, -0.06, 0]} castShadow>
+            <sphereGeometry args={[0.085, 16, 16]} />
+            <meshStandardMaterial color="#10131a" roughness={0.2} metalness={0.3} />
+          </mesh>
+          <mesh position={[0.06, -0.05, 0.06]}>
+            <sphereGeometry args={[0.013, 8, 8]} />
+            <meshStandardMaterial color="#c7253e" emissive="#c7253e" emissiveIntensity={1.6} />
+          </mesh>
+        </group>
+
         {/* Couch */}
         {variant === "living" && (
           <group position={[0.3, 0, -1.3]}>
