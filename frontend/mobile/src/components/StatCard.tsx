@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
+import { AppPressable } from "./AppPressable";
 import { colors } from "../theme/colors";
 
 type Props = {
@@ -18,7 +19,7 @@ export function StatCard({ icon, title, value, subtitle, accent = colors.accent,
   const trendIcon: keyof typeof Ionicons.glyphMap = trendUp ? "trending-up" : "trending-down";
 
   return (
-    <Pressable style={styles.card} onPress={onPress} disabled={!onPress}>
+    <AppPressable style={styles.card} onPress={onPress} disabled={!onPress}>
       <View style={styles.topRow}>
         <View style={[styles.iconBox, { backgroundColor: `${accent}18` }]}>
           <Ionicons name={icon} size={14} color={accent} />
@@ -38,17 +39,21 @@ export function StatCard({ icon, title, value, subtitle, accent = colors.accent,
       </View>
       <View>
         <View style={styles.valueRow}>
-          <Text style={styles.value}>{value}</Text>
+          <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+            {value}
+          </Text>
         </View>
-        <Text style={styles.label}>{subtitle || title}</Text>
+        <Text style={styles.label} numberOfLines={1}>{subtitle || title}</Text>
       </View>
-    </Pressable>
+    </AppPressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: "47%",
+    minWidth: 140,
     backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 14,

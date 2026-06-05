@@ -87,13 +87,13 @@ export function HomeScreen() {
       { ...STATIC_STAT_CONFIG[2], value: "1.84", subtitle: "kWh · 1h", tappable: false },
       { ...STATIC_STAT_CONFIG[3], value: "42 AQI", subtitle: "Air quality", tappable: false },
       {
-        ...STATIC_STAT_CONFIG[2],
+        ...STATIC_STAT_CONFIG[4],
         value: `${activeDevicesCount}/${devices.length}`,
         subtitle: "Devices on",
         tappable: false,
       },
       {
-        ...STATIC_STAT_CONFIG[3],
+        ...STATIC_STAT_CONFIG[5],
         value: lowestBattery != null ? `${lowestBattery} %` : "—",
         subtitle: lowestBattery != null ? "Lowest battery" : "No hardware",
         tappable: false,
