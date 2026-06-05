@@ -299,10 +299,23 @@ export function RoomScene({
       <fog attach="fog" args={[palette.fog, 12, 28]} />
 
       <ambientLight intensity={lightOn ? 0.36 + 0.12 * k : 0.26} />
+      <hemisphereLight
+        args={[lightOn ? "#f4ead8" : "#3a4a6a", palette.floor, lightOn ? 0.45 : 0.3]}
+      />
       <directionalLight
-        position={[-4, 5, -6]}
-        intensity={lightOn ? 0.58 : 0.46}
+        position={[-4, 6, -4]}
+        intensity={lightOn ? 0.62 : 0.46}
         color={lightOn ? "#c9ddf5" : "#7ea3d7"}
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-camera-near={1}
+        shadow-camera-far={22}
+        shadow-camera-left={-7}
+        shadow-camera-right={7}
+        shadow-camera-top={7}
+        shadow-camera-bottom={-7}
+        shadow-bias={-0.0004}
       />
       <pointLight
         position={[0, 2.7, 0]}
@@ -310,6 +323,9 @@ export function RoomScene({
         distance={10}
         decay={1.3}
         color={lightOn ? "#ffd6a0" : "#5f7fb8"}
+        castShadow={lightOn}
+        shadow-mapSize-width={512}
+        shadow-mapSize-height={512}
       />
 
       <group position={[0, -0.55, 0]}>
