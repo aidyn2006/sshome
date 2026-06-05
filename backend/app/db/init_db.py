@@ -21,6 +21,9 @@ LEGACY_DEVICE_COLUMNS = {
     "last_seen_at",
     "telemetry",
 }
+LEGACY_USER_COLUMNS = {
+    "favorite_device_ids",
+}
 
 
 def _patch_legacy_schema() -> None:
@@ -62,6 +65,7 @@ def _patch_legacy_schema() -> None:
         """,
         "CREATE INDEX IF NOT EXISTS ix_password_reset_codes_user_id ON password_reset_codes (user_id)",
         "CREATE INDEX IF NOT EXISTS ix_password_reset_codes_code_hash ON password_reset_codes (code_hash)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS favorite_device_ids JSON",
     ]
 
     with engine.begin() as connection:
@@ -82,6 +86,7 @@ def init_db() -> None:
         has_devices = inspector.has_table("devices")
         has_users = inspector.has_table("users")
         device_columns = {column["name"] for column in inspector.get_columns("devices")} if has_devices else set()
+        user_columns = {column["name"] for column in inspector.get_columns("users")} if has_users else set()
         current_revision = (
             connection.execute(text("SELECT version_num FROM alembic_version")).scalar()
             if has_alembic_version
@@ -89,6 +94,7 @@ def init_db() -> None:
         )
 
     has_missing_device_columns = has_devices and not LEGACY_DEVICE_COLUMNS.issubset(device_columns)
+    has_missing_user_columns = has_users and not LEGACY_USER_COLUMNS.issubset(user_columns)
 
     if has_devices and not has_alembic_version:
         if not has_users:
@@ -98,7 +104,7 @@ def init_db() -> None:
         command.stamp(alembic_cfg, "head")
         return
 
-    if has_devices and (has_missing_device_columns or current_revision in LEGACY_PATCH_REVISIONS):
+    if has_devices and (has_missing_device_columns or has_missing_user_columns or current_revision in LEGACY_PATCH_REVISIONS):
         _patch_legacy_schema()
         command.stamp(alembic_cfg, "head")
         return

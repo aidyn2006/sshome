@@ -36,3 +36,12 @@ def test_password_reset_code_migration_exists() -> None:
     assert "create password reset codes" in migration
     assert "password_reset_codes" in migration
     assert "code_hash" in migration
+
+
+def test_user_favorite_device_ids_migration_exists() -> None:
+    migration_path = Path("alembic/versions/20260605_0008_add_user_favorite_device_ids.py")
+
+    assert migration_path.exists()
+    migration = migration_path.read_text(encoding="utf-8")
+    assert "add user favorite device ids" in migration
+    assert "favorite_device_ids" in migration
