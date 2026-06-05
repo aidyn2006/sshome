@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ContactShadows, OrbitControls, SoftShadows } from "@react-three/drei";
+import { ContactShadows, OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -21,8 +21,8 @@ import { colors } from "../theme/colors";
 
 /**
  * Web room view — real WebGL 3D (react-three-fiber), sharing the exact same
- * `RoomScene` geometry as the native screen. Drag to orbit, soft + contact
- * shadows for depth, ACES tone mapping for a polished look.
+ * `RoomScene` geometry as the native screen. Drag to orbit, contact shadows +
+ * directional shadow maps for depth, ACES tone mapping for a polished look.
  */
 export function Room3DScreen() {
   const insets = useSafeAreaInsets();
@@ -112,12 +112,11 @@ export function Room3DScreen() {
     <View style={[styles.root, lightOn && styles.rootLight]}>
       <View style={styles.canvas}>
         <Canvas
-          shadows
+          shadows="percentage"
           dpr={[1, 2]}
           camera={{ position: [5.5, 2.6, 5.5], fov: 38 }}
           gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
         >
-          <SoftShadows size={26} samples={12} focus={0.9} />
           <RoomScene
             lightOn={lightOn}
             doorOpen={doorOpen}
