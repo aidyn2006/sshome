@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
+from app.core.rate_limit import enforce_login_rate_limit
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (

@@ -36,6 +36,7 @@ class InMemoryRateLimiter:
 device_action_limiter = InMemoryRateLimiter()
 scenario_run_limiter = InMemoryRateLimiter()
 websocket_connect_limiter = InMemoryRateLimiter()
+login_limiter = InMemoryRateLimiter()
 
 
 def _client_host(scope_carrier: Request | WebSocket) -> str:
@@ -79,6 +80,23 @@ def enforce_scenario_run_rate_limit(request: Request, owner_id: str) -> None:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many scenario execution requests",
+        )
+
+
+def enforce_login_rate_limit(request: Request, email: str) -> None:
+    key = _build_rate_limit_key(
+        prefix="login",
+        owner_id=email.strip().lower(),
+        client_host=_client_host(request),
+    )
+    if not login_limiter.allow(
+        key=key,
+        limit=settings.security_login_rate_limit,
+        window_seconds=settings.security_rate_limit_window_seconds,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts, try again later",
         )
 
 

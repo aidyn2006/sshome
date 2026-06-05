@@ -31,7 +31,7 @@ services:
       DATABASE_ECHO: "false"
       DATABASE_AUTO_INIT: "true"
       AUTH_MODE: jwt
-      AUTH_JWT_SECRET_KEY: super-secret-key
+      AUTH_JWT_SECRET_KEY: ${AUTH_JWT_SECRET_KEY:-super-secret-key}
       AUTH_JWT_ALGORITHM: HS256
       AUTH_JWT_OWNER_ID_CLAIM: owner_id
       AUTH_JWT_SUBJECT_CLAIM: sub

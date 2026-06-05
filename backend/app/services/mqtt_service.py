@@ -1,6 +1,7 @@
 import json
 import logging
 import ssl
+import threading
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
@@ -85,15 +86,7 @@ def _command_payload(*, device_type: DeviceType, action: DeviceAction) -> dict[s
     return None
 
 
-def publish_device_command(*, device: Device, action: DeviceAction) -> None:
-    connection = _resolve_connection_settings()
-    if connection is None or device.hardware_id is None:
-        return
-
-    payload = _command_payload(device_type=device.type, action=action)
-    if payload is None:
-        return
-
+def _publish(*, connection: MqttConnectionSettings, topic: str, payload: dict[str, Any], device_id: object) -> None:
     try:
         import paho.mqtt.publish as publish
 
@@ -103,13 +96,37 @@ def publish_device_command(*, device: Device, action: DeviceAction) -> None:
 
         tls = {"tls_version": ssl.PROTOCOL_TLS_CLIENT} if connection.tls else None
         publish.single(
-            topic=f"devices/{device.hardware_id}/commands",
+            topic=topic,
             payload=json.dumps(payload),
             hostname=connection.host,
             port=connection.port,
             client_id=connection.client_id,
             auth=auth,
             tls=tls,
+            keepalive=10,
         )
     except Exception:
-        logger.exception("Unable to publish MQTT command for device %s", device.id)
+        logger.exception("Unable to publish MQTT command for device %s", device_id)
+
+
+def publish_device_command(*, device: Device, action: DeviceAction) -> None:
+    connection = _resolve_connection_settings()
+    if connection is None or device.hardware_id is None:
+        return
+
+    payload = _command_payload(device_type=device.type, action=action)
+    if payload is None:
+        return
+
+    # Fire-and-forget: an unreachable broker must not block the HTTP request.
+    threading.Thread(
+        target=_publish,
+        kwargs={
+            "connection": connection,
+            "topic": f"devices/{device.hardware_id}/commands",
+            "payload": payload,
+            "device_id": device.id,
+        },
+        daemon=True,
+        name="mqtt-publish",
+    ).start()

@@ -12,6 +12,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 _registry: dict[str, dict] = {}
+_loaded_mtime: float | None = None
 
 
 def _find_registry_file() -> Path | None:
@@ -26,15 +27,19 @@ def _find_registry_file() -> Path | None:
 
 
 def load() -> None:
-    global _registry
+    global _registry, _loaded_mtime
     path = _find_registry_file()
     if path is None:
         logger.warning("manufactured_devices.json not found — device registry disabled")
         return
 
     try:
+        mtime = path.stat().st_mtime
+        if _loaded_mtime == mtime and _registry:
+            return  # file unchanged since last load
         devices: list[dict] = json.loads(path.read_text(encoding="utf-8"))
         _registry = {d["hardware_id"]: d for d in devices}
+        _loaded_mtime = mtime
         logger.info("Device registry loaded: %d device(s) from %s", len(_registry), path)
     except Exception:
         logger.exception("Failed to load device registry from %s", path)
@@ -44,7 +49,9 @@ def is_known_device(hardware_id: str) -> bool:
     """True if this hardware_id was produced by us."""
     load()  # re-read file so devices generated after startup are visible
     if not _registry:
-        return True
+        # Fail closed: with no registry we cannot vouch for any hardware_id.
+        logger.warning("Device registry is empty — rejecting hardware_id %s", hardware_id)
+        return False
     return hardware_id in _registry
 
 

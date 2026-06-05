@@ -3,6 +3,7 @@ import json
 import logging
 import ssl
 import threading
+import time
 from datetime import UTC, datetime
 from urllib.parse import urlparse
 from uuid import UUID
@@ -22,6 +23,10 @@ logger = logging.getLogger(__name__)
 _client: mqtt.Client | None = None
 _thread: threading.Thread | None = None
 _loop: asyncio.AbstractEventLoop | None = None
+_stopping = threading.Event()
+
+_RECONNECT_MIN_SECONDS = 5
+_RECONNECT_MAX_SECONDS = 120
 
 
 def _on_connect(client: mqtt.Client, userdata: object, flags: object, reason_code: object, properties: object = None) -> None:
@@ -134,6 +139,7 @@ def _build_client() -> mqtt.Client | None:
     )
     client.on_connect = _on_connect
     client.on_message = _on_message
+    client.reconnect_delay_set(min_delay=_RECONNECT_MIN_SECONDS, max_delay=_RECONNECT_MAX_SECONDS)
 
     if use_hivemq:
         normalized = cluster_url if "://" in cluster_url else f"mqtts://{cluster_url}"
@@ -156,6 +162,22 @@ def _build_client() -> mqtt.Client | None:
     return client
 
 
+def _run_loop(client: mqtt.Client) -> None:
+    """Keep the MQTT loop alive: an unreachable broker must not kill the thread."""
+    delay = _RECONNECT_MIN_SECONDS
+    while not _stopping.is_set():
+        try:
+            client.loop_forever(retry_first_connection=True)
+            # loop_forever returned — either stop() disconnected us or the loop ended cleanly
+            if _stopping.is_set():
+                return
+        except Exception as exc:
+            logger.warning("MQTT subscriber connection failed (%s: %s) — retrying in %ds", type(exc).__name__, exc, delay)
+        if _stopping.wait(timeout=delay):
+            return
+        delay = min(delay * 2, _RECONNECT_MAX_SECONDS)
+
+
 def start() -> None:
     global _client, _thread, _loop
 
@@ -169,13 +191,15 @@ def start() -> None:
         logger.info("MQTT subscriber not started — no broker configured")
         return
 
-    _thread = threading.Thread(target=_client.loop_forever, daemon=True, name="mqtt-subscriber")
+    _stopping.clear()
+    _thread = threading.Thread(target=_run_loop, args=(_client,), daemon=True, name="mqtt-subscriber")
     _thread.start()
     logger.info("MQTT subscriber thread started")
 
 
 def stop() -> None:
     global _client
+    _stopping.set()
     if _client is not None:
         _client.disconnect()
         _client = None
