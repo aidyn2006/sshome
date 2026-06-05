@@ -54,7 +54,7 @@ export function AddDeviceModalScreen({ navigation }: Props) {
         navigation.goBack();
       }
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Unable to add device");
+      setSaveError(err instanceof Error ? err.message : "Unable to add device!");
     } finally {
       setIsSaving(false);
     }
