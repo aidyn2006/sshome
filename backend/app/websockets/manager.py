@@ -42,5 +42,10 @@ class WebSocketManager:
         for websocket in stale_connections:
             self.disconnect(websocket, owner_id=owner_id)
 
+    async def broadcast_all(self, *, message: dict) -> None:
+        """Send a message to every connected client (used for the security feed)."""
+        for owner_id in list(self._connections.keys()):
+            await self.broadcast_to_owner(owner_id=owner_id, message=message)
+
 
 websocket_manager = WebSocketManager()

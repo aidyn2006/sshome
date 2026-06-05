@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
@@ -19,3 +20,16 @@ class DeviceUpdatedMessage(BaseModel):
     device: DeviceRead
     action: DeviceAction | None = None
     scenario_id: UUID | None = None
+
+
+class SecurityEventMessage(BaseModel):
+    type: Literal["security.event"] = "security.event"
+    id: UUID
+    attack_type: str
+    blocked: bool
+    severity: str
+    target: str | None = None
+    source_ip: str | None = None
+    message: str
+    sim_id: str | None = None
+    created_at: datetime

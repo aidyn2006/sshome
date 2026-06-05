@@ -7,6 +7,7 @@ from app.models.password_reset_code import PasswordResetCode
 from app.models.refresh_token import RefreshToken
 from app.models.room import Room
 from app.models.scenario import Scenario
+from app.models.security_event import AttackType, SecurityEvent, SecuritySeverity
 from app.models.user import User, UserRole
 
 __all__ = [
@@ -21,6 +22,9 @@ __all__ = [
     "Device",
     "Event",
     "Scenario",
+    "SecurityEvent",
+    "AttackType",
+    "SecuritySeverity",
     "DeviceType",
     "DeviceStatus",
     "DeviceAction",

@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -20,12 +21,15 @@ from app.routes.rooms import router as rooms_router
 from app.routes.scenes import router as scenes_router
 from app.routes.scenarios import router as scenarios_router
 from app.routes.system import router as system_router
+from app.routes.security import router as security_router
 from app.routes.users import router as users_router
+from app.websockets import loop_registry
 from app.websockets.router import router as websockets_router
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    loop_registry.set_loop(asyncio.get_running_loop())
     if settings.database_auto_init:
         init_db()
     device_registry.load()
@@ -58,6 +62,7 @@ app.include_router(homes_router, prefix=settings.api_v1_prefix)
 app.include_router(rooms_router, prefix=settings.api_v1_prefix)
 app.include_router(scenes_router, prefix=settings.api_v1_prefix)
 app.include_router(scenarios_router, prefix=settings.api_v1_prefix)
+app.include_router(security_router, prefix=settings.api_v1_prefix)
 app.include_router(users_router, prefix=f"{settings.api_v1_prefix}/users", tags=["users"])
 app.include_router(logs_router, prefix=f"{settings.api_v1_prefix}/logs", tags=["logs"])
 app.include_router(websockets_router)

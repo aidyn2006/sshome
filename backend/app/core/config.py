@@ -63,6 +63,21 @@ class Settings(BaseSettings):
     hivemq_username: str | None = None
     hivemq_password: str | None = None
     hivemq_port: int = 8883
+    # --- Red-team / attack simulation module ---
+    # Telegram alerting (leave token empty to disable — alerts then only go to the log).
+    telegram_bot_token: str | None = None
+    telegram_chat_id: str | None = None
+    telegram_api_timeout_seconds: float = 5.0
+    # Base URL the brute-force simulator uses to hit our OWN login endpoint over real HTTP.
+    security_self_base_url: str = "http://localhost:8000"
+    # MQTT-side defenses (added specifically to defeat replay and telemetry-flood attacks).
+    # Replay: reject a telemetry message whose timestamp is older than this many seconds.
+    security_replay_max_age_seconds: int = 30
+    # Replay: how many recent nonces to remember per device.
+    security_replay_nonce_cache_size: int = 256
+    # DDoS: max telemetry messages accepted per device within the window before throttling.
+    security_telemetry_rate_limit: int = 20
+    security_telemetry_rate_window_seconds: int = 10
     scenario_max_actions: int = 20
     cors_allow_origins: str = (
         "http://localhost:19006,"
