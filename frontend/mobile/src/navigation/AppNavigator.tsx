@@ -1,9 +1,11 @@
 import { NavigationContainer, type Theme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
 import { useEffect, useState } from "react";
 
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import { TabBar } from "../components/TabBar";
 import { ActivityScreen } from "../screens/ActivityScreen";
 import { AddDeviceModalScreen } from "../screens/AddDeviceModalScreen";
@@ -26,6 +28,10 @@ import type { RootStackParamList, TabParamList } from "./types";
 
 const Tab = createBottomTabNavigator<TabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+// Expo Go (SDK 54) ships without the ExpoGL native module, so the native WebGL
+// 3D scene cannot run there. The web build and custom dev/standalone builds can.
+const IS_EXPO_GO = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 const navTheme: Theme = {
   dark: false,
@@ -107,10 +113,8 @@ function TabsNavigator() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Devices" component={DevicesScreen} />
-      {/* 3D-комната доступна только в веб-версии (ноутбук); на телефоне таб скрыт */}
-      {Platform.OS === "web" && (
-        <Tab.Screen name="Room3D" component={Room3DRoute} options={{ title: "Room" }} />
-      )}
+      {/* Real WebGL 3D on web + dev/standalone builds; an honest notice in Expo Go. */}
+      <Tab.Screen name="Room3D" component={Room3DRoute} options={{ title: "Room" }} />
       <Tab.Screen name="Scenes" component={ScenesScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />
       {isAdmin && <Tab.Screen name="Admin" component={AdminScreen} options={{ title: "Admin" }} />}
@@ -118,6 +122,21 @@ function TabsNavigator() {
         <Tab.Screen name="AttackSim" component={AttackSimScreen} options={{ title: "Red Team" }} />
       )}
     </Tab.Navigator>
+  );
+}
+
+function Room3DUnavailable({ detail }: { detail?: string }) {
+  const expoGoNotice = Platform.OS !== "web" && IS_EXPO_GO;
+  return (
+    <View style={styles.room3DFallback}>
+      <Text style={styles.room3DFallbackTitle}>3D room view unavailable</Text>
+      <Text style={styles.room3DFallbackText}>
+        {expoGoNotice
+          ? "Expo Go (SDK 54) doesn't include the GL runtime the 3D scene needs. View it in a web browser (the web app renders full 3D), or run a custom dev build — npx expo run:android / run:ios — to see it on this device."
+          : "The 3D scene failed to load on this device."}
+      </Text>
+      {detail && !expoGoNotice ? <Text style={styles.room3DFallbackDetail}>{detail}</Text> : null}
+    </View>
   );
 }
 
@@ -146,15 +165,7 @@ function Room3DRoute() {
   }, []);
 
   if (loadError) {
-    return (
-      <View style={styles.room3DFallback}>
-        <Text style={styles.room3DFallbackTitle}>3D room view unavailable</Text>
-        <Text style={styles.room3DFallbackText}>
-          Expo Go on this device does not provide the native `ExpoGL` module. Open this screen in a custom dev
-          client or a build that includes the GL runtime.
-        </Text>
-      </View>
-    );
+    return <Room3DUnavailable detail={loadError} />;
   }
 
   if (!Room3DScreen) {
@@ -166,7 +177,12 @@ function Room3DRoute() {
     );
   }
 
-  return <Room3DScreen />;
+  // GL can fail at render time (not just import), so guard the subtree.
+  return (
+    <ErrorBoundary fallback={<Room3DUnavailable />}>
+      <Room3DScreen />
+    </ErrorBoundary>
+  );
 }
 
 export function AppNavigator() {
@@ -284,5 +300,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20
+  },
+  room3DFallbackDetail: {
+    color: colors.ink400,
+    fontFamily: "monospace",
+    fontSize: 11,
+    textAlign: "center",
+    marginTop: 4
   }
 });
