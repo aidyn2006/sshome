@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -32,12 +34,36 @@ const ROOM_ICONS: Array<{ name: string; icon: keyof typeof Ionicons.glyphMap }> 
 
 export function AddLocationModalScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { homes, addHome, addRoom, isAuthSubmitting, logout } = useSmartHome();
+  const { homes, addHome, renameHome, removeHome, addRoom, isAuthSubmitting, logout } = useSmartHome();
   const [mode, setMode] = useState<Mode>("room");
   const [name, setName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState<keyof typeof Ionicons.glyphMap>("tv-outline");
   const [nameFocused, setNameFocused] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [homeDrafts, setHomeDrafts] = useState<Record<string, string>>({});
+
+  const saveHomeName = (homeId: string, currentName: string) => {
+    const draft = homeDrafts[homeId];
+    if (draft === undefined || draft.trim() === currentName) {
+      return;
+    }
+    void renameHome(homeId, draft);
+  };
+
+  const confirmDeleteHome = (homeId: string, homeName: string) => {
+    const message = `Delete "${homeName}"? All rooms and devices in this home will be deleted.`;
+    if (Platform.OS === "web") {
+      if (window.confirm(message)) {
+        void removeHome(homeId);
+      }
+      return;
+    }
+
+    Alert.alert("Delete home", message, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => void removeHome(homeId) },
+    ]);
+  };
 
   const save = async () => {
     if (!name.trim()) return;
@@ -56,7 +82,12 @@ export function AddLocationModalScreen({ navigation }: Props) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={styles.wrap}
     >
-      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+      <ScrollView
+        style={styles.scrollWrap}
+        contentContainerStyle={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 24) }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Grabber */}
         <View style={styles.grabber} />
 
@@ -140,8 +171,47 @@ export function AddLocationModalScreen({ navigation }: Props) {
           </Pressable>
         </View>
 
-        {/* Sign out */}
+        {/* Manage existing homes */}
+        {homes.length > 0 && (
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>YOUR HOMES</Text>
+            <View style={styles.homeList}>
+              {homes.map((home) => (
+                <View key={home.id} style={styles.homeRow}>
+                  <Ionicons name="home-outline" size={18} color={colors.ink500} />
+                  <TextInput
+                    value={homeDrafts[home.id] ?? home.name}
+                    onChangeText={(text) => setHomeDrafts((prev) => ({ ...prev, [home.id]: text }))}
+                    onBlur={() => saveHomeName(home.id, home.name)}
+                    onSubmitEditing={() => saveHomeName(home.id, home.name)}
+                    style={styles.homeInput}
+                    returnKeyType="done"
+                    placeholderTextColor={colors.ink400}
+                  />
+                  <Pressable
+                    style={styles.homeDeleteBtn}
+                    onPress={() => confirmDeleteHome(home.id, home.name)}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Account */}
         <View style={styles.divider} />
+        <Pressable
+          style={styles.accountRow}
+          onPress={() => navigation.navigate("ChangePasswordModal")}
+        >
+          <Ionicons name="lock-closed-outline" size={16} color={colors.ink700} />
+          <Text style={styles.accountRowText}>Change password</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.ink400} />
+        </Pressable>
+
+        {/* Sign out */}
         <Pressable
           style={styles.signOutBtn}
           onPress={() => void logout()}
@@ -153,7 +223,7 @@ export function AddLocationModalScreen({ navigation }: Props) {
           </Text>
         </Pressable>
         <Text style={styles.sessionMeta}>Session · mobile · refreshed just now</Text>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -186,10 +256,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     backgroundColor: "rgba(11,13,18,0.4)",
   },
-  sheet: {
+  scrollWrap: {
     backgroundColor: colors.cream50,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    maxHeight: "92%",
+  },
+  sheet: {
     paddingHorizontal: 24,
     paddingTop: 12,
     gap: 18,
@@ -354,6 +427,51 @@ const styles = StyleSheet.create({
   saveText: {
     color: "#fff",
     fontSize: 15,
+    fontWeight: "500",
+  },
+  homeList: {
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    overflow: "hidden",
+  },
+  homeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.hairline,
+  },
+  homeInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 15,
+    fontWeight: "500",
+    color: colors.ink900,
+  },
+  homeDeleteBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 999,
+    backgroundColor: "#fff1f1",
+    borderWidth: 0.5,
+    borderColor: "#f5c6c6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  accountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    height: 28,
+  },
+  accountRowText: {
+    flex: 1,
+    color: colors.ink700,
+    fontSize: 14,
     fontWeight: "500",
   },
   divider: {

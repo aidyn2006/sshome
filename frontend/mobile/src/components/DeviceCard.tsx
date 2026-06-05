@@ -11,9 +11,11 @@ type Props = {
   device: Device;
   roomName: string;
   onToggle?: () => void;
+  editMode?: boolean;
+  onEdit?: () => void;
 };
 
-export function DeviceCard({ device, roomName, onToggle }: Props) {
+export function DeviceCard({ device, roomName, onToggle, editMode = false, onEdit }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
   const active = isDeviceActive(device.status);
   const offline = device.isOnline === false;
@@ -30,6 +32,7 @@ export function DeviceCard({ device, roomName, onToggle }: Props) {
       <Pressable
         onPressIn={() => animateTo(0.97)}
         onPressOut={() => animateTo(1)}
+        onPress={editMode ? onEdit : undefined}
         style={styles.inner}
       >
         {/* top row */}
@@ -42,7 +45,11 @@ export function DeviceCard({ device, roomName, onToggle }: Props) {
             />
           </View>
 
-          {canToggle ? (
+          {editMode ? (
+            <Pressable onPress={onEdit} style={[styles.powerBtn, styles.editBtn]}>
+              <Ionicons name="pencil-outline" size={14} color={colors.ink700} />
+            </Pressable>
+          ) : canToggle ? (
             <Pressable
               onPress={async () => {
                 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -143,6 +150,11 @@ const styles = StyleSheet.create({
   powerBtnReadOnly: {
     backgroundColor: colors.ink50 ?? colors.ink100,
     opacity: 0.6,
+  },
+  editBtn: {
+    backgroundColor: colors.cream100,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
   },
   meta: {
     gap: 4,

@@ -198,6 +198,14 @@ export function AppNavigator() {
           }}
         />
         <Stack.Screen
+          name="EditDeviceModal"
+          component={EditDeviceModalScreen}
+          options={{
+            presentation: "modal",
+            animation: "slide_from_bottom"
+          }}
+        />
+        <Stack.Screen
           name="AddScenarioModal"
           component={AddScenarioModalScreen}
           options={{
@@ -216,6 +224,14 @@ export function AppNavigator() {
         <Stack.Screen
           name="ManageFavoritesModal"
           component={ManageFavoritesModalScreen}
+          options={{
+            presentation: "modal",
+            animation: "slide_from_bottom"
+          }}
+        />
+        <Stack.Screen
+          name="ChangePasswordModal"
+          component={ChangePasswordModalScreen}
           options={{
             presentation: "modal",
             animation: "slide_from_bottom"

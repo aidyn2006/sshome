@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -15,7 +15,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "AllRoomsModal">;
 
 export function AllRoomsModalScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { rooms, devices } = useSmartHome();
+  const { rooms, devices, renameRoom, removeRoom } = useSmartHome();
+  const [editMode, setEditMode] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   const roomInfo = useMemo(
     () =>
@@ -32,6 +34,29 @@ export function AllRoomsModalScreen({ navigation }: Props) {
     [roomInfo]
   );
 
+  const saveName = (roomId: string, currentName: string) => {
+    const draft = drafts[roomId];
+    if (draft === undefined || draft.trim() === currentName) {
+      return;
+    }
+    void renameRoom(roomId, draft);
+  };
+
+  const confirmDelete = (roomId: string, name: string) => {
+    const message = `Delete "${name}"? All devices in the room will be deleted.`;
+    if (Platform.OS === "web") {
+      if (window.confirm(message)) {
+        void removeRoom(roomId);
+      }
+      return;
+    }
+
+    Alert.alert("Delete room", message, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => void removeRoom(roomId) },
+    ]);
+  };
+
   return (
     <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 24) }]}>
       {/* Header */}
@@ -45,15 +70,33 @@ export function AllRoomsModalScreen({ navigation }: Props) {
               {rooms.length} room{rooms.length !== 1 ? "s" : ""} · {totalActive} device{totalActive !== 1 ? "s" : ""} active
             </Text>
           </View>
-          <Pressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="close" size={18} color={colors.ink700} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            {roomInfo.length > 0 && (
+              <Pressable
+                style={[styles.editBtn, editMode && styles.editBtnActive]}
+                onPress={() => setEditMode((v) => !v)}
+              >
+                <Ionicons
+                  name={editMode ? "checkmark" : "pencil-outline"}
+                  size={15}
+                  color={editMode ? colors.cream50 : colors.ink700}
+                />
+                <Text style={[styles.editText, editMode && styles.editTextActive]}>
+                  {editMode ? "Done" : "Edit"}
+                </Text>
+              </Pressable>
+            )}
+            <Pressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
+              <Ionicons name="close" size={18} color={colors.ink700} />
+            </Pressable>
+          </View>
         </View>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.grid}
+        keyboardShouldPersistTaps="handled"
       >
         {roomInfo.length === 0 ? (
           <View style={styles.empty}>
@@ -64,6 +107,29 @@ export function AllRoomsModalScreen({ navigation }: Props) {
             <Text style={styles.emptyText}>
               Use the profile icon on the home screen to add your first room.
             </Text>
+          </View>
+        ) : editMode ? (
+          <View style={styles.editList}>
+            {roomInfo.map((room) => (
+              <View key={room.id} style={styles.editRow}>
+                <Text style={styles.editEmoji}>{room.emoji}</Text>
+                <TextInput
+                  value={drafts[room.id] ?? room.name}
+                  onChangeText={(text) => setDrafts((prev) => ({ ...prev, [room.id]: text }))}
+                  onBlur={() => saveName(room.id, room.name)}
+                  onSubmitEditing={() => saveName(room.id, room.name)}
+                  style={styles.editInput}
+                  returnKeyType="done"
+                  placeholderTextColor={colors.ink400}
+                />
+                <Pressable
+                  style={styles.deleteBtn}
+                  onPress={() => confirmDelete(room.id, room.name)}
+                >
+                  <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                </Pressable>
+              </View>
+            ))}
           </View>
         ) : (
           <View style={styles.gridInner}>
@@ -108,6 +174,71 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+  },
+  editBtnActive: {
+    backgroundColor: colors.ink900,
+    borderColor: colors.ink900,
+  },
+  editText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.ink700,
+  },
+  editTextActive: {
+    color: colors.cream50,
+  },
+  editList: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    overflow: "hidden",
+  },
+  editRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.hairline,
+  },
+  editEmoji: {
+    fontSize: 20,
+  },
+  editInput: {
+    flex: 1,
+    height: 44,
+    fontSize: 15,
+    fontWeight: "500",
+    color: colors.ink900,
+  },
+  deleteBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    backgroundColor: "#fff1f1",
+    borderWidth: 0.5,
+    borderColor: "#f5c6c6",
+    alignItems: "center",
+    justifyContent: "center",
   },
   eyebrow: {
     fontFamily: "monospace",

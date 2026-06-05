@@ -31,6 +31,7 @@ export function DevicesScreen() {
   const { devices, rooms, isDataLoading, toggleDevice } = useSmartHome();
   const [activeFilter, setActiveFilter] = useState<FilterType>("ALL");
   const [query, setQuery] = useState("");
+  const [editMode, setEditMode] = useState(false);
 
   const filteredDevices = useMemo(() => {
     const type = mapFilterTypeToDeviceType(activeFilter);
@@ -65,9 +66,24 @@ export function DevicesScreen() {
         subtitle={`${activeCount} of ${devices.length} active`}
         secure
         right={
-          <Pressable style={styles.headerBtn} onPress={() => navigation.navigate("AddDeviceModal")}>
-            <Ionicons name="add" size={20} color={colors.ink700} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              style={[styles.editBtn, editMode && styles.editBtnActive]}
+              onPress={() => setEditMode((v) => !v)}
+            >
+              <Ionicons
+                name={editMode ? "checkmark" : "pencil-outline"}
+                size={15}
+                color={editMode ? colors.cream50 : colors.ink700}
+              />
+              <Text style={[styles.editText, editMode && styles.editTextActive]}>
+                {editMode ? "Done" : "Edit"}
+              </Text>
+            </Pressable>
+            <Pressable style={styles.headerBtn} onPress={() => navigation.navigate("AddDeviceModal")}>
+              <Ionicons name="add" size={20} color={colors.ink700} />
+            </Pressable>
+          </View>
         }
       />
 
@@ -135,6 +151,8 @@ export function DevicesScreen() {
                 <DeviceCard
                   device={item}
                   roomName={roomMap.get(item.room_id) ?? "Unknown"}
+                  editMode={editMode}
+                  onEdit={() => navigation.navigate("EditDeviceModal", { deviceId: item.id })}
                   onToggle={
                     item.type === "CAMERA" || item.type === "MOTION" || item.type === "TEMP"
                       ? undefined
@@ -159,6 +177,34 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     gap: spacing.md,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    height: 34,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+  },
+  editBtnActive: {
+    backgroundColor: colors.ink900,
+    borderColor: colors.ink900,
+  },
+  editText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.ink700,
+  },
+  editTextActive: {
+    color: colors.cream50,
   },
   headerBtn: {
     width: 38,
