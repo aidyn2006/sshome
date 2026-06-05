@@ -1,15 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { RegisterPayload } from "../types/auth";
@@ -70,10 +63,10 @@ export function RegisterScreen({
       >
         {/* Compact header */}
         <View style={styles.compactHeader}>
-          <Pressable onPress={onSwitchToLogin} style={styles.backButton}>
+          <AppPressable onPress={onSwitchToLogin} style={styles.backButton}>
             <Ionicons name="chevron-back" size={16} color={colors.ink700} />
             <Text style={styles.backText}>Back</Text>
-          </Pressable>
+          </AppPressable>
           <Text style={styles.compactTitle}>
             Make yourself <Text style={styles.heroAccent}>at home.</Text>
           </Text>
@@ -147,13 +140,13 @@ export function RegisterScreen({
                 onFocus={() => setPwFocused(true)}
                 onBlur={() => setPwFocused(false)}
               />
-              <Pressable onPress={() => setShowPw((v) => !v)} style={styles.eyeBtn}>
+              <AppPressable onPress={() => setShowPw((v) => !v)} style={styles.eyeBtn}>
                 <Ionicons
                   name={showPw ? "eye-off-outline" : "eye-outline"}
                   size={18}
                   color={colors.ink500}
                 />
-              </Pressable>
+              </AppPressable>
             </View>
             {/* Strength meter */}
             {password.length > 0 && (
@@ -188,16 +181,16 @@ export function RegisterScreen({
               onFocus={() => setConfirmFocused(true)}
               onBlur={() => setConfirmFocused(false)}
             />
-            <Pressable onPress={() => setShowConfirm((v) => !v)} style={styles.eyeBtn}>
+            <AppPressable onPress={() => setShowConfirm((v) => !v)} style={styles.eyeBtn}>
               <Ionicons
                 name={showConfirm ? "eye-off-outline" : "eye-outline"}
                 size={18}
                 color={colors.ink500}
               />
-            </Pressable>
+            </AppPressable>
           </Field>
 
-          <Pressable
+          <AppPressable
             style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
             onPress={() => onSubmit({ name, email, phone, password, confirmPassword })}
             disabled={isSubmitting}
@@ -206,13 +199,13 @@ export function RegisterScreen({
               {isSubmitting ? "Creating account…" : "Create Account"}
             </Text>
             {!isSubmitting && <Ionicons name="chevron-forward" size={18} color="#fff" />}
-          </Pressable>
+          </AppPressable>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account?{" "}</Text>
-            <Pressable onPress={onSwitchToLogin}>
+            <AppPressable onPress={onSwitchToLogin}>
               <Text style={styles.footerLink}>Sign in</Text>
-            </Pressable>
+            </AppPressable>
           </View>
         </View>
       </ScrollView>

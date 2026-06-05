@@ -1,15 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -128,9 +121,9 @@ export function AddScenarioModalScreen({ navigation, route }: Props) {
             <Text style={styles.eyebrow}>AUTOMATION</Text>
             <Text style={styles.title}>{editing ? "Edit scene" : "New scene"}</Text>
           </View>
-          <Pressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
+          <AppPressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={18} color={colors.ink700} />
-          </Pressable>
+          </AppPressable>
         </View>
 
         {/* Name */}
@@ -204,7 +197,7 @@ export function AddScenarioModalScreen({ navigation, route }: Props) {
                       {choicesForDevice(device).map((choice) => {
                         const active = selected === choice.action;
                         return (
-                          <Pressable
+                          <AppPressable
                             key={choice.action}
                             style={[styles.choiceChip, active && styles.choiceChipActive]}
                             onPress={() => toggleAction(device.id, choice.action)}
@@ -212,7 +205,7 @@ export function AddScenarioModalScreen({ navigation, route }: Props) {
                             <Text style={[styles.choiceText, active && styles.choiceTextActive]}>
                               {choice.label}
                             </Text>
-                          </Pressable>
+                          </AppPressable>
                         );
                       })}
                     </View>
@@ -228,10 +221,10 @@ export function AddScenarioModalScreen({ navigation, route }: Props) {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <Pressable style={styles.cancelBtn} onPress={() => navigation.goBack()}>
+          <AppPressable style={styles.cancelBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.cancelText}>Cancel</Text>
-          </Pressable>
-          <Pressable
+          </AppPressable>
+          <AppPressable
             style={[styles.saveBtn, (!canSave || isSaving) && styles.saveBtnDisabled]}
             onPress={() => void save()}
             disabled={!canSave || isSaving}
@@ -240,7 +233,7 @@ export function AddScenarioModalScreen({ navigation, route }: Props) {
               {isSaving ? "Saving..." : editing ? "Save Changes" : "Create Scene"}
             </Text>
             {!isSaving && <Ionicons name={editing ? "checkmark" : "add"} size={18} color="#fff" />}
-          </Pressable>
+          </AppPressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

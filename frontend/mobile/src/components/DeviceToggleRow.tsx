@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, StyleSheet, Text, View } from "react-native";
+import { AppPressable } from "./AppPressable";
 
 import { colors } from "../theme/colors";
 import type { Device } from "../types/smartHome";
@@ -47,7 +48,7 @@ export function DeviceToggleRow({ device, roomName, onToggle }: Props) {
         <Ionicons name="cloud-offline-outline" size={16} color={colors.ink400} style={styles.offlineIcon} />
       )}
 
-      <Pressable
+      <AppPressable
         onPress={canToggle ? async () => {
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onToggle();
@@ -55,7 +56,7 @@ export function DeviceToggleRow({ device, roomName, onToggle }: Props) {
         style={[styles.track, isActive && styles.trackActive, !canToggle && styles.trackReadOnly]}
       >
         <Animated.View style={[styles.thumb, { transform: [{ translateX: thumbX }] }]} />
-      </Pressable>
+      </AppPressable>
     </View>
   );
 }

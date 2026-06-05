@@ -1,15 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { LoginPayload } from "../types/auth";
@@ -226,10 +219,10 @@ export function LoginScreen({
 
           {authMode === "reset" ? (
             <>
-              <Pressable onPress={returnToLogin} style={styles.backButton} disabled={isResetSubmitting}>
+              <AppPressable onPress={returnToLogin} style={styles.backButton} disabled={isResetSubmitting}>
                 <Ionicons name="chevron-back" size={16} color={colors.ink700} />
                 <Text style={styles.backText}>Back to sign in</Text>
-              </Pressable>
+              </AppPressable>
 
               <View style={styles.resetHeader}>
                 <Text style={styles.resetTitle}>Reset password</Text>
@@ -269,14 +262,14 @@ export function LoginScreen({
                     </View>
                   </View>
 
-                  <Pressable
+                  <AppPressable
                     style={[styles.submitBtn, isResetSubmitting && styles.submitBtnDisabled]}
                     onPress={handleRequestReset}
                     disabled={isResetSubmitting}
                   >
                     <Text style={styles.submitText}>{isResetSubmitting ? "Sending…" : "Send Code"}</Text>
                     {!isResetSubmitting && <Ionicons name="mail-outline" size={18} color="#fff" />}
-                  </Pressable>
+                  </AppPressable>
                 </>
               ) : null}
 
@@ -300,22 +293,22 @@ export function LoginScreen({
                     </View>
                   </View>
 
-                  <Pressable
+                  <AppPressable
                     style={[styles.submitBtn, isResetSubmitting && styles.submitBtnDisabled]}
                     onPress={handleVerifyResetCode}
                     disabled={isResetSubmitting}
                   >
                     <Text style={styles.submitText}>{isResetSubmitting ? "Checking…" : "Confirm Code"}</Text>
                     {!isResetSubmitting && <Ionicons name="checkmark" size={18} color="#fff" />}
-                  </Pressable>
+                  </AppPressable>
 
-                  <Pressable
+                  <AppPressable
                     onPress={handleRequestReset}
                     style={styles.secondaryLinkButton}
                     disabled={isResetSubmitting}
                   >
                     <Text style={styles.secondaryLinkText}>Send a new code</Text>
-                  </Pressable>
+                  </AppPressable>
                 </>
               ) : null}
 
@@ -335,13 +328,13 @@ export function LoginScreen({
                         onFocus={() => setNewPwFocused(true)}
                         onBlur={() => setNewPwFocused(false)}
                       />
-                      <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
+                      <AppPressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
                         <Ionicons
                           name={showNewPw ? "eye-off-outline" : "eye-outline"}
                           size={18}
                           color={colors.ink500}
                         />
-                      </Pressable>
+                      </AppPressable>
                     </View>
                   </View>
 
@@ -359,24 +352,24 @@ export function LoginScreen({
                         onFocus={() => setConfirmPwFocused(true)}
                         onBlur={() => setConfirmPwFocused(false)}
                       />
-                      <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
+                      <AppPressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
                         <Ionicons
                           name={showConfirmPw ? "eye-off-outline" : "eye-outline"}
                           size={18}
                           color={colors.ink500}
                         />
-                      </Pressable>
+                      </AppPressable>
                     </View>
                   </View>
 
-                  <Pressable
+                  <AppPressable
                     style={[styles.submitBtn, isResetSubmitting && styles.submitBtnDisabled]}
                     onPress={handleConfirmReset}
                     disabled={isResetSubmitting}
                   >
                     <Text style={styles.submitText}>{isResetSubmitting ? "Updating…" : "Update Password"}</Text>
                     {!isResetSubmitting && <Ionicons name="chevron-forward" size={18} color="#fff" />}
-                  </Pressable>
+                  </AppPressable>
                 </>
               ) : null}
             </>
@@ -420,26 +413,26 @@ export function LoginScreen({
                     onFocus={() => setPwFocused(true)}
                     onBlur={() => setPwFocused(false)}
                   />
-                  <Pressable onPress={() => setShowPw((v) => !v)} style={styles.eyeBtn}>
+                  <AppPressable onPress={() => setShowPw((v) => !v)} style={styles.eyeBtn}>
                     <Ionicons name={showPw ? "eye-off-outline" : "eye-outline"} size={18} color={colors.ink500} />
-                  </Pressable>
+                  </AppPressable>
                 </View>
               </View>
 
               <View style={styles.forgotRow}>
-                <Pressable onPress={openPasswordReset} disabled={isBusy}>
+                <AppPressable onPress={openPasswordReset} disabled={isBusy}>
                   <Text style={styles.footerLink}>Forgot password?</Text>
-                </Pressable>
+                </AppPressable>
               </View>
 
-              <Pressable
+              <AppPressable
                 style={[styles.submitBtn, isBusy && styles.submitBtnDisabled]}
                 onPress={() => onSubmit({ email, password })}
                 disabled={isBusy}
               >
                 <Text style={styles.submitText}>{isSubmitting ? "Authorizing…" : "Sign In"}</Text>
                 {!isSubmitting && <Ionicons name="chevron-forward" size={18} color="#fff" />}
-              </Pressable>
+              </AppPressable>
 
               <View style={styles.divider}>
                 <View style={styles.divLine} />
@@ -448,21 +441,21 @@ export function LoginScreen({
               </View>
 
               <View style={styles.socialRow}>
-                <Pressable
+                <AppPressable
                   style={[styles.socialButton, isBusy && styles.socialButtonDisabled]}
                   onPress={onGoogleSubmit}
                   disabled={isBusy}
                 >
                   <Ionicons name="logo-google" size={18} color="#374151" />
                   <Text style={styles.socialText}>Google</Text>
-                </Pressable>
+                </AppPressable>
               </View>
 
               <View style={styles.footer}>
                 <Text style={styles.footerText}>Don't have an account?{" "}</Text>
-                <Pressable onPress={onSwitchToRegister} disabled={isBusy}>
+                <AppPressable onPress={onSwitchToRegister} disabled={isBusy}>
                   <Text style={styles.footerLink}>Create an account</Text>
-                </Pressable>
+                </AppPressable>
               </View>
             </>
           )}

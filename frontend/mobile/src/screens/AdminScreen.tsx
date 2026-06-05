@@ -1,15 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View
-} from "react-native";
+  ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 
 import type { AdminUser, AuditLogEntry, ManufacturedDevice } from "../api/admin";
 import { ScreenHeader } from "../components/ScreenHeader";
@@ -110,14 +103,14 @@ export function AdminScreen() {
         subtitle="Factory devices, user roles, and security audit."
         secure
         right={
-          <Pressable
+          <AppPressable
             accessibilityRole="button"
             accessibilityLabel="Refresh admin data"
             style={styles.iconButton}
             onPress={() => void loadAdminData()}
           >
             <Ionicons name="refresh" size={17} color={colors.ink700} />
-          </Pressable>
+          </AppPressable>
         }
       />
 
@@ -142,7 +135,7 @@ export function AdminScreen() {
                 maxLength={3}
               />
             </View>
-            <Pressable
+            <AppPressable
               accessibilityRole="button"
               disabled={isGenerating}
               style={[styles.actionButton, isGenerating && styles.actionButtonDisabled]}
@@ -150,21 +143,21 @@ export function AdminScreen() {
             >
               <Ionicons name="add-circle-outline" size={18} color={colors.onAccent} />
               <Text style={styles.actionButtonText}>Generate</Text>
-            </Pressable>
+            </AppPressable>
           </View>
 
           <View style={styles.typeGrid}>
             {DEVICE_TYPES.map((type) => {
               const isActive = type === deviceType;
               return (
-                <Pressable
+                <AppPressable
                   accessibilityRole="button"
                   key={type}
                   style={[styles.typeChip, isActive && styles.typeChipActive]}
                   onPress={() => setDeviceType(type)}
                 >
                   <Text style={[styles.typeChipText, isActive && styles.typeChipTextActive]}>{type}</Text>
-                </Pressable>
+                </AppPressable>
               );
             })}
           </View>
@@ -214,7 +207,7 @@ export function AdminScreen() {
                   <Text style={styles.userName}>{item.name}</Text>
                   <Text style={styles.userEmail}>{item.email}</Text>
                 </View>
-                <Pressable
+                <AppPressable
                   accessibilityRole="button"
                   disabled={isCurrentUser || isUpdating}
                   style={[styles.roleButton, item.role === "ADMIN" && styles.roleButtonAdmin, (isCurrentUser || isUpdating) && styles.roleButtonDisabled]}
@@ -223,7 +216,7 @@ export function AdminScreen() {
                   <Text style={[styles.roleButtonText, item.role === "ADMIN" && styles.roleButtonAdminText]}>
                     {isUpdating ? "..." : item.role}
                   </Text>
-                </Pressable>
+                </AppPressable>
               </View>
             );
           })}

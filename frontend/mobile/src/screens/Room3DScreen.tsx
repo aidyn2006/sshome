@@ -3,7 +3,8 @@ import { OrbitControls } from "@react-three/drei/native";
 import { Canvas } from "@react-three/fiber/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { PanResponder, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -169,7 +170,7 @@ export function Room3DScreen() {
             {rooms.map((room) => {
               const active = room.id === (selectedRoom?.id ?? rooms[0]?.id);
               return (
-                <Pressable
+                <AppPressable
                   key={room.id}
                   onPress={() => setSelectedRoomId(room.id)}
                   style={[
@@ -188,7 +189,7 @@ export function Room3DScreen() {
                   >
                     {room.name}
                   </Text>
-                </Pressable>
+                </AppPressable>
               );
             })}
           </ScrollView>
@@ -228,13 +229,13 @@ export function Room3DScreen() {
               <Text style={styles.intensityValue}>{intensity}<Text style={styles.intensityUnit}>%</Text></Text>
             </View>
             <View style={styles.intensityControlRow}>
-              <Pressable
+              <AppPressable
                 style={styles.intensityStepButton}
                 onPress={() => nudgeIntensity(-10)}
                 hitSlop={8}
               >
                 <Ionicons name="remove" size={16} color={colors.ink700} />
-              </Pressable>
+              </AppPressable>
 
               <View
                 style={styles.intensityTrackTouch}
@@ -247,27 +248,27 @@ export function Room3DScreen() {
                 </View>
               </View>
 
-              <Pressable
+              <AppPressable
                 style={styles.intensityStepButton}
                 onPress={() => nudgeIntensity(10)}
                 hitSlop={8}
               >
                 <Ionicons name="add" size={16} color={colors.ink700} />
-              </Pressable>
+              </AppPressable>
             </View>
             <Text style={styles.intensityHint}>Drag the bar or use - / +</Text>
           </View>
         )}
 
         <View style={styles.panelActions}>
-          <Pressable style={styles.allOnBtn} onPress={() => switchAll("ON")}>
+          <AppPressable style={styles.allOnBtn} onPress={() => switchAll("ON")}>
             <Ionicons name="power" size={16} color="#fff" />
             <Text style={styles.allOnText}>Power on all</Text>
-          </Pressable>
-          <Pressable style={[styles.allOffBtn, !lightOn && styles.allOffBtnDark]} onPress={() => switchAll("OFF")}>
+          </AppPressable>
+          <AppPressable style={[styles.allOffBtn, !lightOn && styles.allOffBtnDark]} onPress={() => switchAll("OFF")}>
             <Ionicons name="power" size={16} color={lightOn ? colors.ink700 : colors.cream50} />
             <Text style={[styles.allOffText, !lightOn && styles.allOffTextDark]}>Power off</Text>
-          </Pressable>
+          </AppPressable>
         </View>
       </View>
     </View>
@@ -290,13 +291,13 @@ function HudChip({
   onPress: () => void;
 }) {
   return (
-    <Pressable style={[styles.chip, light && styles.chipLight, active && styles.chipActive]} onPress={onPress}>
+    <AppPressable style={[styles.chip, light && styles.chipLight, active && styles.chipActive]} onPress={onPress}>
       <View style={[styles.chipIcon, active && styles.chipIconActive, light && !active && styles.chipIconLight]}>
         <Ionicons name={icon} size={13} color={active ? "#fff" : light ? colors.ink700 : colors.cream50} />
       </View>
       <Text style={[styles.chipLabel, light && styles.chipLabelLight]}>{label}</Text>
       <Text style={[styles.chipState, light && styles.chipStateLight, active && styles.chipStateActive]}>{state}</Text>
-    </Pressable>
+    </AppPressable>
   );
 }
 

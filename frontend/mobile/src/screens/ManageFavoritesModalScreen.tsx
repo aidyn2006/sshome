@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -41,9 +42,9 @@ export function ManageFavoritesModalScreen({ navigation }: Props) {
               {favoriteDeviceIds.length} device{favoriteDeviceIds.length !== 1 ? "s" : ""} selected
             </Text>
           </View>
-          <Pressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
+          <AppPressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={18} color={colors.ink700} />
-          </Pressable>
+          </AppPressable>
         </View>
       </View>
 
@@ -65,7 +66,7 @@ export function ManageFavoritesModalScreen({ navigation }: Props) {
 
               return (
                 <View key={device.id}>
-                  <Pressable
+                  <AppPressable
                     style={styles.deviceRow}
                     onPress={() => toggleFavorite(device.id)}
                   >
@@ -83,7 +84,7 @@ export function ManageFavoritesModalScreen({ navigation }: Props) {
                     <View style={[styles.checkbox, isFav && styles.checkboxActive]}>
                       {isFav && <Ionicons name="checkmark" size={14} color={colors.surface} />}
                     </View>
-                  </Pressable>
+                  </AppPressable>
                   {index < sortedDevices.length - 1 && (
                     <View style={styles.divider} />
                   )}
@@ -99,9 +100,9 @@ export function ManageFavoritesModalScreen({ navigation }: Props) {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-        <Pressable style={styles.doneBtn} onPress={() => navigation.goBack()}>
+        <AppPressable style={styles.doneBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.doneBtnText}>Done</Text>
-        </Pressable>
+        </AppPressable>
       </View>
     </View>
   );

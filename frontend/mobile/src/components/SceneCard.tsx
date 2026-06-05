@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRef, useState } from "react";
-import { Animated, ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { AppPressable } from "./AppPressable";
 
 import { colors } from "../theme/colors";
 import type { Scenario } from "../types/smartHome";
@@ -63,21 +64,21 @@ export function SceneCard({ scene, colorIndex, onRun, editMode = false, onEdit, 
 
       {editMode ? (
         <View style={styles.editActions}>
-          <Pressable onPress={onEdit} style={styles.editBtn}>
+          <AppPressable onPress={onEdit} style={styles.editBtn}>
             <Ionicons name="pencil-outline" size={15} color={colors.ink700} />
-          </Pressable>
-          <Pressable onPress={onDelete} style={[styles.editBtn, styles.deleteBtn]}>
+          </AppPressable>
+          <AppPressable onPress={onDelete} style={[styles.editBtn, styles.deleteBtn]}>
             <Ionicons name="trash-outline" size={15} color="#c53030" />
-          </Pressable>
+          </AppPressable>
         </View>
       ) : (
-        <Pressable onPress={run} style={[styles.runBtn, running && { backgroundColor: accent }]}>
+        <AppPressable onPress={run} style={[styles.runBtn, running && { backgroundColor: accent }]}>
           {running ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <Ionicons name="play" size={14} color="#fff" />
           )}
-        </Pressable>
+        </AppPressable>
       )}
     </Animated.View>
   );

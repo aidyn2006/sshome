@@ -19,14 +19,18 @@ depends_on = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    # create_type=False: we create the enums explicitly below, so create_table
+    # must NOT try to emit CREATE TYPE again (that would raise "type already
+    # exists" and abort the migration).
     attack_type = postgresql.ENUM(
-        "MQTT_SPOOFING", "BRUTE_FORCE", "REPLAY", "DDOS", name="attack_type"
+        "MQTT_SPOOFING", "BRUTE_FORCE", "REPLAY", "DDOS", name="attack_type", create_type=False
     )
     security_severity = postgresql.ENUM(
-        "INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL", name="security_severity"
+        "INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL", name="security_severity", create_type=False
     )
-    attack_type.create(op.get_bind(), checkfirst=True)
-    security_severity.create(op.get_bind(), checkfirst=True)
+    attack_type.create(bind, checkfirst=True)
+    security_severity.create(bind, checkfirst=True)
 
     op.create_table(
         "security_events",
