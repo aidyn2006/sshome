@@ -1,15 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -125,9 +118,9 @@ export function ChangePasswordModalScreen({ navigation }: Props) {
             <Text style={styles.eyebrow}>ACCOUNT</Text>
             <Text style={styles.title}>Change password</Text>
           </View>
-          <Pressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
+          <AppPressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={18} color={colors.ink700} />
-          </Pressable>
+          </AppPressable>
         </View>
 
         <View style={styles.fieldGroup}>
@@ -188,17 +181,17 @@ export function ChangePasswordModalScreen({ navigation }: Props) {
         )}
 
         <View style={styles.actions}>
-          <Pressable style={styles.cancelBtn} onPress={() => navigation.goBack()}>
+          <AppPressable style={styles.cancelBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.cancelText}>Cancel</Text>
-          </Pressable>
-          <Pressable
+          </AppPressable>
+          <AppPressable
             style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
             onPress={() => void save()}
             disabled={!canSave}
           >
             <Text style={styles.saveText}>{isSaving ? "Saving..." : "Save"}</Text>
             {!isSaving && <Ionicons name="checkmark" size={16} color={colors.onAccent} />}
-          </Pressable>
+          </AppPressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -1,16 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+  Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -120,9 +112,9 @@ export function EditDeviceModalScreen({ navigation, route }: Props) {
             <Ionicons name="hardware-chip-outline" size={24} color={colors.ink500} />
           </View>
           <Text style={styles.missingTitle}>Device not found</Text>
-          <Pressable style={styles.doneBtn} onPress={() => navigation.goBack()}>
+          <AppPressable style={styles.doneBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.doneText}>Done</Text>
-          </Pressable>
+          </AppPressable>
         </View>
       </View>
     );
@@ -149,9 +141,9 @@ export function EditDeviceModalScreen({ navigation, route }: Props) {
             <Text style={styles.eyebrow}>DEVICE</Text>
             <Text style={styles.title}>Edit device</Text>
           </View>
-          <Pressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
+          <AppPressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={18} color={colors.ink700} />
-          </Pressable>
+          </AppPressable>
         </View>
 
         <View style={styles.summary}>
@@ -199,7 +191,7 @@ export function EditDeviceModalScreen({ navigation, route }: Props) {
           ) : (
             <View style={styles.roomList}>
               {rooms.map((room) => (
-                <Pressable
+                <AppPressable
                   key={room.id}
                   style={[styles.roomRow, selectedRoomId === room.id && styles.roomRowActive]}
                   onPress={() => setSelectedRoomId(room.id)}
@@ -211,29 +203,29 @@ export function EditDeviceModalScreen({ navigation, route }: Props) {
                   {selectedRoomId === room.id && (
                     <Ionicons name="checkmark" size={18} color={colors.accent} />
                   )}
-                </Pressable>
+                </AppPressable>
               ))}
             </View>
           )}
         </View>
 
         <View style={styles.actions}>
-          <Pressable
+          <AppPressable
             style={[styles.deleteBtn, isDeleting && styles.actionDisabled]}
             onPress={confirmDelete}
             disabled={isDeleting || isSaving}
           >
             <Ionicons name="trash-outline" size={16} color={colors.danger} />
             <Text style={styles.deleteText}>{isDeleting ? "Deleting..." : "Delete"}</Text>
-          </Pressable>
-          <Pressable
+          </AppPressable>
+          <AppPressable
             style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
             onPress={() => void save()}
             disabled={!canSave}
           >
             <Text style={styles.saveText}>{isSaving ? "Saving..." : "Save"}</Text>
             {!isSaving && <Ionicons name="checkmark" size={16} color={colors.onAccent} />}
-          </Pressable>
+          </AppPressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

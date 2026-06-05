@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 
 import { getBackendHealth } from "../api/system";
 import { DeviceToggleRow } from "../components/DeviceToggleRow";
@@ -125,9 +126,9 @@ export function HomeScreen() {
         secure
         backendStatus={backendStatus}
         right={
-          <Pressable onPress={() => navigation.navigate("AddLocationModal")} style={styles.avatarBtn}>
+          <AppPressable onPress={() => navigation.navigate("AddLocationModal")} style={styles.avatarBtn}>
             <Ionicons name="person-outline" size={18} color={colors.ink700} />
-          </Pressable>
+          </AppPressable>
         }
       />
 
@@ -249,10 +250,10 @@ function Section({
           <Text style={styles.sectionTitle}>{title}</Text>
         </View>
         {action && (
-          <Pressable style={styles.sectionAction} onPress={onAction} disabled={!onAction}>
+          <AppPressable style={styles.sectionAction} onPress={onAction} disabled={!onAction}>
             <Text style={styles.sectionActionText}>{action}</Text>
             <Ionicons name="chevron-forward" size={14} color={colors.ink700} />
-          </Pressable>
+          </AppPressable>
         )}
       </View>
       {children}

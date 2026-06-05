@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { AppPressable } from "./AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors } from "../theme/colors";
@@ -37,7 +38,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           const displayLabel = route.name === "Room3D" ? "Room" : label;
 
           return (
-            <Pressable
+            <AppPressable
               key={route.key}
               onPress={() => navigation.navigate(route.name)}
               style={styles.tabButton}
@@ -53,7 +54,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 />
               </View>
               <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{displayLabel}</Text>
-            </Pressable>
+            </AppPressable>
           );
         })}
       </View>

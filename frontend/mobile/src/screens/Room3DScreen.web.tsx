@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 
 import { useSmartHome } from "../store/SmartHomeContext";
 import { colors } from "../theme/colors";
@@ -174,14 +175,14 @@ export function Room3DScreen() {
               {rooms.map((room) => {
                 const active = room.id === (selectedRoom?.id ?? rooms[0]?.id);
                 return (
-                  <Pressable
+                  <AppPressable
                     key={room.id}
                     onPress={() => setSelectedRoomId(room.id)}
                     style={[styles.chip, active && styles.chipActive]}
                   >
                     <Text style={styles.roomEmoji}>{room.emoji}</Text>
                     <Text style={[styles.chipText, active && styles.chipTextActive]}>{room.name}</Text>
-                  </Pressable>
+                  </AppPressable>
                 );
               })}
             </ScrollView>
@@ -216,28 +217,28 @@ export function Room3DScreen() {
           {lightOn && (
             <View style={styles.intensityRow}>
               <Text style={styles.intensityLabel}>INTENSITY</Text>
-              <Pressable style={styles.intensityStepButton} onPress={() => nudgeIntensity(-10)}>
+              <AppPressable style={styles.intensityStepButton} onPress={() => nudgeIntensity(-10)}>
                 <Ionicons name="remove" size={14} color={colors.ink700} />
-              </Pressable>
+              </AppPressable>
               <View style={styles.intensityTrack}>
                 <View style={[styles.intensityFill, { width: `${intensity}%` }]} />
               </View>
-              <Pressable style={styles.intensityStepButton} onPress={() => nudgeIntensity(10)}>
+              <AppPressable style={styles.intensityStepButton} onPress={() => nudgeIntensity(10)}>
                 <Ionicons name="add" size={14} color={colors.ink700} />
-              </Pressable>
+              </AppPressable>
               <Text style={styles.intensityValue}>{intensity}%</Text>
             </View>
           )}
 
           <View style={styles.actionsRow}>
-            <Pressable style={styles.allOnBtn} onPress={() => switchAll("ON")}>
+            <AppPressable style={styles.allOnBtn} onPress={() => switchAll("ON")}>
               <Ionicons name="power" size={14} color="#fff" />
               <Text style={styles.allOnText}>Power on all</Text>
-            </Pressable>
-            <Pressable style={styles.allOffBtn} onPress={() => switchAll("OFF")}>
+            </AppPressable>
+            <AppPressable style={styles.allOffBtn} onPress={() => switchAll("OFF")}>
               <Ionicons name="power" size={14} color={colors.ink700} />
               <Text style={styles.allOffText}>Power off</Text>
-            </Pressable>
+            </AppPressable>
           </View>
         </View>
       </View>
@@ -399,7 +400,7 @@ function RoomIllustration({
           <View style={[scene.baseboard, { backgroundColor: palette.baseboard }]} />
 
           {/* door (left side of the back wall) */}
-          <Pressable
+          <AppPressable
             onPress={hasDoor ? onDoorPress : undefined}
             disabled={!hasDoor}
             style={[scene.doorFrame, !hasDoor && { opacity: 0.45 }]}
@@ -417,10 +418,10 @@ function RoomIllustration({
             >
               <View style={scene.doorHandle} />
             </Animated.View>
-          </Pressable>
+          </AppPressable>
 
           {/* window (right side of the back wall) */}
-          <Pressable onPress={onWindowPress} style={scene.windowFrame}>
+          <AppPressable onPress={onWindowPress} style={scene.windowFrame}>
             <View style={[scene.windowSky, { backgroundColor: palette.windowSky }]}>
               {/* moon / sun */}
               <View
@@ -435,7 +436,7 @@ function RoomIllustration({
               <View style={scene.mullionV} />
               <View style={scene.mullionH} />
             </View>
-          </Pressable>
+          </AppPressable>
 
           {/* wall art */}
           <View style={[scene.wallArt, { borderColor: accent }]}>
@@ -444,7 +445,7 @@ function RoomIllustration({
         </View>
 
         {/* pendant lamp (over the room center) */}
-        <Pressable
+        <AppPressable
           onPress={hasLight ? onLightPress : undefined}
           disabled={!hasLight}
           style={[scene.lampHitbox, !hasLight && { opacity: 0.45 }]}
@@ -453,7 +454,7 @@ function RoomIllustration({
           <View style={[scene.lampShade, lightOn && { backgroundColor: "#3a3f4d" }]}>
             <View style={[scene.lampBulb, lightOn && { backgroundColor: "#ffd76e" }]} />
           </View>
-        </Pressable>
+        </AppPressable>
 
         {/* light cone + glow pool */}
         <Animated.View pointerEvents="none" style={[scene.lightCone, { opacity: glowOpacity }]} />
@@ -542,7 +543,7 @@ function DeviceChip({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <AppPressable
       style={[styles.deviceChip, active && styles.deviceChipActive, disabled && styles.deviceChipDisabled]}
       onPress={onPress}
       disabled={disabled}
@@ -552,7 +553,7 @@ function DeviceChip({
       </View>
       <Text style={styles.deviceChipLabel}>{label}</Text>
       <Text style={[styles.deviceChipState, active && styles.deviceChipStateActive]}>{state}</Text>
-    </Pressable>
+    </AppPressable>
   );
 }
 

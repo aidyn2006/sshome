@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
@@ -67,7 +68,7 @@ export function DevicesScreen() {
         secure
         right={
           <View style={styles.headerActions}>
-            <Pressable
+            <AppPressable
               style={[styles.editBtn, editMode && styles.editBtnActive]}
               onPress={() => setEditMode((v) => !v)}
             >
@@ -79,10 +80,10 @@ export function DevicesScreen() {
               <Text style={[styles.editText, editMode && styles.editTextActive]}>
                 {editMode ? "Done" : "Edit"}
               </Text>
-            </Pressable>
-            <Pressable style={styles.headerBtn} onPress={() => navigation.navigate("AddDeviceModal")}>
+            </AppPressable>
+            <AppPressable style={styles.headerBtn} onPress={() => navigation.navigate("AddDeviceModal")}>
               <Ionicons name="add" size={20} color={colors.ink700} />
-            </Pressable>
+            </AppPressable>
           </View>
         }
       />
@@ -99,7 +100,15 @@ export function DevicesScreen() {
             style={styles.searchInput}
           />
           {query.length > 0 && (
-            <Ionicons name="close-outline" size={18} color={colors.ink500} onPress={() => setQuery("")} />
+            <AppPressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+              hitSlop={8}
+              style={styles.searchClear}
+              onPress={() => setQuery("")}
+            >
+              <Ionicons name="close-outline" size={18} color={colors.ink500} />
+            </AppPressable>
           )}
         </View>
 
@@ -232,6 +241,12 @@ const styles = StyleSheet.create({
     height: "100%",
     color: colors.ink900,
     fontSize: 15,
+  },
+  searchClear: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
   pillRow: {
     gap: 8,

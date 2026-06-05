@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, StyleSheet, Text, View } from "react-native";
+import { AppPressable } from "./AppPressable";
 
 import { colors } from "../theme/colors";
 import type { Device } from "../types/smartHome";
@@ -29,7 +30,7 @@ export function DeviceCard({ device, roomName, onToggle, editMode = false, onEdi
 
   return (
     <Animated.View style={[styles.card, offline && styles.cardOffline, { transform: [{ scale }] }]}>
-      <Pressable
+      <AppPressable
         onPressIn={() => animateTo(0.97)}
         onPressOut={() => animateTo(1)}
         onPress={editMode ? onEdit : undefined}
@@ -46,11 +47,11 @@ export function DeviceCard({ device, roomName, onToggle, editMode = false, onEdi
           </View>
 
           {editMode ? (
-            <Pressable onPress={onEdit} style={[styles.powerBtn, styles.editBtn]}>
+            <AppPressable onPress={onEdit} style={[styles.powerBtn, styles.editBtn]}>
               <Ionicons name="pencil-outline" size={14} color={colors.ink700} />
-            </Pressable>
+            </AppPressable>
           ) : canToggle ? (
-            <Pressable
+            <AppPressable
               onPress={async () => {
                 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onToggle();
@@ -58,7 +59,7 @@ export function DeviceCard({ device, roomName, onToggle, editMode = false, onEdi
               style={[styles.powerBtn, active && styles.powerBtnOn]}
             >
               <Ionicons name="power" size={14} color={active ? colors.cream50 : colors.ink500} />
-            </Pressable>
+            </AppPressable>
           ) : (
             <View style={[styles.powerBtn, styles.powerBtnReadOnly]}>
               <Ionicons
@@ -92,7 +93,7 @@ export function DeviceCard({ device, roomName, onToggle, editMode = false, onEdi
             )}
           </View>
         </View>
-      </Pressable>
+      </AppPressable>
     </Animated.View>
   );
 }

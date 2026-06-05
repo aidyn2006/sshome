@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -72,7 +73,7 @@ export function AllRoomsModalScreen({ navigation }: Props) {
           </View>
           <View style={styles.headerActions}>
             {roomInfo.length > 0 && (
-              <Pressable
+              <AppPressable
                 style={[styles.editBtn, editMode && styles.editBtnActive]}
                 onPress={() => setEditMode((v) => !v)}
               >
@@ -84,11 +85,11 @@ export function AllRoomsModalScreen({ navigation }: Props) {
                 <Text style={[styles.editText, editMode && styles.editTextActive]}>
                   {editMode ? "Done" : "Edit"}
                 </Text>
-              </Pressable>
+              </AppPressable>
             )}
-            <Pressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
+            <AppPressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
               <Ionicons name="close" size={18} color={colors.ink700} />
-            </Pressable>
+            </AppPressable>
           </View>
         </View>
       </View>
@@ -122,12 +123,12 @@ export function AllRoomsModalScreen({ navigation }: Props) {
                   returnKeyType="done"
                   placeholderTextColor={colors.ink400}
                 />
-                <Pressable
+                <AppPressable
                   style={styles.deleteBtn}
                   onPress={() => confirmDelete(room.id, room.name)}
                 >
                   <Ionicons name="trash-outline" size={16} color={colors.danger} />
-                </Pressable>
+                </AppPressable>
               </View>
             ))}
           </View>

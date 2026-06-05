@@ -1,16 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+  Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -97,9 +89,9 @@ export function AddLocationModalScreen({ navigation }: Props) {
             <Text style={styles.eyebrow}>LOCATION</Text>
             <Text style={styles.title}>New {mode === "home" ? "home" : "room"}</Text>
           </View>
-          <Pressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
+          <AppPressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={18} color={colors.ink700} />
-          </Pressable>
+          </AppPressable>
         </View>
 
         {/* Mode toggle */}
@@ -114,7 +106,7 @@ export function AddLocationModalScreen({ navigation }: Props) {
             <Text style={styles.fieldLabel}>ICON</Text>
             <View style={styles.iconRow}>
             {ROOM_ICONS.map((r) => (
-              <Pressable
+              <AppPressable
                 key={r.name}
                 style={[styles.iconOption, selectedIcon === r.icon && styles.iconOptionActive]}
                 onPress={() => {
@@ -127,7 +119,7 @@ export function AddLocationModalScreen({ navigation }: Props) {
                   size={22}
                   color={selectedIcon === r.icon ? colors.cream50 : colors.ink700}
                 />
-              </Pressable>
+              </AppPressable>
             ))}
             </View>
           </View>
@@ -158,17 +150,17 @@ export function AddLocationModalScreen({ navigation }: Props) {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <Pressable style={styles.cancelBtn} onPress={() => navigation.goBack()}>
+          <AppPressable style={styles.cancelBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.cancelText}>Cancel</Text>
-          </Pressable>
-          <Pressable
+          </AppPressable>
+          <AppPressable
             style={[styles.saveBtn, (!name.trim() || isSaving) && styles.saveBtnDisabled]}
             onPress={() => void save()}
             disabled={!name.trim() || isSaving}
           >
             <Text style={styles.saveText}>{isSaving ? "Saving…" : "Save"}</Text>
             {!isSaving && <Ionicons name="chevron-forward" size={16} color="#fff" />}
-          </Pressable>
+          </AppPressable>
         </View>
 
         {/* Manage existing homes */}
@@ -188,12 +180,12 @@ export function AddLocationModalScreen({ navigation }: Props) {
                     returnKeyType="done"
                     placeholderTextColor={colors.ink400}
                   />
-                  <Pressable
+                  <AppPressable
                     style={styles.homeDeleteBtn}
                     onPress={() => confirmDeleteHome(home.id, home.name)}
                   >
                     <Ionicons name="trash-outline" size={16} color={colors.danger} />
-                  </Pressable>
+                  </AppPressable>
                 </View>
               ))}
             </View>
@@ -202,17 +194,17 @@ export function AddLocationModalScreen({ navigation }: Props) {
 
         {/* Account */}
         <View style={styles.divider} />
-        <Pressable
+        <AppPressable
           style={styles.accountRow}
           onPress={() => navigation.navigate("ChangePasswordModal")}
         >
           <Ionicons name="lock-closed-outline" size={16} color={colors.ink700} />
           <Text style={styles.accountRowText}>Change password</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.ink400} />
-        </Pressable>
+        </AppPressable>
 
         {/* Sign out */}
-        <Pressable
+        <AppPressable
           style={styles.signOutBtn}
           onPress={() => void logout()}
           disabled={isAuthSubmitting}
@@ -221,7 +213,7 @@ export function AddLocationModalScreen({ navigation }: Props) {
           <Text style={styles.signOutText}>
             {isAuthSubmitting ? "Signing out…" : "Sign out of this device"}
           </Text>
-        </Pressable>
+        </AppPressable>
         <Text style={styles.sessionMeta}>Session · mobile · refreshed just now</Text>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -240,13 +232,13 @@ function ModeChip({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <AppPressable
       style={[styles.modeChip, active && styles.modeChipActive]}
       onPress={onPress}
     >
       <Ionicons name={icon} size={16} color={active ? colors.ink900 : colors.ink700} />
       <Text style={[styles.modeChipText, active && styles.modeChipTextActive]}>{label}</Text>
-    </Pressable>
+    </AppPressable>
   );
 }
 

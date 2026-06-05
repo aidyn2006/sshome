@@ -1,15 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -85,9 +78,9 @@ export function AddDeviceModalScreen({ navigation }: Props) {
             <Text style={styles.eyebrow}>DEVICE</Text>
             <Text style={styles.title}>New device</Text>
           </View>
-          <Pressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
+          <AppPressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={18} color={colors.ink700} />
-          </Pressable>
+          </AppPressable>
         </View>
 
         {/* Device type picker */}
@@ -95,7 +88,7 @@ export function AddDeviceModalScreen({ navigation }: Props) {
           <Text style={styles.fieldLabel}>TYPE</Text>
           <View style={styles.typeRow}>
             {DEVICE_TYPES.map((opt) => (
-              <Pressable
+              <AppPressable
                 key={opt.type}
                 style={[styles.typeChip, selectedType === opt.type && styles.typeChipActive]}
                 onPress={() => setSelectedType(opt.type)}
@@ -108,7 +101,7 @@ export function AddDeviceModalScreen({ navigation }: Props) {
                 <Text style={[styles.typeChipLabel, selectedType === opt.type && styles.typeChipLabelActive]}>
                   {opt.label}
                 </Text>
-              </Pressable>
+              </AppPressable>
             ))}
           </View>
         </View>
@@ -166,7 +159,7 @@ export function AddDeviceModalScreen({ navigation }: Props) {
           ) : (
             <View style={styles.roomList}>
               {rooms.map((room) => (
-                <Pressable
+                <AppPressable
                   key={room.id}
                   style={[styles.roomRow, selectedRoomId === room.id && styles.roomRowActive]}
                   onPress={() => setSelectedRoomId(room.id)}
@@ -178,7 +171,7 @@ export function AddDeviceModalScreen({ navigation }: Props) {
                   {selectedRoomId === room.id && (
                     <Ionicons name="checkmark" size={18} color={colors.accent} />
                   )}
-                </Pressable>
+                </AppPressable>
               ))}
             </View>
           )}
@@ -193,17 +186,17 @@ export function AddDeviceModalScreen({ navigation }: Props) {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <Pressable style={styles.cancelBtn} onPress={() => navigation.goBack()}>
+          <AppPressable style={styles.cancelBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.cancelText}>Cancel</Text>
-          </Pressable>
-          <Pressable
+          </AppPressable>
+          <AppPressable
             style={[styles.saveBtn, (!canSave || isSaving) && styles.saveBtnDisabled]}
             onPress={() => void save()}
             disabled={!canSave || isSaving}
           >
             <Text style={styles.saveText}>{isSaving ? "Adding..." : "Add Device"}</Text>
             {!isSaving && <Ionicons name="add" size={18} color="#fff" />}
-          </Pressable>
+          </AppPressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { AppPressable } from "./AppPressable";
 
 import { colors } from "../theme/colors";
 
@@ -11,12 +12,12 @@ type Props = {
 
 export function FilterPill({ label, isActive, onPress, count }: Props) {
   return (
-    <Pressable onPress={onPress} style={[styles.pill, isActive && styles.pillActive]}>
+    <AppPressable onPress={onPress} style={[styles.pill, isActive && styles.pillActive]}>
       <Text style={[styles.text, isActive && styles.textActive]}>{label}</Text>
       {count !== undefined && (
         <Text style={[styles.count, isActive && styles.countActive]}>{count}</Text>
       )}
-    </Pressable>
+    </AppPressable>
   );
 }
 

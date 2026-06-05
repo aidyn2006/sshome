@@ -1,14 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
+  ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 
 import type { AttackType, SecurityEvent, SecurityStats } from "../api/security";
 import { ScreenHeader } from "../components/ScreenHeader";
@@ -163,14 +157,14 @@ export function AttackSimScreen() {
         subtitle="Launch real attacks at your own system and watch the defenses respond."
         secure
         right={
-          <Pressable
+          <AppPressable
             accessibilityRole="button"
             accessibilityLabel="Refresh security feed"
             style={styles.iconButton}
             onPress={() => void refresh()}
           >
             <Ionicons name="refresh" size={17} color={colors.ink700} />
-          </Pressable>
+          </AppPressable>
         }
       />
 
@@ -210,7 +204,7 @@ export function AttackSimScreen() {
             const isRunning = runningAttack === attack.type;
             const disabled = runningAttack !== null;
             return (
-              <Pressable
+              <AppPressable
                 key={attack.type}
                 accessibilityRole="button"
                 disabled={disabled}
@@ -232,7 +226,7 @@ export function AttackSimScreen() {
                     </>
                   )}
                 </View>
-              </Pressable>
+              </AppPressable>
             );
           })}
         </View>

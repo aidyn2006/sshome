@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useMemo, useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppPressable } from "../components/AppPressable";
 
 import { SceneCard } from "../components/SceneCard";
 import { ScreenHeader } from "../components/ScreenHeader";
@@ -57,7 +58,7 @@ export function ScenesScreen() {
         secure
         right={
           <View style={styles.headerActions}>
-            <Pressable
+            <AppPressable
               style={[styles.editBtn, editMode && styles.editBtnActive]}
               onPress={() => setEditMode((v) => !v)}
             >
@@ -69,10 +70,10 @@ export function ScenesScreen() {
               <Text style={[styles.editText, editMode && styles.editTextActive]}>
                 {editMode ? "Done" : "Edit"}
               </Text>
-            </Pressable>
-            <Pressable style={styles.addBtn} onPress={() => navigation.navigate("AddScenarioModal")}>
+            </AppPressable>
+            <AppPressable style={styles.addBtn} onPress={() => navigation.navigate("AddScenarioModal")}>
               <Ionicons name="add" size={18} color={colors.cream50} />
-            </Pressable>
+            </AppPressable>
           </View>
         }
       />
@@ -158,10 +159,10 @@ function FeaturedSceneCard({ scene, accent, onRun }: { scene: Scenario; accent: 
 
   return (
     <View style={styles.featured}>
-      {/* glow bg */}
-      <View style={[styles.featuredGlow, { backgroundColor: accent }]} />
-      <View style={[styles.featuredRing1]} />
-      <View style={[styles.featuredRing2, { borderColor: `${accent}AA` }]}>
+      {/* decorative background — must never intercept taps on web */}
+      <View pointerEvents="none" style={[styles.featuredGlow, { backgroundColor: accent }]} />
+      <View pointerEvents="none" style={[styles.featuredRing1]} />
+      <View pointerEvents="none" style={[styles.featuredRing2, { borderColor: `${accent}AA` }]}>
         <Ionicons name="flash-outline" size={30} color={accent} />
       </View>
 
@@ -170,7 +171,7 @@ function FeaturedSceneCard({ scene, accent, onRun }: { scene: Scenario; accent: 
         <Text style={styles.featuredTitle}>{scene.name}</Text>
         <Text style={styles.featuredDesc} numberOfLines={2}>{scene.description}</Text>
         <View style={styles.featuredActions}>
-          <Pressable
+          <AppPressable
             onPress={run}
             style={[styles.featuredRunBtn, { backgroundColor: accent }]}
           >
@@ -180,7 +181,7 @@ function FeaturedSceneCard({ scene, accent, onRun }: { scene: Scenario; accent: 
               <Ionicons name="play" size={14} color="#fff" />
             )}
             <Text style={styles.featuredRunText}>{running ? "Running" : "Run now"}</Text>
-          </Pressable>
+          </AppPressable>
           <Text style={styles.featuredActionsCount}>{scene.actions.length} ACTIONS</Text>
         </View>
       </View>
