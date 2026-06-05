@@ -13,6 +13,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { LoginPayload } from "../types/auth";
+import {
+  confirmPasswordReset,
+  requestPasswordReset,
+  verifyPasswordResetCode,
+} from "../api/auth";
+import { isApiError } from "../api/client";
 import { preloadGoogleIdentity } from "../utils/googleAuth";
 import { colors } from "../theme/colors";
 
@@ -25,6 +31,20 @@ type Props = {
   onSubmit: (payload: LoginPayload) => Promise<void> | void;
 };
 
+type ResetStep = "request" | "code" | "password";
+
+function getResetErrorMessage(error: unknown, fallback: string): string {
+  if (isApiError(error) && error.message.trim()) {
+    return error.message;
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
 export function LoginScreen({
   appTitle,
   isSubmitting = false,
@@ -36,15 +56,133 @@ export function LoginScreen({
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"login" | "reset">("login");
+  const [resetStep, setResetStep] = useState<ResetStep>("request");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [isResetSubmitting, setIsResetSubmitting] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [pwFocused, setPwFocused] = useState(false);
+  const [resetEmailFocused, setResetEmailFocused] = useState(false);
+  const [resetCodeFocused, setResetCodeFocused] = useState(false);
+  const [newPwFocused, setNewPwFocused] = useState(false);
+  const [confirmPwFocused, setConfirmPwFocused] = useState(false);
+  const [loginNotice, setLoginNotice] = useState<string | null>(null);
+  const isBusy = isSubmitting || isResetSubmitting;
 
   useEffect(() => {
     if (Platform.OS === "web") {
       preloadGoogleIdentity().catch(() => undefined);
     }
   }, []);
+
+  const openPasswordReset = () => {
+    setAuthMode("reset");
+    setResetStep("request");
+    setResetEmail(email.trim());
+    setResetCode("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setResetMessage(null);
+    setResetError(null);
+    setLoginNotice(null);
+  };
+
+  const returnToLogin = () => {
+    setAuthMode("login");
+    setResetStep("request");
+    setResetError(null);
+    setResetMessage(null);
+  };
+
+  const handleRequestReset = async () => {
+    const nextEmail = resetEmail.trim();
+
+    if (!nextEmail) {
+      setResetError("Enter your email address");
+      return;
+    }
+
+    setIsResetSubmitting(true);
+    setResetError(null);
+    setResetMessage(null);
+
+    try {
+      await requestPasswordReset({ email: nextEmail });
+      setResetEmail(nextEmail);
+      setResetStep("code");
+      setResetMessage("If that email exists, a 6-digit code has been sent.");
+    } catch (error) {
+      setResetError(getResetErrorMessage(error, "Unable to send reset code"));
+    } finally {
+      setIsResetSubmitting(false);
+    }
+  };
+
+  const handleVerifyResetCode = async () => {
+    const code = resetCode.trim();
+
+    if (!/^\d{6}$/.test(code)) {
+      setResetError("Enter the 6-digit code from your email");
+      return;
+    }
+
+    setIsResetSubmitting(true);
+    setResetError(null);
+    setResetMessage(null);
+
+    try {
+      await verifyPasswordResetCode({ email: resetEmail, code });
+      setResetCode(code);
+      setResetStep("password");
+      setResetMessage("Code confirmed. Set a new password.");
+    } catch (error) {
+      setResetError(getResetErrorMessage(error, "Unable to verify reset code"));
+    } finally {
+      setIsResetSubmitting(false);
+    }
+  };
+
+  const handleConfirmReset = async () => {
+    if (newPassword !== confirmNewPassword) {
+      setResetError("Passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setResetError("Password must be at least 8 characters");
+      return;
+    }
+
+    setIsResetSubmitting(true);
+    setResetError(null);
+    setResetMessage(null);
+
+    try {
+      await confirmPasswordReset({
+        email: resetEmail,
+        code: resetCode,
+        new_password: newPassword,
+      });
+      setEmail(resetEmail);
+      setPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setLoginNotice("Password updated. Sign in with your new password.");
+      returnToLogin();
+    } catch (error) {
+      setResetError(getResetErrorMessage(error, "Unable to reset password"));
+    } finally {
+      setIsResetSubmitting(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -71,88 +209,263 @@ export function LoginScreen({
           <Text style={styles.heroSub}>Sign in to control your house, your way.</Text>
         </View>
 
-        {/* Form */}
         <View style={styles.form}>
-          {errorMessage ? (
-            <View style={styles.errorBox}>
-              <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
-              <Text style={styles.errorText}>{errorMessage}</Text>
+          {authMode === "login" && loginNotice ? (
+            <View style={styles.successBox}>
+              <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
+              <Text style={styles.successText}>{loginNotice}</Text>
             </View>
           ) : null}
 
-          {/* Email */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>EMAIL</Text>
-            <View style={[styles.inputWrap, emailFocused && styles.inputWrapFocused]}>
-              <Ionicons name="mail-outline" size={18} color={colors.ink500} />
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                placeholder="you@home.com"
-                placeholderTextColor={colors.ink400}
-                style={styles.input}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-              />
+          {(authMode === "login" ? errorMessage : resetError) ? (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
+              <Text style={styles.errorText}>{authMode === "login" ? errorMessage : resetError}</Text>
             </View>
-          </View>
+          ) : null}
 
-          {/* Password */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>PASSWORD</Text>
-            <View style={[styles.inputWrap, pwFocused && styles.inputWrapFocused]}>
-              <Ionicons name="lock-closed-outline" size={18} color={colors.ink500} />
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPw}
-                placeholder="••••••••"
-                placeholderTextColor={colors.ink400}
-                style={styles.input}
-                onFocus={() => setPwFocused(true)}
-                onBlur={() => setPwFocused(false)}
-              />
-              <Pressable onPress={() => setShowPw((v) => !v)} style={styles.eyeBtn}>
-                <Ionicons name={showPw ? "eye-off-outline" : "eye-outline"} size={18} color={colors.ink500} />
+          {authMode === "reset" ? (
+            <>
+              <Pressable onPress={returnToLogin} style={styles.backButton} disabled={isResetSubmitting}>
+                <Ionicons name="chevron-back" size={16} color={colors.ink700} />
+                <Text style={styles.backText}>Back to sign in</Text>
               </Pressable>
-            </View>
-          </View>
 
-          {/* CTA */}
-          <Pressable
-            style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
-            onPress={() => onSubmit({ email, password })}
-            disabled={isSubmitting}
-          >
-            <Text style={styles.submitText}>{isSubmitting ? "Authorizing…" : "Sign In"}</Text>
-            {!isSubmitting && <Ionicons name="chevron-forward" size={18} color="#fff" />}
-          </Pressable>
+              <View style={styles.resetHeader}>
+                <Text style={styles.resetTitle}>Reset password</Text>
+                <Text style={styles.resetSub}>
+                  {resetStep === "request"
+                    ? "We'll send a confirmation code to your email."
+                    : resetStep === "code"
+                      ? `Enter the 6-digit code sent to ${resetEmail}.`
+                      : "Choose a new password for your account."}
+                </Text>
+              </View>
 
-          <View style={styles.divider}>
-            <View style={styles.divLine} />
-            <Text style={styles.divText}>or continue with</Text>
-            <View style={styles.divLine} />
-          </View>
+              {resetMessage ? (
+                <View style={styles.successBox}>
+                  <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
+                  <Text style={styles.successText}>{resetMessage}</Text>
+                </View>
+              ) : null}
 
-          <View style={styles.socialRow}>
-            <Pressable
-              style={[styles.socialButton, isSubmitting && styles.socialButtonDisabled]}
-              onPress={onGoogleSubmit}
-              disabled={isSubmitting}
-            >
-              <Ionicons name="logo-google" size={18} color="#374151" />
-              <Text style={styles.socialText}>Google</Text>
-            </Pressable>
-          </View>
+              {resetStep === "request" ? (
+                <>
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.fieldLabel}>EMAIL</Text>
+                    <View style={[styles.inputWrap, resetEmailFocused && styles.inputWrapFocused]}>
+                      <Ionicons name="mail-outline" size={18} color={colors.ink500} />
+                      <TextInput
+                        value={resetEmail}
+                        onChangeText={setResetEmail}
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                        placeholder="you@home.com"
+                        placeholderTextColor={colors.ink400}
+                        style={styles.input}
+                        onFocus={() => setResetEmailFocused(true)}
+                        onBlur={() => setResetEmailFocused(false)}
+                      />
+                    </View>
+                  </View>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account?{" "}</Text>
-            <Pressable onPress={onSwitchToRegister}>
-              <Text style={styles.footerLink}>Create an account</Text>
-            </Pressable>
-          </View>
+                  <Pressable
+                    style={[styles.submitBtn, isResetSubmitting && styles.submitBtnDisabled]}
+                    onPress={handleRequestReset}
+                    disabled={isResetSubmitting}
+                  >
+                    <Text style={styles.submitText}>{isResetSubmitting ? "Sending…" : "Send Code"}</Text>
+                    {!isResetSubmitting && <Ionicons name="mail-outline" size={18} color="#fff" />}
+                  </Pressable>
+                </>
+              ) : null}
+
+              {resetStep === "code" ? (
+                <>
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.fieldLabel}>CONFIRMATION CODE</Text>
+                    <View style={[styles.inputWrap, resetCodeFocused && styles.inputWrapFocused]}>
+                      <Ionicons name="keypad-outline" size={18} color={colors.ink500} />
+                      <TextInput
+                        value={resetCode}
+                        onChangeText={setResetCode}
+                        keyboardType="number-pad"
+                        maxLength={6}
+                        placeholder="000000"
+                        placeholderTextColor={colors.ink400}
+                        style={styles.input}
+                        onFocus={() => setResetCodeFocused(true)}
+                        onBlur={() => setResetCodeFocused(false)}
+                      />
+                    </View>
+                  </View>
+
+                  <Pressable
+                    style={[styles.submitBtn, isResetSubmitting && styles.submitBtnDisabled]}
+                    onPress={handleVerifyResetCode}
+                    disabled={isResetSubmitting}
+                  >
+                    <Text style={styles.submitText}>{isResetSubmitting ? "Checking…" : "Confirm Code"}</Text>
+                    {!isResetSubmitting && <Ionicons name="checkmark" size={18} color="#fff" />}
+                  </Pressable>
+
+                  <Pressable
+                    onPress={handleRequestReset}
+                    style={styles.secondaryLinkButton}
+                    disabled={isResetSubmitting}
+                  >
+                    <Text style={styles.secondaryLinkText}>Send a new code</Text>
+                  </Pressable>
+                </>
+              ) : null}
+
+              {resetStep === "password" ? (
+                <>
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.fieldLabel}>NEW PASSWORD</Text>
+                    <View style={[styles.inputWrap, newPwFocused && styles.inputWrapFocused]}>
+                      <Ionicons name="lock-closed-outline" size={18} color={colors.ink500} />
+                      <TextInput
+                        value={newPassword}
+                        onChangeText={setNewPassword}
+                        secureTextEntry={!showNewPw}
+                        placeholder="At least 8 characters"
+                        placeholderTextColor={colors.ink400}
+                        style={styles.input}
+                        onFocus={() => setNewPwFocused(true)}
+                        onBlur={() => setNewPwFocused(false)}
+                      />
+                      <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
+                        <Ionicons
+                          name={showNewPw ? "eye-off-outline" : "eye-outline"}
+                          size={18}
+                          color={colors.ink500}
+                        />
+                      </Pressable>
+                    </View>
+                  </View>
+
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.fieldLabel}>CONFIRM PASSWORD</Text>
+                    <View style={[styles.inputWrap, confirmPwFocused && styles.inputWrapFocused]}>
+                      <Ionicons name="lock-closed-outline" size={18} color={colors.ink500} />
+                      <TextInput
+                        value={confirmNewPassword}
+                        onChangeText={setConfirmNewPassword}
+                        secureTextEntry={!showConfirmPw}
+                        placeholder="Repeat password"
+                        placeholderTextColor={colors.ink400}
+                        style={styles.input}
+                        onFocus={() => setConfirmPwFocused(true)}
+                        onBlur={() => setConfirmPwFocused(false)}
+                      />
+                      <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
+                        <Ionicons
+                          name={showConfirmPw ? "eye-off-outline" : "eye-outline"}
+                          size={18}
+                          color={colors.ink500}
+                        />
+                      </Pressable>
+                    </View>
+                  </View>
+
+                  <Pressable
+                    style={[styles.submitBtn, isResetSubmitting && styles.submitBtnDisabled]}
+                    onPress={handleConfirmReset}
+                    disabled={isResetSubmitting}
+                  >
+                    <Text style={styles.submitText}>{isResetSubmitting ? "Updating…" : "Update Password"}</Text>
+                    {!isResetSubmitting && <Ionicons name="chevron-forward" size={18} color="#fff" />}
+                  </Pressable>
+                </>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>EMAIL</Text>
+                <View style={[styles.inputWrap, emailFocused && styles.inputWrapFocused]}>
+                  <Ionicons name="mail-outline" size={18} color={colors.ink500} />
+                  <TextInput
+                    value={email}
+                    onChangeText={(nextEmail) => {
+                      setEmail(nextEmail);
+                      setLoginNotice(null);
+                    }}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    placeholder="you@home.com"
+                    placeholderTextColor={colors.ink400}
+                    style={styles.input}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>PASSWORD</Text>
+                <View style={[styles.inputWrap, pwFocused && styles.inputWrapFocused]}>
+                  <Ionicons name="lock-closed-outline" size={18} color={colors.ink500} />
+                  <TextInput
+                    value={password}
+                    onChangeText={(nextPassword) => {
+                      setPassword(nextPassword);
+                      setLoginNotice(null);
+                    }}
+                    secureTextEntry={!showPw}
+                    placeholder="••••••••"
+                    placeholderTextColor={colors.ink400}
+                    style={styles.input}
+                    onFocus={() => setPwFocused(true)}
+                    onBlur={() => setPwFocused(false)}
+                  />
+                  <Pressable onPress={() => setShowPw((v) => !v)} style={styles.eyeBtn}>
+                    <Ionicons name={showPw ? "eye-off-outline" : "eye-outline"} size={18} color={colors.ink500} />
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.forgotRow}>
+                <Pressable onPress={openPasswordReset} disabled={isBusy}>
+                  <Text style={styles.footerLink}>Forgot password?</Text>
+                </Pressable>
+              </View>
+
+              <Pressable
+                style={[styles.submitBtn, isBusy && styles.submitBtnDisabled]}
+                onPress={() => onSubmit({ email, password })}
+                disabled={isBusy}
+              >
+                <Text style={styles.submitText}>{isSubmitting ? "Authorizing…" : "Sign In"}</Text>
+                {!isSubmitting && <Ionicons name="chevron-forward" size={18} color="#fff" />}
+              </Pressable>
+
+              <View style={styles.divider}>
+                <View style={styles.divLine} />
+                <Text style={styles.divText}>or continue with</Text>
+                <View style={styles.divLine} />
+              </View>
+
+              <View style={styles.socialRow}>
+                <Pressable
+                  style={[styles.socialButton, isBusy && styles.socialButtonDisabled]}
+                  onPress={onGoogleSubmit}
+                  disabled={isBusy}
+                >
+                  <Ionicons name="logo-google" size={18} color="#374151" />
+                  <Text style={styles.socialText}>Google</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>Don't have an account?{" "}</Text>
+                <Pressable onPress={onSwitchToRegister} disabled={isBusy}>
+                  <Text style={styles.footerLink}>Create an account</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -257,6 +570,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
+  successBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: colors.successSoft,
+  },
+  successText: {
+    flex: 1,
+    color: colors.success,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  backButton: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  backText: {
+    color: colors.ink700,
+    fontSize: 14,
+  },
+  resetHeader: {
+    gap: 4,
+  },
+  resetTitle: {
+    color: colors.ink900,
+    fontSize: 24,
+    fontWeight: "700",
+  },
+  resetSub: {
+    color: colors.ink500,
+    fontSize: 14,
+    lineHeight: 20,
+  },
   fieldGroup: {
     gap: 6,
   },
@@ -291,6 +641,21 @@ const styles = StyleSheet.create({
   },
   eyeBtn: {
     padding: 4,
+  },
+  forgotRow: {
+    alignItems: "flex-end",
+    marginTop: -4,
+  },
+  secondaryLinkButton: {
+    alignSelf: "center",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  secondaryLinkText: {
+    color: colors.ink700,
+    fontSize: 14,
+    fontWeight: "500",
+    textDecorationLine: "underline",
   },
   submitBtn: {
     flexDirection: "row",

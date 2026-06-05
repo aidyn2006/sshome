@@ -3,6 +3,10 @@ import type {
   AuthContextResponse,
   GoogleLoginPayload,
   LoginPayload,
+  PasswordResetConfirmPayload,
+  PasswordResetMessageResponse,
+  PasswordResetRequestPayload,
+  PasswordResetVerifyPayload,
   RefreshPayload,
   TokenPairResponse,
   UserOut,
@@ -34,6 +38,36 @@ export async function register(payload: RegisterPayload): Promise<UserOut> {
       password: payload.password,
       name,
       phone: phone || null
+    }
+  });
+}
+
+export async function requestPasswordReset(payload: PasswordResetRequestPayload): Promise<PasswordResetMessageResponse> {
+  return apiRequest<PasswordResetMessageResponse>("/auth/password-reset/request", {
+    method: "POST",
+    body: {
+      email: payload.email.trim()
+    }
+  });
+}
+
+export async function verifyPasswordResetCode(payload: PasswordResetVerifyPayload): Promise<PasswordResetMessageResponse> {
+  return apiRequest<PasswordResetMessageResponse>("/auth/password-reset/verify", {
+    method: "POST",
+    body: {
+      email: payload.email.trim(),
+      code: payload.code.trim()
+    }
+  });
+}
+
+export async function confirmPasswordReset(payload: PasswordResetConfirmPayload): Promise<PasswordResetMessageResponse> {
+  return apiRequest<PasswordResetMessageResponse>("/auth/password-reset/confirm", {
+    method: "POST",
+    body: {
+      email: payload.email.trim(),
+      code: payload.code.trim(),
+      new_password: payload.new_password
     }
   });
 }

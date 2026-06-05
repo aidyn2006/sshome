@@ -35,3 +35,20 @@ class AccessTokenResponse(BaseModel):
 
 class LogoutRequest(BaseModel):
     refresh_token: str
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetVerifyRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+
+
+class PasswordResetConfirmRequest(PasswordResetVerifyRequest):
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class PasswordResetMessageResponse(BaseModel):
+    message: str

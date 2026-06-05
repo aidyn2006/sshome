@@ -140,6 +140,97 @@ def test_auth_workflow_rejects_invalid_password(integration_client) -> None:
     assert response.json()["detail"] == "Invalid email or password"
 
 
+def test_password_reset_workflow_sends_code_and_updates_password(integration_client, monkeypatch) -> None:
+    sent_codes: list[dict[str, str | int]] = []
+
+    def fake_send_password_reset_code(email: str, code: str, expires_in_minutes: int) -> None:
+        sent_codes.append(
+            {
+                "email": email,
+                "code": code,
+                "expires_in_minutes": expires_in_minutes,
+            }
+        )
+
+    monkeypatch.setattr("app.services.password_reset_service.send_password_reset_code", fake_send_password_reset_code)
+    integration_client.register_user(email="reset-flow@example.com", password="OldStrongPass123!")
+
+    request_response = integration_client.client.post(
+        "/auth/password-reset/request",
+        json={"email": "reset-flow@example.com"},
+    )
+    assert request_response.status_code == 202
+    assert request_response.json()["message"] == "If an account exists, a password reset code has been sent."
+    assert len(sent_codes) == 1
+    assert sent_codes[0]["email"] == "reset-flow@example.com"
+    assert isinstance(sent_codes[0]["code"], str)
+
+    verify_response = integration_client.client.post(
+        "/auth/password-reset/verify",
+        json={"email": "reset-flow@example.com", "code": sent_codes[0]["code"]},
+    )
+    assert verify_response.status_code == 200
+    assert verify_response.json()["message"] == "Password reset code is valid."
+
+    confirm_response = integration_client.client.post(
+        "/auth/password-reset/confirm",
+        json={
+            "email": "reset-flow@example.com",
+            "code": sent_codes[0]["code"],
+            "new_password": "NewStrongPass123!",
+        },
+    )
+    assert confirm_response.status_code == 200
+    assert confirm_response.json()["message"] == "Password has been reset."
+
+    old_login_response = integration_client.client.post(
+        "/auth/login",
+        json={
+            "email": "reset-flow@example.com",
+            "password": "OldStrongPass123!",
+        },
+    )
+    assert old_login_response.status_code == 401
+
+    new_login_response = integration_client.client.post(
+        "/auth/login",
+        json={
+            "email": "reset-flow@example.com",
+            "password": "NewStrongPass123!",
+        },
+    )
+    assert new_login_response.status_code == 200
+
+    reused_code_response = integration_client.client.post(
+        "/auth/password-reset/confirm",
+        json={
+            "email": "reset-flow@example.com",
+            "code": sent_codes[0]["code"],
+            "new_password": "AnotherStrongPass123!",
+        },
+    )
+    assert reused_code_response.status_code == 400
+    assert reused_code_response.json()["detail"] == "Invalid or expired password reset code"
+
+
+def test_password_reset_request_does_not_reveal_unknown_email(integration_client, monkeypatch) -> None:
+    sent_codes: list[str] = []
+
+    def fake_send_password_reset_code(email: str, code: str, expires_in_minutes: int) -> None:
+        sent_codes.append(code)
+
+    monkeypatch.setattr("app.services.password_reset_service.send_password_reset_code", fake_send_password_reset_code)
+
+    response = integration_client.client.post(
+        "/auth/password-reset/request",
+        json={"email": "missing-reset@example.com"},
+    )
+
+    assert response.status_code == 202
+    assert response.json()["message"] == "If an account exists, a password reset code has been sent."
+    assert sent_codes == []
+
+
 def test_google_auth_workflow_creates_user_and_returns_tokens(integration_client, monkeypatch) -> None:
     async def fake_verify_google_id_token(id_token: str) -> GoogleIdentity:
         assert id_token == "google.jwt.identity.token"

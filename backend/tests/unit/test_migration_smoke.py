@@ -26,3 +26,13 @@ def test_device_hardware_id_migration_exists() -> None:
     migration = migration_path.read_text(encoding="utf-8")
     assert "add device hardware id" in migration
     assert "hardware_id" in migration
+
+
+def test_password_reset_code_migration_exists() -> None:
+    migration_path = Path("alembic/versions/20260513_0007_create_password_reset_codes.py")
+
+    assert migration_path.exists()
+    migration = migration_path.read_text(encoding="utf-8")
+    assert "create password reset codes" in migration
+    assert "password_reset_codes" in migration
+    assert "code_hash" in migration

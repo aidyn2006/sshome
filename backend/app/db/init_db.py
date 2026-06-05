@@ -50,6 +50,18 @@ def _patch_legacy_schema() -> None:
             END IF;
         END $$;
         """,
+        """
+        CREATE TABLE IF NOT EXISTS password_reset_codes (
+            id UUID PRIMARY KEY,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            code_hash VARCHAR(128) NOT NULL,
+            expires_at TIMESTAMPTZ NOT NULL,
+            used_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ NOT NULL
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS ix_password_reset_codes_user_id ON password_reset_codes (user_id)",
+        "CREATE INDEX IF NOT EXISTS ix_password_reset_codes_code_hash ON password_reset_codes (code_hash)",
     ]
 
     with engine.begin() as connection:

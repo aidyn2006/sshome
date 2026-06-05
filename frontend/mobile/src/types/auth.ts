@@ -12,6 +12,23 @@ export type RefreshPayload = {
   refresh_token: string;
 };
 
+export type PasswordResetRequestPayload = {
+  email: string;
+};
+
+export type PasswordResetVerifyPayload = {
+  email: string;
+  code: string;
+};
+
+export type PasswordResetConfirmPayload = PasswordResetVerifyPayload & {
+  new_password: string;
+};
+
+export type PasswordResetMessageResponse = {
+  message: string;
+};
+
 export type RegisterPayload = {
   name: string;
   email: string;
