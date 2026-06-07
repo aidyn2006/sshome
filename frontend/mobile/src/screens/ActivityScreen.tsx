@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { AppPressable } from "../components/AppPressable";
 import { EventRow } from "../components/EventRow";
 import { FilterPill } from "../components/FilterPill";
 import { ScreenHeader } from "../components/ScreenHeader";
@@ -51,7 +52,7 @@ function getEventSource(event: Event): Exclude<SourceFilter, "ALL"> {
 }
 
 export function ActivityScreen() {
-  const { events, devices, isDataLoading } = useSmartHome();
+  const { events, devices, rooms, isDataLoading } = useSmartHome();
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("ALL");
 
@@ -66,6 +67,7 @@ export function ActivityScreen() {
 
   const sections = useMemo(() => groupByTime(filtered), [filtered]);
   const deviceMap = useMemo(() => new Map(devices.map((d) => [d.id, d])), [devices]);
+  const roomMap = useMemo(() => new Map(rooms.map((r) => [r.id, r.name])), [rooms]);
 
   const counts = useMemo(() => ({
     total:    events.length,
@@ -88,9 +90,9 @@ export function ActivityScreen() {
           {DATE_FILTERS.map((f) => {
             const on = f.key === dateFilter;
             return (
-              <View key={f.key} onTouchEnd={() => setDateFilter(f.key)} style={[styles.segItem, on && styles.segItemActive]}>
+              <AppPressable key={f.key} onPress={() => setDateFilter(f.key)} style={[styles.segItem, on && styles.segItemActive]}>
                 <Text style={[styles.segText, on && styles.segTextActive]}>{f.label}</Text>
-              </View>
+              </AppPressable>
             );
           })}
         </View>
@@ -133,15 +135,19 @@ export function ActivityScreen() {
                 <View style={styles.groupLine} />
                 <Text style={styles.groupCount}>{data.length}</Text>
               </View>
-              {data.map((e, i) => (
-                <EventRow
-                  key={e.id}
-                  event={e}
-                  device={e.type === "DEVICE" ? deviceMap.get(e.device_id) : undefined}
-                  isFirst={i === 0}
-                  isLast={i === data.length - 1}
-                />
-              ))}
+              {data.map((e, i) => {
+                const dev = e.type === "DEVICE" ? deviceMap.get(e.device_id) : undefined;
+                return (
+                  <EventRow
+                    key={e.id}
+                    event={e}
+                    device={dev}
+                    roomName={dev ? roomMap.get(dev.room_id) : undefined}
+                    isFirst={i === 0}
+                    isLast={i === data.length - 1}
+                  />
+                );
+              })}
             </View>
           ))
         )}

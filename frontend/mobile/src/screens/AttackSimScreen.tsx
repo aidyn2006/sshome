@@ -65,6 +65,51 @@ const ATTACK_LABELS: Record<AttackType, string> = {
   DDOS: "DDoS"
 };
 
+// Plain-language explanation per attack: what the attacker tried and which
+// defense is supposed to stop it. Shown in the incident trace so a non-expert
+// understands "what happened and why".
+const DEFENSE_BY_ATTACK: Record<AttackType, { defense: string; attempt: string }> = {
+  BRUTE_FORCE: {
+    defense: "Login rate limiter",
+    attempt: "Hammered the login endpoint with many wrong passwords for one account."
+  },
+  MQTT_SPOOFING: {
+    defense: "Device secret check (SHA-256)",
+    attempt: "Sent fake sensor data signed with the wrong device secret."
+  },
+  REPLAY: {
+    defense: "Replay guard (nonce + timestamp)",
+    attempt: "Re-sent a real, previously captured message to fake activity."
+  },
+  DDOS: {
+    defense: "Per-device telemetry throttle",
+    attempt: "Flooded the broker with a burst of messages from one device."
+  }
+};
+
+function outcomeExplanation(event: SecurityEvent): string {
+  switch (event.attack_type) {
+    case "BRUTE_FORCE":
+      return event.blocked
+        ? "The rate limiter returned HTTP 429 after too many tries, so the guessing was stopped."
+        : "Every login attempt was accepted (no 429). The rate limiter never triggered — make sure the backend was rebuilt and restarted with login rate limiting enabled.";
+    case "MQTT_SPOOFING":
+      return event.blocked
+        ? "The broker checked the device secret, saw it was forged, and dropped the message."
+        : "The forged message was accepted — secret verification did not reject it.";
+    case "REPLAY":
+      return event.blocked
+        ? "The replay guard spotted the reused nonce/timestamp and rejected the duplicate."
+        : "The replayed message was accepted — the nonce/timestamp guard did not catch it.";
+    case "DDOS":
+      return event.blocked
+        ? "Messages above the per-device limit were throttled inside the time window."
+        : "The flood went through without being throttled.";
+    default:
+      return event.message;
+  }
+}
+
 function getErrorMessage(error: unknown): string {
   return error instanceof Error && error.message.trim() ? error.message : "Request failed";
 }
@@ -364,15 +409,49 @@ export function AttackSimScreen() {
                 <Text style={styles.traceTime}>{formatTime(selectedEvent.created_at)}</Text>
               </View>
 
+              {/* Plain-language story: attack → defense → outcome */}
+              <View style={styles.storyList}>
+                <View style={styles.storyStep}>
+                  <View style={[styles.storyDot, { backgroundColor: colors.dangerSoft }]}>
+                    <Ionicons name="flash" size={13} color={colors.danger} />
+                  </View>
+                  <View style={styles.storyText}>
+                    <Text style={styles.storyLabel}>THE ATTACK</Text>
+                    <Text style={styles.storyBody}>{DEFENSE_BY_ATTACK[selectedEvent.attack_type].attempt}</Text>
+                  </View>
+                </View>
+                <View style={styles.storyStep}>
+                  <View style={[styles.storyDot, { backgroundColor: colors.infoSoft }]}>
+                    <Ionicons name="shield-outline" size={13} color={colors.info} />
+                  </View>
+                  <View style={styles.storyText}>
+                    <Text style={styles.storyLabel}>THE DEFENSE</Text>
+                    <Text style={styles.storyBody}>{DEFENSE_BY_ATTACK[selectedEvent.attack_type].defense}</Text>
+                  </View>
+                </View>
+                <View style={styles.storyStep}>
+                  <View
+                    style={[
+                      styles.storyDot,
+                      { backgroundColor: selectedEvent.blocked ? colors.successSoft : colors.dangerSoft }
+                    ]}
+                  >
+                    <Ionicons
+                      name={selectedEvent.blocked ? "checkmark" : "close"}
+                      size={13}
+                      color={selectedEvent.blocked ? colors.success : colors.danger}
+                    />
+                  </View>
+                  <View style={styles.storyText}>
+                    <Text style={styles.storyLabel}>
+                      {selectedEvent.blocked ? "OUTCOME — BLOCKED" : "OUTCOME — GOT THROUGH"}
+                    </Text>
+                    <Text style={styles.storyBody}>{outcomeExplanation(selectedEvent)}</Text>
+                  </View>
+                </View>
+              </View>
+
               <View style={styles.traceGrid}>
-                <View style={styles.traceField}>
-                  <Text style={styles.traceFieldLabel}>EVENT ID</Text>
-                  <Text style={styles.traceFieldValue}>{selectedEvent.id}</Text>
-                </View>
-                <View style={styles.traceField}>
-                  <Text style={styles.traceFieldLabel}>SIM ID</Text>
-                  <Text style={styles.traceFieldValue}>{selectedEvent.sim_id ?? "n/a"}</Text>
-                </View>
                 <View style={styles.traceField}>
                   <Text style={styles.traceFieldLabel}>TARGET</Text>
                   <Text style={styles.traceFieldValue}>{selectedEvent.target ?? "n/a"}</Text>
@@ -396,7 +475,7 @@ export function AttackSimScreen() {
               </View>
 
               <View style={styles.traceMessageBox}>
-                <Text style={styles.traceFieldLabel}>MESSAGE</Text>
+                <Text style={styles.traceFieldLabel}>RAW LOG</Text>
                 <Text style={styles.traceMessage}>{selectedEvent.message}</Text>
               </View>
             </View>
@@ -819,6 +898,40 @@ const styles = StyleSheet.create({
     color: colors.ink400,
     fontFamily: "monospace",
     fontSize: 11
+  },
+  storyList: {
+    gap: 10
+  },
+  storyStep: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "flex-start"
+  },
+  storyDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginTop: 1
+  },
+  storyText: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2
+  },
+  storyLabel: {
+    color: colors.ink500,
+    fontFamily: "monospace",
+    fontSize: 9.5,
+    fontWeight: "700",
+    letterSpacing: 0.8
+  },
+  storyBody: {
+    color: colors.ink800,
+    fontSize: 13,
+    lineHeight: 18
   },
   traceGrid: {
     flexDirection: "row",

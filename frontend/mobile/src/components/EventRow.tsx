@@ -7,6 +7,7 @@ import type { Device, Event } from "../types/smartHome";
 type Props = {
   event: Event;
   device?: Device;
+  roomName?: string;
   isFirst?: boolean;
   isLast?: boolean;
 };
@@ -21,15 +22,16 @@ function timeAgo(timestamp: number): string {
 }
 
 type VerbConfig = { label: string; tone: "accent" | "success" | "danger" | "warn" | "info" | "neutral" };
-function getVerb(event: Event): VerbConfig {
-  if (event.type === "SCENE") return { label: "EXECUTE", tone: "info" };
+function getVerb(event: Event, device?: Device): VerbConfig {
+  if (event.type === "SCENE") return { label: "Ran scene", tone: "info" };
+  const isDoor = device?.type === "DOOR";
   switch (event.action) {
-    case "TURN_ON":  return { label: "TURN_ON",  tone: "accent" };
-    case "TURN_OFF": return { label: "TURN_OFF", tone: "neutral" };
-    case "OPEN":     return { label: "OPEN",     tone: "accent" };
-    case "CLOSE":    return { label: "CLOSE",    tone: "neutral" };
+    case "TURN_ON":  return { label: "Turned on",  tone: "accent" };
+    case "TURN_OFF": return { label: "Turned off", tone: "neutral" };
+    case "OPEN":     return { label: isDoor ? "Unlocked" : "Opened", tone: "warn" };
+    case "CLOSE":    return { label: isDoor ? "Locked" : "Closed",   tone: "success" };
   }
-  return { label: "UPDATE", tone: "neutral" };
+  return { label: "Updated", tone: "neutral" };
 }
 
 const TONE_COLORS: Record<string, { bg: string; fg: string }> = {
@@ -48,15 +50,19 @@ function getIconName(event: Event, device?: Device): keyof typeof Ionicons.glyph
     case "DOOR":   return "lock-closed-outline";
     case "AC":     return "snow-outline";
     case "TEMP":   return "thermometer-outline";
+    case "CAMERA": return "videocam-outline";
+    case "MOTION": return "walk-outline";
   }
   return "hardware-chip-outline";
 }
 
-export function EventRow({ event, device, isFirst = false, isLast = false }: Props) {
-  const verb = getVerb(event);
+export function EventRow({ event, device, roomName, isFirst = false, isLast = false }: Props) {
+  const verb = getVerb(event, device);
   const tc = TONE_COLORS[verb.tone] ?? TONE_COLORS.neutral;
   const title = event.type === "SCENE" ? (event.scene_name ?? "Scene") : (device?.name ?? "Unknown device");
-  const code = event.type === "SCENE" ? "scenario.run" : "device.cmd.exec";
+  // Friendly context instead of the technical "device.cmd.exec" code: where it
+  // happened and when. Scenes show how many devices they touched (if known).
+  const where = event.type === "SCENE" ? "Scene" : roomName;
 
   return (
     <View style={styles.row}>
@@ -64,21 +70,18 @@ export function EventRow({ event, device, isFirst = false, isLast = false }: Pro
       <View style={styles.railCol}>
         {!isFirst && <View style={styles.railTop} />}
         {!isLast  && <View style={styles.railBot} />}
-        <View style={styles.railNode}>
-          <Ionicons name={getIconName(event, device)} size={10} color={colors.ink700} />
+        <View style={[styles.railNode, { backgroundColor: tc.bg, borderColor: tc.bg }]}>
+          <Ionicons name={getIconName(event, device)} size={11} color={tc.fg} />
         </View>
       </View>
 
       <View style={styles.body}>
-        <View style={styles.titleRow}>
-          <View style={[styles.verbPill, { backgroundColor: tc.bg }]}>
-            <Text style={[styles.verbText, { color: tc.fg }]}>{verb.label}</Text>
-          </View>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
-        </View>
+        <Text style={styles.title} numberOfLines={1}>
+          <Text style={[styles.verb, { color: tc.fg }]}>{verb.label}</Text>
+          {"  "}{title}
+        </Text>
         <Text style={styles.meta}>
-          <Text style={styles.code}>{code}</Text>
-          {"  ·  "}{timeAgo(event.timestamp)}
+          {where ? `${where}  ·  ` : ""}{timeAgo(event.timestamp)}
         </Text>
       </View>
     </View>
@@ -127,38 +130,19 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    gap: 4,
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  verbPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  verbText: {
-    fontFamily: "monospace",
-    fontSize: 10,
-    fontWeight: "600",
-    letterSpacing: 0.3,
+    gap: 3,
+    justifyContent: "center",
   },
   title: {
     color: colors.ink900,
     fontSize: 14,
-    fontWeight: "500",
     letterSpacing: -0.1,
-    flex: 1,
+  },
+  verb: {
+    fontWeight: "700",
   },
   meta: {
-    fontFamily: "monospace",
-    fontSize: 11,
+    fontSize: 11.5,
     color: colors.ink500,
-  },
-  code: {
-    color: colors.ink600,
   },
 });
