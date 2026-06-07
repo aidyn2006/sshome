@@ -5,6 +5,7 @@ export type RootStackParamList = {
   EditDeviceModal: { deviceId: string };
   AddScenarioModal: { scenarioId?: string } | undefined;
   AllRoomsModal: undefined;
+  RoomDetailModal: { roomId: string };
   ManageFavoritesModal: undefined;
   ChangePasswordModal: undefined;
 };

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
+import { AppPressable } from "./AppPressable";
 import { colors } from "../theme/colors";
 
 type Props = {
@@ -8,13 +9,14 @@ type Props = {
   deviceCount: number;
   isActive: boolean;
   activeCount?: number;
+  onPress?: () => void;
 };
 
-export function RoomCard({ emoji, name, deviceCount, isActive, activeCount = 0 }: Props) {
+export function RoomCard({ emoji, name, deviceCount, isActive, activeCount = 0, onPress }: Props) {
   const countLabel = `${activeCount}/${deviceCount}`;
 
-  return (
-    <View style={styles.card}>
+  const content = (
+    <>
       <View style={styles.topRow}>
         <View style={styles.iconBox}>
           <Text style={styles.emoji}>{emoji}</Text>
@@ -31,8 +33,23 @@ export function RoomCard({ emoji, name, deviceCount, isActive, activeCount = 0 }
           {activeCount === 0 ? "All quiet" : `${activeCount} device${activeCount === 1 ? "" : "s"} active`}
         </Text>
       </View>
-    </View>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <AppPressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${name}, ${countLabel} devices active`}
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      >
+        {content}
+      </AppPressable>
+    );
+  }
+
+  return <View style={styles.card}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -50,6 +67,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 1,
+  },
+  cardPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.985 }],
   },
   topRow: {
     flexDirection: "row",

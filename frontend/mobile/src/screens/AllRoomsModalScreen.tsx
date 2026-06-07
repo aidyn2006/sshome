@@ -142,6 +142,7 @@ export function AllRoomsModalScreen({ navigation }: Props) {
                   deviceCount={room.deviceCount}
                   isActive={room.activeCount > 0}
                   activeCount={room.activeCount}
+                  onPress={() => navigation.navigate("RoomDetailModal", { roomId: room.id })}
                 />
               </View>
             ))}

@@ -21,6 +21,7 @@ import { HomeScreen } from "../screens/HomeScreen";
 import { LoginScreen } from "../screens/LoginScreen";
 import { ManageFavoritesModalScreen } from "../screens/ManageFavoritesModalScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
+import { RoomDetailModalScreen } from "../screens/RoomDetailModalScreen";
 import { ScenesScreen } from "../screens/ScenesScreen";
 import { useSmartHome } from "../store/SmartHomeContext";
 import { colors } from "../theme/colors";
@@ -238,6 +239,14 @@ export function AppNavigator() {
         <Stack.Screen
           name="AllRoomsModal"
           component={AllRoomsModalScreen}
+          options={{
+            presentation: "modal",
+            animation: "slide_from_bottom"
+          }}
+        />
+        <Stack.Screen
+          name="RoomDetailModal"
+          component={RoomDetailModalScreen}
           options={{
             presentation: "modal",
             animation: "slide_from_bottom"

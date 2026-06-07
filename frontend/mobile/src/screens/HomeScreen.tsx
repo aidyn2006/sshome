@@ -186,6 +186,7 @@ export function HomeScreen() {
                         deviceCount={r.deviceCount}
                         isActive={r.isActive}
                         activeCount={r.activeCount}
+                        onPress={() => navigation.navigate("RoomDetailModal", { roomId: r.id })}
                       />
                     </View>
                   ))}
