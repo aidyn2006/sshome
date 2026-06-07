@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Keyboard,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -51,32 +51,12 @@ function actionLabel(action: DeviceAction): string {
   return "Close";
 }
 
-// Height of the floating input bar (its padding + the input's min height).
-const INPUT_BAR_HEIGHT = 58;
-
 export function AssistantScreen() {
   const insets = useSafeAreaInsets();
-  const navBarHeight = tabBarHeight(insets.bottom);
-
-  // Track the keyboard so the input bar rides just above it. When the keyboard
-  // is closed it parks above the floating nav bar instead.
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  useEffect(() => {
-    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const show = Keyboard.addListener(showEvt, (e) => setKeyboardHeight(e.endCoordinates?.height ?? 0));
-    const hide = Keyboard.addListener(hideEvt, () => setKeyboardHeight(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-
-  // Above the keyboard when open (minus the inset the keyboard already covers),
-  // otherwise above the floating nav bar. Pad the scroll so the last message clears it.
-  const inputBarBottom =
-    keyboardHeight > 0 ? Math.max(keyboardHeight - insets.bottom, 0) + 8 : navBarHeight + 8;
-  const contentBottomPadding = inputBarBottom + INPUT_BAR_HEIGHT + 16;
+  // The input bar is docked in normal flow at the bottom of the column; this
+  // margin keeps it clear of the floating nav bar. KeyboardAvoidingView lifts
+  // the whole column above the keyboard when it opens.
+  const inputBarMarginBottom = tabBarHeight(insets.bottom) + 8;
 
   const {
     addScenario,
@@ -220,7 +200,10 @@ export function AssistantScreen() {
   };
 
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <ScreenHeader
         eyebrow="AI ASSISTANT"
         title="Assistant"
@@ -229,8 +212,9 @@ export function AssistantScreen() {
       />
 
       <ScrollView
+        style={styles.scroll}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.content, { paddingBottom: contentBottomPadding }]}
+        contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.promptRow}>
@@ -397,7 +381,7 @@ export function AssistantScreen() {
         </View>
       </ScrollView>
 
-      <View style={[styles.inputBar, { bottom: inputBarBottom }]}>
+      <View style={[styles.inputBar, { marginBottom: inputBarMarginBottom }]}>
         <TextInput
           value={input}
           onChangeText={setInput}
@@ -414,7 +398,7 @@ export function AssistantScreen() {
           <Ionicons name="send" size={17} color="#fff" />
         </AppPressable>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -423,8 +407,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.cream50,
   },
+  scroll: {
+    flex: 1,
+  },
   content: {
     paddingHorizontal: 20,
+    paddingBottom: 12,
     gap: spacing.md,
   },
   promptRow: {
@@ -559,9 +547,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   inputBar: {
-    position: "absolute",
-    left: 12,
-    right: 12,
+    marginHorizontal: 12,
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 8,
