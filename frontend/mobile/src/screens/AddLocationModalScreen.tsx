@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import type { RootStackParamList } from "../navigation/types";
+import type { RootStackParamList, TabParamList } from "../navigation/types";
 import { useSmartHome } from "../store/SmartHomeContext";
 import { colors } from "../theme/colors";
 
@@ -26,7 +26,22 @@ const ROOM_ICONS: Array<{ name: string; icon: keyof typeof Ionicons.glyphMap }> 
 
 export function AddLocationModalScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { homes, rooms, addHome, renameHome, removeHome, addRoom, isAuthSubmitting, logout } = useSmartHome();
+  const { homes, rooms, isAdmin, addHome, renameHome, removeHome, addRoom, isAuthSubmitting, logout } = useSmartHome();
+
+  // Screens that were moved out of the bottom bar — reachable from here.
+  const menuItems = (
+    [
+      { key: "Scenes", label: "Scenes", icon: "flash-outline", show: true },
+      { key: "Activity", label: "Activity", icon: "pulse-outline", show: true },
+      { key: "Room3D", label: "Room 3D", icon: "cube-outline", show: Platform.OS === "web" },
+      { key: "Admin", label: "Admin", icon: "shield-checkmark-outline", show: isAdmin },
+      { key: "AttackSim", label: "Red Team", icon: "bug-outline", show: isAdmin },
+    ] as Array<{ key: keyof TabParamList; label: string; icon: keyof typeof Ionicons.glyphMap; show: boolean }>
+  ).filter((item) => item.show);
+
+  const openTab = (screen: keyof TabParamList) => {
+    navigation.navigate("Tabs", { screen });
+  };
   const [mode, setMode] = useState<Mode>("room");
   const [name, setName] = useState("");
   const [selectedHomeId, setSelectedHomeId] = useState<string>(homes[0]?.id ?? "");
@@ -99,6 +114,26 @@ export function AddLocationModalScreen({ navigation }: Props) {
           <AppPressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={18} color={colors.ink700} />
           </AppPressable>
+        </View>
+
+        {/* Menu — screens moved out of the bottom bar */}
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>MENU</Text>
+          <View style={styles.menuList}>
+            {menuItems.map((item, index) => (
+              <AppPressable
+                key={item.key}
+                style={[styles.menuRow, index < menuItems.length - 1 && styles.menuRowBorder]}
+                onPress={() => openTab(item.key)}
+              >
+                <View style={styles.menuIcon}>
+                  <Ionicons name={item.icon} size={18} color={colors.ink700} />
+                </View>
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.ink400} />
+              </AppPressable>
+            ))}
+          </View>
         </View>
 
         {/* Mode toggle */}
@@ -406,6 +441,38 @@ const styles = StyleSheet.create({
   },
   fieldGroup: {
     gap: 6,
+  },
+  menuList: {
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    overflow: "hidden",
+  },
+  menuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  menuRowBorder: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.hairline,
+  },
+  menuIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.ink100,
+  },
+  menuLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "500",
+    color: colors.ink900,
   },
   fieldLabel: {
     fontFamily: "monospace",

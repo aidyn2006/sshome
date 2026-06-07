@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ScrollView,
   StyleSheet,
@@ -57,9 +57,25 @@ const INPUT_BAR_HEIGHT = 58;
 export function AssistantScreen() {
   const insets = useSafeAreaInsets();
   const navBarHeight = tabBarHeight(insets.bottom);
-  // Park the input bar just above the floating nav bar, and pad the scroll
-  // content so the last message clears both.
-  const inputBarBottom = navBarHeight + 8;
+
+  // Track the keyboard so the input bar rides just above it. When the keyboard
+  // is closed it parks above the floating nav bar instead.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const show = Keyboard.addListener(showEvt, (e) => setKeyboardHeight(e.endCoordinates?.height ?? 0));
+    const hide = Keyboard.addListener(hideEvt, () => setKeyboardHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  // Above the keyboard when open (minus the inset the keyboard already covers),
+  // otherwise above the floating nav bar. Pad the scroll so the last message clears it.
+  const inputBarBottom =
+    keyboardHeight > 0 ? Math.max(keyboardHeight - insets.bottom, 0) + 8 : navBarHeight + 8;
   const contentBottomPadding = inputBarBottom + INPUT_BAR_HEIGHT + 16;
 
   const {
@@ -204,10 +220,7 @@ export function AssistantScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={styles.screen}
-    >
+    <View style={styles.screen}>
       <ScreenHeader
         eyebrow="AI ASSISTANT"
         title="Assistant"
@@ -401,7 +414,7 @@ export function AssistantScreen() {
           <Ionicons name="send" size={17} color="#fff" />
         </AppPressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

@@ -1,5 +1,7 @@
+import type { NavigatorScreenParams } from "@react-navigation/native";
+
 export type RootStackParamList = {
-  Tabs: undefined;
+  Tabs: NavigatorScreenParams<TabParamList>;
   AddLocationModal: undefined;
   AddDeviceModal: { roomId?: string } | undefined;
   EditDeviceModal: { deviceId: string };

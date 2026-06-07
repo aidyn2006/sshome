@@ -27,13 +27,19 @@ const iconMap: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive
   AttackSim:{ active: "bug",         inactive: "bug-outline" },
 };
 
+// Only these live in the bottom bar — everything else (Scenes, Activity, Room
+// 3D, Admin, Red Team) is reachable from the profile sheet to keep the bar light.
+const PRIMARY_TABS = ["Home", "Devices", "Assistant"];
+
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const visibleRoutes = state.routes.filter((route) => PRIMARY_TABS.includes(route.name));
 
   return (
     <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <View style={styles.pill}>
-        {state.routes.map((route, index) => {
+        {visibleRoutes.map((route) => {
+          const index = state.routes.findIndex((r) => r.key === route.key);
           const isFocused = state.index === index;
           const descriptor = descriptors[route.key];
           const options = descriptor.options;
