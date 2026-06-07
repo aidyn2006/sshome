@@ -13,8 +13,10 @@ from app.schemas.security import (
     SecurityStatsOut,
     SimulateAttackRequest,
     SimulateAttackResponse,
+    TelegramSettingsOut,
+    TelegramSettingsUpdate,
 )
-from app.services import attack_sim_service, telegram_service
+from app.services import attack_sim_service, runtime_settings, telegram_service
 from app.services.attack_sim_service import SimulationError
 
 router = APIRouter(prefix="/security", tags=["security"])
@@ -81,3 +83,44 @@ def security_stats(
         by_type=by_type,
         telegram_configured=telegram_service.is_configured(),
     )
+
+
+def _telegram_settings_out() -> TelegramSettingsOut:
+    cfg = runtime_settings.get_telegram_settings()
+    return TelegramSettingsOut(
+        enabled=cfg["enabled"],
+        chat_id=cfg["chat_id"],
+        has_token=bool(cfg["bot_token"]),
+        configured=telegram_service.is_configured(),
+    )
+
+
+@router.get("/telegram", response_model=TelegramSettingsOut)
+def get_telegram_settings(_: User = Depends(require_admin)) -> TelegramSettingsOut:
+    return _telegram_settings_out()
+
+
+@router.put("/telegram", response_model=TelegramSettingsOut)
+def update_telegram_settings(
+    payload: TelegramSettingsUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> TelegramSettingsOut:
+    runtime_settings.update_telegram_settings(
+        db,
+        bot_token=payload.bot_token,
+        chat_id=payload.chat_id,
+        enabled=payload.enabled,
+    )
+    return _telegram_settings_out()
+
+
+@router.post("/telegram/test")
+def test_telegram_alert(_: User = Depends(require_admin)) -> dict[str, bool]:
+    if not telegram_service.is_configured():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Telegram is not configured — set a bot token and chat id first.",
+        )
+    telegram_service.send_alert("✅ SSHome test alert — Telegram is wired up correctly.")
+    return {"ok": True}

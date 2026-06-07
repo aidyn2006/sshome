@@ -1,3 +1,4 @@
+from app.models.app_setting import AppSetting
 from app.models.audit_log import AuditLog, AuditLogAction
 from app.models.device import Device
 from app.models.enums import DeviceAction, DeviceStatus, DeviceType
@@ -11,6 +12,7 @@ from app.models.security_event import AttackType, SecurityEvent, SecuritySeverit
 from app.models.user import User, UserRole
 
 __all__ = [
+    "AppSetting",
     "User",
     "UserRole",
     "RefreshToken",

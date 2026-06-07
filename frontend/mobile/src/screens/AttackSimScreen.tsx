@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+  ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { AppPressable } from "../components/AppPressable";
 
-import type { AttackType, SecurityEvent, SecurityStats } from "../api/security";
+import type { AttackType, SecurityEvent, SecurityStats, TelegramSettings } from "../api/security";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { useSmartHome } from "../store/SmartHomeContext";
 import { colors } from "../theme/colors";
@@ -133,7 +133,15 @@ function formatTime(iso: string): string {
 }
 
 export function AttackSimScreen() {
-  const { simulateAttack, listSecurityEvents, getSecurityStats, securityEvents } = useSmartHome();
+  const {
+    simulateAttack,
+    listSecurityEvents,
+    getSecurityStats,
+    securityEvents,
+    getTelegramSettings,
+    updateTelegramSettings,
+    testTelegramAlert
+  } = useSmartHome();
 
   const [events, setEvents] = useState<SecurityEvent[]>([]);
   const [stats, setStats] = useState<SecurityStats | null>(null);
@@ -142,6 +150,63 @@ export function AttackSimScreen() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [ddosIntensity, setDdosIntensity] = useState<number>(50);
   const [lastIncidentTrace, setLastIncidentTrace] = useState<IncidentTrace | null>(null);
+
+  // Telegram alert config — editable here instead of being baked into env vars.
+  const [telegram, setTelegram] = useState<TelegramSettings | null>(null);
+  const [chatIdInput, setChatIdInput] = useState("");
+  const [tokenInput, setTokenInput] = useState("");
+  const [savingTelegram, setSavingTelegram] = useState(false);
+  const [testingTelegram, setTestingTelegram] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getTelegramSettings()
+      .then((cfg) => {
+        if (!cancelled) {
+          setTelegram(cfg);
+          setChatIdInput(cfg.chat_id ?? "");
+        }
+      })
+      .catch(() => {
+        /* admin-only or offline — leave the card in its default state */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [getTelegramSettings]);
+
+  const saveTelegram = async (override?: Partial<{ enabled: boolean }>) => {
+    setSavingTelegram(true);
+    try {
+      const next = await updateTelegramSettings({
+        chatId: chatIdInput.trim(),
+        botToken: tokenInput.trim() ? tokenInput.trim() : undefined,
+        enabled: override?.enabled
+      });
+      setTelegram(next);
+      setChatIdInput(next.chat_id ?? "");
+      setTokenInput("");
+      if (override?.enabled === undefined) {
+        Alert.alert("Saved", next.configured ? "Telegram alerts are now active." : "Saved, but still missing a bot token or chat id.");
+      }
+    } catch (error) {
+      Alert.alert("Could not save", getErrorMessage(error));
+    } finally {
+      setSavingTelegram(false);
+    }
+  };
+
+  const sendTelegramTest = async () => {
+    setTestingTelegram(true);
+    try {
+      await testTelegramAlert();
+      Alert.alert("Test sent", "Check your Telegram chat for the test message.");
+    } catch (error) {
+      Alert.alert("Test failed", getErrorMessage(error));
+    } finally {
+      setTestingTelegram(false);
+    }
+  };
 
   const refresh = useCallback(async () => {
     try {

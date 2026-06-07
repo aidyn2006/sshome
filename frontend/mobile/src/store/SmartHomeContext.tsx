@@ -42,13 +42,18 @@ import {
 import { UnauthorizedError, isApiError } from "../api/client";
 import {
   getSecurityStats as getSecurityStatsRequest,
+  getTelegramSettings as getTelegramSettingsRequest,
   listSecurityEvents as listSecurityEventsRequest,
   simulateAttack as simulateAttackRequest,
+  testTelegramAlert as testTelegramAlertRequest,
+  updateTelegramSettings as updateTelegramSettingsRequest,
   type AttackType,
   type SecurityEvent,
   type SecurityStats,
   type SimulateAttackPayload,
-  type SimulateAttackResult
+  type SimulateAttackResult,
+  type TelegramSettings,
+  type TelegramSettingsUpdate
 } from "../api/security";
 import {
   applyDeviceAction,
@@ -146,6 +151,9 @@ type SmartHomeContextValue = {
   simulateAttack: (payload: SimulateAttackPayload) => Promise<SimulateAttackResult>;
   listSecurityEvents: (limit?: number, attackType?: AttackType) => Promise<SecurityEvent[]>;
   getSecurityStats: () => Promise<SecurityStats>;
+  getTelegramSettings: () => Promise<TelegramSettings>;
+  updateTelegramSettings: (payload: TelegramSettingsUpdate) => Promise<TelegramSettings>;
+  testTelegramAlert: () => Promise<{ ok: boolean }>;
   securityEvents: SecurityEvent[];
 };
 
@@ -1315,6 +1323,12 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
         runWithSession((accessToken) => listSecurityEventsRequest(accessToken, limit, attackType)),
       getSecurityStats: async () =>
         runWithSession((accessToken) => getSecurityStatsRequest(accessToken)),
+      getTelegramSettings: async () =>
+        runWithSession((accessToken) => getTelegramSettingsRequest(accessToken)),
+      updateTelegramSettings: async (payload: TelegramSettingsUpdate) =>
+        runWithSession((accessToken) => updateTelegramSettingsRequest(accessToken, payload)),
+      testTelegramAlert: async () =>
+        runWithSession((accessToken) => testTelegramAlertRequest(accessToken)),
       securityEvents
     }),
     [

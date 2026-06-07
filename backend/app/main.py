@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.http_security import configure_http_security
 from app.db.init_db import init_db
-from app.services import device_registry, mqtt_subscriber
+from app.db.session import SessionLocal
+from app.services import device_registry, mqtt_subscriber, runtime_settings
 from app.routes.ai import router as ai_router
 from app.routes.admin import router as admin_router
 from app.routes.auth import router as auth_router
@@ -32,6 +33,16 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     loop_registry.set_loop(asyncio.get_running_loop())
     if settings.database_auto_init:
         init_db()
+    # Prime the runtime-settings cache (Telegram chat id/token) from the DB.
+    # Guarded so a missing table (pre-migration) never blocks startup.
+    try:
+        db = SessionLocal()
+        try:
+            runtime_settings.load_from_db(db)
+        finally:
+            db.close()
+    except Exception:  # pragma: no cover - defensive boot guard
+        pass
     device_registry.load()
     mqtt_subscriber.start()
     yield

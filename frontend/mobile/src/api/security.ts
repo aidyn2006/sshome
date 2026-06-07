@@ -76,3 +76,45 @@ export async function getSecurityStats(token: string): Promise<SecurityStats> {
     token
   });
 }
+
+export type TelegramSettings = {
+  enabled: boolean;
+  chat_id: string | null;
+  has_token: boolean;
+  configured: boolean;
+};
+
+export type TelegramSettingsUpdate = {
+  botToken?: string;
+  chatId?: string;
+  enabled?: boolean;
+};
+
+export async function getTelegramSettings(token: string): Promise<TelegramSettings> {
+  return apiRequest<TelegramSettings>("/api/v1/security/telegram", {
+    method: "GET",
+    token
+  });
+}
+
+export async function updateTelegramSettings(
+  token: string,
+  payload: TelegramSettingsUpdate
+): Promise<TelegramSettings> {
+  return apiRequest<TelegramSettings>("/api/v1/security/telegram", {
+    method: "PUT",
+    token,
+    body: {
+      bot_token: payload.botToken,
+      chat_id: payload.chatId,
+      enabled: payload.enabled
+    }
+  });
+}
+
+export async function testTelegramAlert(token: string): Promise<{ ok: boolean }> {
+  return apiRequest<{ ok: boolean }>("/api/v1/security/telegram/test", {
+    method: "POST",
+    token
+  });
+}

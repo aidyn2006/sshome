@@ -11,21 +11,23 @@ import threading
 import httpx
 
 from app.core.config import settings
+from app.services import runtime_settings
 
 logger = logging.getLogger(__name__)
 
 
 def is_configured() -> bool:
-    return bool(settings.telegram_bot_token and settings.telegram_chat_id)
+    cfg = runtime_settings.get_telegram_settings()
+    return bool(cfg["enabled"] and cfg["bot_token"] and cfg["chat_id"])
 
 
-def _send_blocking(text: str) -> None:
-    url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
+def _send_blocking(text: str, *, bot_token: str, chat_id: str) -> None:
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     try:
         response = httpx.post(
             url,
             json={
-                "chat_id": settings.telegram_chat_id,
+                "chat_id": chat_id,
                 "text": text,
                 "parse_mode": "HTML",
                 "disable_web_page_preview": True,
@@ -40,13 +42,15 @@ def _send_blocking(text: str) -> None:
 
 def send_alert(text: str) -> None:
     """Fire-and-forget alert. Never blocks the caller or raises."""
-    if not is_configured():
+    cfg = runtime_settings.get_telegram_settings()
+    if not (cfg["enabled"] and cfg["bot_token"] and cfg["chat_id"]):
         logger.info("[TELEGRAM] (not configured) %s", text)
         return
 
     threading.Thread(
         target=_send_blocking,
         args=(text,),
+        kwargs={"bot_token": cfg["bot_token"], "chat_id": cfg["chat_id"]},
         daemon=True,
         name="telegram-alert",
     ).start()

@@ -96,6 +96,15 @@ def _patch_legacy_schema() -> None:
         "CREATE INDEX IF NOT EXISTS ix_security_events_attack_type ON security_events (attack_type)",
         "CREATE INDEX IF NOT EXISTS ix_security_events_sim_id ON security_events (sim_id)",
         "CREATE INDEX IF NOT EXISTS ix_security_events_created_at ON security_events (created_at)",
+        """
+        CREATE TABLE IF NOT EXISTS app_settings (
+            id UUID PRIMARY KEY,
+            key VARCHAR(64) NOT NULL,
+            value VARCHAR(1024),
+            updated_at TIMESTAMPTZ NOT NULL
+        )
+        """,
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_app_settings_key ON app_settings (key)",
     ]
 
     with engine.begin() as connection:

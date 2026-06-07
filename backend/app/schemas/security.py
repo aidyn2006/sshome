@@ -41,3 +41,17 @@ class SecurityStatsOut(BaseModel):
     not_blocked: int
     by_type: dict[str, int]
     telegram_configured: bool
+
+
+class TelegramSettingsOut(BaseModel):
+    enabled: bool
+    chat_id: str | None
+    has_token: bool
+    configured: bool
+
+
+class TelegramSettingsUpdate(BaseModel):
+    # None = leave unchanged; "" = clear the override (fall back to env default).
+    bot_token: str | None = Field(default=None, max_length=1024)
+    chat_id: str | None = Field(default=None, max_length=1024)
+    enabled: bool | None = None
