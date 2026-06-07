@@ -62,3 +62,44 @@ class AIScenarioDraft(BaseModel):
     description: str | None = Field(default=None, max_length=240)
     actions: list[AIScenarioDraftAction] = Field(min_length=1, max_length=20)
     explanation: str = Field(min_length=1, max_length=400)
+
+
+class AIAssistantDeviceAction(BaseModel):
+    device_id: UUID
+    action: DeviceAction
+
+
+class AIAssistantControlProposal(BaseModel):
+    actions: list[AIAssistantDeviceAction] = Field(min_length=1, max_length=20)
+    explanation: str = Field(min_length=1, max_length=400)
+
+
+class AIAssistantScenarioRunProposal(BaseModel):
+    scenario_id: UUID
+    name: str
+    explanation: str = Field(min_length=1, max_length=400)
+
+
+class AIAssistantChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class AIAssistantChatResponse(BaseModel):
+    answer: str = Field(min_length=1, max_length=2000)
+    scenario_draft: AIScenarioDraft | None = None
+    control_proposal: AIAssistantControlProposal | None = None
+    scenario_run: AIAssistantScenarioRunProposal | None = None
+
+
+class AIAssistantActionExecutionRequest(BaseModel):
+    actions: list[AIAssistantDeviceAction] = Field(min_length=1, max_length=20)
+
+
+class AIAssistantExecutedAction(BaseModel):
+    device: DeviceRead
+    action: DeviceAction
+
+
+class AIAssistantActionExecutionResult(BaseModel):
+    message: str
+    executed_actions: list[AIAssistantExecutedAction]

@@ -184,6 +184,133 @@ def test_generate_scenario_draft_requires_openai_key(monkeypatch) -> None:
         raise AssertionError("Expected OPENAI_API_KEY validation error")
 
 
+def test_assistant_chat_returns_answer_and_scenario_draft(monkeypatch) -> None:
+    db = MagicMock()
+    owner_id = uuid4()
+    device_id = uuid4()
+    device = SimpleNamespace(
+        id=device_id,
+        name="Bedroom Light",
+        type=DeviceType.LIGHT,
+        status=DeviceStatus.ON,
+    )
+
+    monkeypatch.setattr(
+        ai_service,
+        "_assistant_context",
+        lambda db, *, owner_id: (
+            [device],
+            {
+                "devices": [
+                    {
+                        "device_id": str(device_id),
+                        "name": "Bedroom Light",
+                        "type": "LIGHT",
+                        "status": "ON",
+                        "supported_actions": ["TURN_ON", "TURN_OFF"],
+                    }
+                ],
+                "recent_events": [],
+                "scenarios": [],
+            },
+        ),
+    )
+    monkeypatch.setattr("app.services.ai_service.scenario_service.list_scenarios", lambda *args, **kwargs: [])
+    monkeypatch.setattr(
+        ai_service,
+        "_post_openai_structured",
+        lambda **kwargs: {
+            "answer": "I prepared a draft scene for you to review.",
+            "scenario_draft": {
+                "present": True,
+                "name": "Night Mode",
+                "description": "Turn off bedroom light.",
+                "actions": [
+                    {
+                        "device_id": str(device_id),
+                        "action": "TURN_OFF",
+                    }
+                ],
+                "explanation": "The request matched the bedroom light.",
+            },
+            "control_proposal": {
+                "present": False,
+                "actions": [],
+                "explanation": "",
+            },
+            "scenario_run": {
+                "present": False,
+                "scenario_id": "00000000-0000-0000-0000-000000000000",
+                "explanation": "",
+            },
+        },
+    )
+
+    result = ai_service.assistant_chat(db, owner_id=owner_id, message="make night mode")
+
+    assert result.answer == "I prepared a draft scene for you to review."
+    assert result.scenario_draft is not None
+    assert result.scenario_draft.name == "Night Mode"
+    assert result.scenario_draft.actions[0].action == DeviceAction.TURN_OFF
+
+
+def test_assistant_chat_returns_control_proposal(monkeypatch) -> None:
+    db = MagicMock()
+    owner_id = uuid4()
+    device_id = uuid4()
+    device = SimpleNamespace(
+        id=device_id,
+        name="Bedroom Light",
+        type=DeviceType.LIGHT,
+        status=DeviceStatus.ON,
+    )
+
+    monkeypatch.setattr(
+        ai_service,
+        "_assistant_context",
+        lambda db, *, owner_id: (
+            [device],
+            {"devices": [], "recent_events": [], "scenarios": []},
+        ),
+    )
+    monkeypatch.setattr("app.services.ai_service.scenario_service.list_scenarios", lambda *args, **kwargs: [])
+    monkeypatch.setattr(
+        ai_service,
+        "_post_openai_structured",
+        lambda **kwargs: {
+            "answer": "I can turn off Bedroom Light after you confirm.",
+            "scenario_draft": {
+                "present": False,
+                "name": "",
+                "description": "",
+                "actions": [],
+                "explanation": "",
+            },
+            "control_proposal": {
+                "present": True,
+                "actions": [
+                    {
+                        "device_id": str(device_id),
+                        "action": "TURN_OFF",
+                    }
+                ],
+                "explanation": "Bedroom Light is controllable.",
+            },
+            "scenario_run": {
+                "present": False,
+                "scenario_id": "00000000-0000-0000-0000-000000000000",
+                "explanation": "",
+            },
+        },
+    )
+
+    result = ai_service.assistant_chat(db, owner_id=owner_id, message="turn off bedroom light")
+
+    assert result.control_proposal is not None
+    assert result.control_proposal.actions[0].device_id == device_id
+    assert result.control_proposal.actions[0].action == DeviceAction.TURN_OFF
+
+
 def test_run_scene_resolves_boolean_light_action(monkeypatch) -> None:
     db = MagicMock()
     owner_id = uuid4()

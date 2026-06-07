@@ -6,6 +6,11 @@ from app.core.deps import get_current_owner_id
 from app.db.session import get_db
 from app.models.enums import DeviceAction
 from app.schemas.ai import (
+    AIAssistantActionExecutionResult,
+    AIAssistantChatResponse,
+    AIAssistantControlProposal,
+    AIAssistantDeviceAction,
+    AIAssistantExecutedAction,
     AIScenarioDraft,
     AIScenarioDraftAction,
     AutomationSuggestionList,
@@ -114,6 +119,94 @@ def test_scenario_draft_route_returns_ai_draft(client, monkeypatch) -> None:
             "action": "TURN_OFF",
         }
     ]
+
+
+def test_assistant_chat_route_returns_answer_and_draft(client, monkeypatch) -> None:
+    owner_id = UUID("550e8400-e29b-41d4-a716-446655440000")
+    fake_db = object()
+    device_id = uuid4()
+
+    _override_dependencies(client, owner_id, fake_db)
+    monkeypatch.setattr(
+        "app.routes.ai.ai_service.assistant_chat",
+        lambda db, *, owner_id, message: AIAssistantChatResponse(
+            answer="I prepared a draft scene for you to review.",
+            scenario_draft=AIScenarioDraft(
+                name="Night Mode",
+                description="Turn off the lights.",
+                actions=[
+                    AIScenarioDraftAction(
+                        device_id=device_id,
+                        action=DeviceAction.TURN_OFF,
+                    )
+                ],
+                explanation="Matched the requested routine to one controllable light.",
+            ),
+            control_proposal=AIAssistantControlProposal(
+                actions=[
+                    AIAssistantDeviceAction(
+                        device_id=device_id,
+                        action=DeviceAction.TURN_OFF,
+                    )
+                ],
+                explanation="Confirm to turn off the light.",
+            ),
+        ),
+    )
+
+    response = client.post("/api/v1/ai/chat", json={"message": "make night mode"})
+
+    _clear_overrides(client)
+
+    assert response.status_code == 200
+    assert response.json()["answer"] == "I prepared a draft scene for you to review."
+    assert response.json()["scenario_draft"]["name"] == "Night Mode"
+    assert response.json()["control_proposal"]["actions"][0]["action"] == "TURN_OFF"
+
+
+def test_confirm_assistant_device_actions_route_executes_actions(client, monkeypatch) -> None:
+    owner_id = UUID("550e8400-e29b-41d4-a716-446655440000")
+    fake_db = object()
+    device_id = uuid4()
+    room_id = uuid4()
+    created_at = datetime(2026, 5, 8, 12, 0, tzinfo=UTC)
+    device = DeviceRead(
+        id=device_id,
+        name="Main Light",
+        type="LIGHT",
+        status="OFF",
+        room_id=room_id,
+        owner_id=owner_id,
+        created_at=created_at,
+        updated_at=created_at,
+    )
+
+    _override_dependencies(client, owner_id, fake_db)
+    monkeypatch.setattr(
+        "app.routes.ai.ai_service.execute_assistant_device_actions",
+        lambda db, *, owner_id, actions: AIAssistantActionExecutionResult(
+            message="Executed 1 action.",
+            executed_actions=[
+                AIAssistantExecutedAction(
+                    device=device,
+                    action=DeviceAction.TURN_OFF,
+                )
+            ],
+        ),
+    )
+    monkeypatch.setattr("app.routes.ai.publish_device_update_from_sync", lambda **kwargs: None)
+    monkeypatch.setattr("app.routes.ai.publish_device_command", lambda **kwargs: None)
+
+    response = client.post(
+        "/api/v1/ai/confirm-device-actions",
+        json={"actions": [{"device_id": str(device_id), "action": "TURN_OFF"}]},
+    )
+
+    _clear_overrides(client)
+
+    assert response.status_code == 200
+    assert response.json()["message"] == "Executed 1 action."
+    assert response.json()["executed_actions"][0]["device"]["status"] == "OFF"
 
 
 def test_scene_run_accepts_tz_payload(client, monkeypatch) -> None:

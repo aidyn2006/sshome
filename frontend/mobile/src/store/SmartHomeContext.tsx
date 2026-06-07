@@ -20,7 +20,12 @@ import {
   type ManufacturedDevice
 } from "../api/admin";
 import {
+  confirmAssistantDeviceActions as confirmAssistantDeviceActionsRequest,
   generateScenarioDraft as generateScenarioDraftRequest,
+  sendAssistantMessage as sendAssistantMessageRequest,
+  type AIAssistantActionExecutionResult,
+  type AIAssistantDeviceAction,
+  type AIAssistantChatResponse,
   type AIScenarioDraft
 } from "../api/ai";
 import {
@@ -120,6 +125,8 @@ type SmartHomeContextValue = {
   editScenario: (scenarioId: string, payload: ScenarioPayload) => Promise<boolean>;
   removeScenario: (scenarioId: string) => Promise<boolean>;
   generateScenarioDraft: (prompt: string) => Promise<AIScenarioDraft>;
+  sendAssistantMessage: (message: string) => Promise<AIAssistantChatResponse>;
+  confirmAssistantDeviceActions: (actions: AIAssistantDeviceAction[]) => Promise<AIAssistantActionExecutionResult>;
   addHome: (name: string) => Promise<void>;
   renameHome: (homeId: string, name: string) => Promise<boolean>;
   removeHome: (homeId: string) => Promise<boolean>;
@@ -1258,6 +1265,22 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       removeScenario,
       generateScenarioDraft: async (prompt: string) =>
         runWithSession((accessToken) => generateScenarioDraftRequest(accessToken, prompt)),
+      sendAssistantMessage: async (message: string) =>
+        runWithSession((accessToken) => sendAssistantMessageRequest(accessToken, message)),
+      confirmAssistantDeviceActions: async (actions: AIAssistantDeviceAction[]) => {
+        const result = await runWithSession((accessToken) =>
+          confirmAssistantDeviceActionsRequest(accessToken, actions)
+        );
+        const updatedDevices = result.executed_actions.map((item) => mapDevice(item.device));
+        setDevices((prev) => mergeUpdatedDeviceList(prev, updatedDevices));
+        setDeviceEvents((prev) =>
+          sortEventsByNewest([
+            ...result.executed_actions.map((item) => buildDeviceEvent(item.device.id, item.action)),
+            ...prev
+          ])
+        );
+        return result;
+      },
       addHome,
       renameHome,
       removeHome,

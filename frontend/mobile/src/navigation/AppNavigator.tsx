@@ -11,6 +11,7 @@ import { ActivityScreen } from "../screens/ActivityScreen";
 import { AddDeviceModalScreen } from "../screens/AddDeviceModalScreen";
 import { AddScenarioModalScreen } from "../screens/AddScenarioModalScreen";
 import { AdminScreen } from "../screens/AdminScreen";
+import { AssistantScreen } from "../screens/AssistantScreen";
 import { AttackSimScreen } from "../screens/AttackSimScreen";
 import { AddLocationModalScreen } from "../screens/AddLocationModalScreen";
 import { AllRoomsModalScreen } from "../screens/AllRoomsModalScreen";
@@ -118,6 +119,7 @@ function TabsNavigator() {
       {Platform.OS === "web" && (
         <Tab.Screen name="Room3D" component={Room3DRoute} options={{ title: "Room" }} />
       )}
+      <Tab.Screen name="Assistant" component={AssistantScreen} />
       <Tab.Screen name="Scenes" component={ScenesScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />
       {isAdmin && <Tab.Screen name="Admin" component={AdminScreen} options={{ title: "Admin" }} />}

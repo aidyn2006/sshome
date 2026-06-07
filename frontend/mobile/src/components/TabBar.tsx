@@ -10,6 +10,7 @@ const iconMap: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive
   Home:     { active: "home",        inactive: "home-outline" },
   Room3D:   { active: "cube",        inactive: "cube-outline" },
   Devices:  { active: "grid",        inactive: "grid-outline" },
+  Assistant:{ active: "chatbubble-ellipses", inactive: "chatbubble-ellipses-outline" },
   Scenes:   { active: "flash",       inactive: "flash-outline" },
   Activity: { active: "pulse",       inactive: "pulse-outline" },
   Admin:    { active: "shield-checkmark", inactive: "shield-checkmark-outline" },

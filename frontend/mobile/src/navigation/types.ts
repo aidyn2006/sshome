@@ -14,6 +14,7 @@ export type TabParamList = {
   Home: undefined;
   Room3D: undefined;
   Devices: undefined;
+  Assistant: undefined;
   Scenes: undefined;
   Activity: undefined;
   Admin: undefined;
