@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from app.core.deps import CurrentOwnerId
+from app.core.deps import CurrentAuth, CurrentOwnerId
 from app.core.rate_limit import enforce_device_action_rate_limit
 from app.db.session import get_db
 from app.schemas.ai import (
@@ -9,6 +9,8 @@ from app.schemas.ai import (
     AIAssistantActionExecutionResult,
     AIAssistantChatRequest,
     AIAssistantChatResponse,
+    AISecurityAnalysisRequest,
+    AISecurityAnalysisResponse,
     AIScenarioDraft,
     AIScenarioDraftRequest,
     AutomationSuggestionList,
@@ -53,6 +55,21 @@ def assistant_chat(
     db: Session = Depends(get_db),
 ) -> AIAssistantChatResponse:
     return ai_service.assistant_chat(db, owner_id=owner_id, message=payload.message)
+
+
+@router.post("/ai/security-analysis", response_model=AISecurityAnalysisResponse)
+def analyze_security_activity(
+    payload: AISecurityAnalysisRequest,
+    auth_context: CurrentAuth,
+    db: Session = Depends(get_db),
+) -> AISecurityAnalysisResponse:
+    roles = {role.upper() for role in auth_context.roles}
+    return ai_service.analyze_security_activity(
+        db,
+        owner_id=auth_context.owner_id,
+        window=payload.window,
+        include_security_events="ADMIN" in roles,
+    )
 
 
 @router.post("/ai/confirm-device-actions", response_model=AIAssistantActionExecutionResult)

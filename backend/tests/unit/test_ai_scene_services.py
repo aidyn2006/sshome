@@ -7,6 +7,7 @@ from uuid import uuid4
 from fastapi import HTTPException
 
 from app.models.enums import DeviceAction, DeviceStatus, DeviceType
+from app.models.security_event import AttackType, SecuritySeverity
 from app.schemas.scene import SceneActionRequest, SceneRunRequest
 from app.services import ai_service, scene_service
 
@@ -309,6 +310,82 @@ def test_assistant_chat_returns_control_proposal(monkeypatch) -> None:
     assert result.control_proposal is not None
     assert result.control_proposal.actions[0].device_id == device_id
     assert result.control_proposal.actions[0].action == DeviceAction.TURN_OFF
+
+
+def test_analyze_security_activity_uses_activity_and_security_events(monkeypatch) -> None:
+    db = MagicMock()
+    owner_id = uuid4()
+    device_id = uuid4()
+    now = datetime(2026, 5, 8, 12, 0, tzinfo=UTC)
+    device = SimpleNamespace(id=device_id, name="Front Door")
+    captured: dict = {}
+
+    event = SimpleNamespace(
+        id=uuid4(),
+        device_id=device_id,
+        action=DeviceAction.OPEN,
+        timestamp=now - timedelta(minutes=10),
+    )
+    security_event = SimpleNamespace(
+        id=uuid4(),
+        attack_type=AttackType.BRUTE_FORCE,
+        severity=SecuritySeverity.HIGH,
+        blocked=False,
+        target="admin@example.com",
+        source_ip="203.0.113.7",
+        message="Repeated login attempts were not blocked",
+        created_at=now - timedelta(minutes=5),
+    )
+
+    monkeypatch.setattr(
+        ai_service,
+        "_device_context",
+        lambda db, *, owner_id: (
+            [device],
+            [
+                {
+                    "device_id": str(device_id),
+                    "name": "Front Door",
+                    "type": "DOOR",
+                    "status": "OPEN",
+                    "room": "Living Room",
+                }
+            ],
+        ),
+    )
+    monkeypatch.setattr("app.services.ai_service.event_service.list_events", lambda *args, **kwargs: [event])
+    monkeypatch.setattr(ai_service, "_list_security_events", lambda *args, **kwargs: [security_event])
+    def fake_post_openai_structured(**kwargs):
+        captured["payload"] = kwargs["user_payload"]
+        return {
+            "risk_level": "HIGH",
+            "summary": "Door activity and an unblocked brute-force event need attention.",
+            "findings": [
+                {
+                    "severity": "HIGH",
+                    "title": "Unblocked brute force",
+                    "detail": "A high severity login attack was not blocked.",
+                }
+            ],
+            "recommendations": ["Check login protection and close the front door."],
+        }
+
+    monkeypatch.setattr(ai_service, "_post_openai_structured", fake_post_openai_structured)
+
+    result = ai_service.analyze_security_activity(
+        db,
+        owner_id=owner_id,
+        window="today",
+        include_security_events=True,
+        now=now,
+    )
+
+    assert result.risk_level == "HIGH"
+    assert result.reviewed_events == 1
+    assert result.reviewed_security_events == 1
+    assert captured["payload"]["activity_events"][0]["device_name"] == "Front Door"
+    assert captured["payload"]["security_events"][0]["attack_type"] == "BRUTE_FORCE"
+    assert captured["payload"]["security_events"][0]["blocked"] is False
 
 
 def test_run_scene_resolves_boolean_light_action(monkeypatch) -> None:

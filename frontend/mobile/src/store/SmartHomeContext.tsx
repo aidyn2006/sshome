@@ -20,12 +20,15 @@ import {
   type ManufacturedDevice
 } from "../api/admin";
 import {
+  analyzeSecurityActivity as analyzeSecurityActivityRequest,
   confirmAssistantDeviceActions as confirmAssistantDeviceActionsRequest,
   generateScenarioDraft as generateScenarioDraftRequest,
   sendAssistantMessage as sendAssistantMessageRequest,
   type AIAssistantActionExecutionResult,
   type AIAssistantDeviceAction,
   type AIAssistantChatResponse,
+  type AISecurityAnalysis,
+  type AISecurityAnalysisWindow,
   type AIScenarioDraft
 } from "../api/ai";
 import {
@@ -132,6 +135,7 @@ type SmartHomeContextValue = {
   generateScenarioDraft: (prompt: string) => Promise<AIScenarioDraft>;
   sendAssistantMessage: (message: string) => Promise<AIAssistantChatResponse>;
   confirmAssistantDeviceActions: (actions: AIAssistantDeviceAction[]) => Promise<AIAssistantActionExecutionResult>;
+  analyzeSecurityActivity: (window: AISecurityAnalysisWindow) => Promise<AISecurityAnalysis>;
   addHome: (name: string) => Promise<void>;
   renameHome: (homeId: string, name: string) => Promise<boolean>;
   removeHome: (homeId: string) => Promise<boolean>;
@@ -1289,6 +1293,8 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
         );
         return result;
       },
+      analyzeSecurityActivity: async (window: AISecurityAnalysisWindow) =>
+        runWithSession((accessToken) => analyzeSecurityActivityRequest(accessToken, window)),
       addHome,
       renameHome,
       removeHome,

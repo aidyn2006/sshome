@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -103,3 +104,28 @@ class AIAssistantExecutedAction(BaseModel):
 class AIAssistantActionExecutionResult(BaseModel):
     message: str
     executed_actions: list[AIAssistantExecutedAction]
+
+
+SecurityAnalysisWindow = Literal["today", "week", "month"]
+SecurityRiskLevel = Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+
+
+class AISecurityAnalysisRequest(BaseModel):
+    window: SecurityAnalysisWindow = "today"
+
+
+class AISecurityFinding(BaseModel):
+    severity: SecurityRiskLevel
+    title: str = Field(min_length=1, max_length=120)
+    detail: str = Field(min_length=1, max_length=400)
+
+
+class AISecurityAnalysisResponse(BaseModel):
+    generated_at: datetime
+    window: SecurityAnalysisWindow
+    risk_level: SecurityRiskLevel
+    summary: str = Field(min_length=1, max_length=700)
+    findings: list[AISecurityFinding] = Field(max_length=6)
+    recommendations: list[str] = Field(max_length=6)
+    reviewed_events: int
+    reviewed_security_events: int

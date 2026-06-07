@@ -45,6 +45,27 @@ export type AIAssistantActionExecutionResult = {
   }>;
 };
 
+export type AISecurityRiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+
+export type AISecurityAnalysisWindow = "today" | "week" | "month";
+
+export type AISecurityFinding = {
+  severity: AISecurityRiskLevel;
+  title: string;
+  detail: string;
+};
+
+export type AISecurityAnalysis = {
+  generated_at: string;
+  window: AISecurityAnalysisWindow;
+  risk_level: AISecurityRiskLevel;
+  summary: string;
+  findings: AISecurityFinding[];
+  recommendations: string[];
+  reviewed_events: number;
+  reviewed_security_events: number;
+};
+
 export async function generateScenarioDraft(
   token: string,
   prompt: string
@@ -78,5 +99,17 @@ export async function confirmAssistantDeviceActions(
     token,
     body: { actions },
     timeoutMs: 20000
+  });
+}
+
+export async function analyzeSecurityActivity(
+  token: string,
+  window: AISecurityAnalysisWindow
+): Promise<AISecurityAnalysis> {
+  return apiRequest<AISecurityAnalysis>("/api/v1/ai/security-analysis", {
+    method: "POST",
+    token,
+    body: { window },
+    timeoutMs: 30000
   });
 }

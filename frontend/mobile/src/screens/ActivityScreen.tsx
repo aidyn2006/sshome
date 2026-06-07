@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import type { AISecurityAnalysis, AISecurityRiskLevel } from "../api/ai";
 import { AppPressable } from "../components/AppPressable";
 import { EventRow } from "../components/EventRow";
 import { FilterPill } from "../components/FilterPill";
@@ -21,6 +22,13 @@ const SOURCE_FILTERS = ["ALL", "MANUAL", "SCENARIO"] as const;
 
 type Section = { title: string; data: Event[] };
 type SourceFilter = typeof SOURCE_FILTERS[number];
+
+const RISK_META: Record<AISecurityRiskLevel, { label: string; color: string; background: string }> = {
+  LOW: { label: "Low", color: colors.success, background: colors.successSoft },
+  MEDIUM: { label: "Medium", color: colors.warn, background: colors.warnSoft },
+  HIGH: { label: "High", color: colors.danger, background: colors.dangerSoft },
+  CRITICAL: { label: "Critical", color: colors.danger, background: colors.dangerSoft },
+};
 
 function getCutoff(filter: DateFilter): number {
   const now = Date.now();
@@ -52,9 +60,12 @@ function getEventSource(event: Event): Exclude<SourceFilter, "ALL"> {
 }
 
 export function ActivityScreen() {
-  const { events, devices, rooms, isDataLoading } = useSmartHome();
+  const { events, devices, rooms, isDataLoading, analyzeSecurityActivity } = useSmartHome();
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("ALL");
+  const [securityAnalysis, setSecurityAnalysis] = useState<AISecurityAnalysis | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const filtered = useMemo(() => {
     const cutoff = getCutoff(dateFilter);
@@ -75,12 +86,41 @@ export function ActivityScreen() {
     scenario: events.filter((e) => getEventSource(e) === "SCENARIO").length,
   }), [events]);
 
+  const runSecurityAnalysis = async () => {
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+
+    try {
+      const result = await analyzeSecurityActivity(dateFilter);
+      setSecurityAnalysis(result);
+    } catch (error) {
+      setAnalysisError(error instanceof Error ? error.message : "AI analysis failed");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <View style={styles.screen}>
       <ScreenHeader
         eyebrow="AUDIT LOG"
         title="Activity"
         subtitle="A record of every action on this home."
+        right={
+          <AppPressable
+            accessibilityLabel="Analyze security activity"
+            disabled={isAnalyzing}
+            onPress={runSecurityAnalysis}
+            style={[styles.analyzeButton, isAnalyzing && styles.analyzeButtonDisabled]}
+          >
+            {isAnalyzing ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <Ionicons name="shield-half-outline" size={17} color={colors.accent} />
+            )}
+            <Text style={styles.analyzeText}>{isAnalyzing ? "Analyzing" : "AI check"}</Text>
+          </AppPressable>
+        }
         secure
       />
 
@@ -117,6 +157,14 @@ export function ActivityScreen() {
             />
           ))}
         </View>
+
+        {securityAnalysis ? <SecurityAnalysisCard analysis={securityAnalysis} /> : null}
+        {analysisError ? (
+          <View style={styles.analysisError}>
+            <Ionicons name="warning-outline" size={16} color={colors.warn} />
+            <Text style={styles.analysisErrorText}>{analysisError}</Text>
+          </View>
+        ) : null}
 
         {/* Event groups */}
         {sections.length === 0 ? (
@@ -157,6 +205,61 @@ export function ActivityScreen() {
   );
 }
 
+function SecurityAnalysisCard({ analysis }: { analysis: AISecurityAnalysis }) {
+  const meta = RISK_META[analysis.risk_level];
+
+  return (
+    <View style={styles.analysisCard}>
+      <View style={styles.analysisHeader}>
+        <View style={styles.analysisTitleRow}>
+          <Ionicons name="sparkles-outline" size={17} color={colors.accent} />
+          <Text style={styles.analysisTitle}>AI security analysis</Text>
+        </View>
+        <View style={[styles.riskBadge, { backgroundColor: meta.background }]}>
+          <Text style={[styles.riskText, { color: meta.color }]}>{meta.label}</Text>
+        </View>
+      </View>
+
+      <Text style={styles.analysisSummary}>{analysis.summary}</Text>
+
+      {analysis.findings.length > 0 ? (
+        <View style={styles.analysisSection}>
+          <Text style={styles.analysisSectionTitle}>Findings</Text>
+          {analysis.findings.map((finding, index) => {
+            const findingMeta = RISK_META[finding.severity];
+            return (
+              <View key={`${finding.title}-${index}`} style={styles.findingRow}>
+                <View style={[styles.findingDot, { backgroundColor: findingMeta.color }]} />
+                <View style={styles.findingTextBlock}>
+                  <Text style={styles.findingTitle}>{finding.title}</Text>
+                  <Text style={styles.findingDetail}>{finding.detail}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
+
+      {analysis.recommendations.length > 0 ? (
+        <View style={styles.analysisSection}>
+          <Text style={styles.analysisSectionTitle}>Recommended actions</Text>
+          {analysis.recommendations.map((item, index) => (
+            <View key={`${item}-${index}`} style={styles.recommendationRow}>
+              <Ionicons name="checkmark-circle-outline" size={15} color={colors.success} />
+              <Text style={styles.recommendationText}>{item}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      <Text style={styles.analysisMeta}>
+        Reviewed {analysis.reviewed_events} activity events
+        {analysis.reviewed_security_events > 0 ? ` and ${analysis.reviewed_security_events} security events` : ""}
+      </Text>
+    </View>
+  );
+}
+
 function LogStat({ label, value, accent }: { label: string; value: number; accent: string }) {
   return (
     <View style={styles.statCell}>
@@ -175,6 +278,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 120,
     gap: spacing.md,
+  },
+  analyzeButton: {
+    minHeight: 32,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  analyzeButtonDisabled: {
+    opacity: 0.7,
+  },
+  analyzeText: {
+    color: colors.accent,
+    fontSize: 12,
+    fontWeight: "700",
   },
   segment: {
     flexDirection: "row",
@@ -243,6 +365,113 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     flexWrap: "wrap",
+  },
+  analysisCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    padding: 16,
+    gap: 12,
+  },
+  analysisHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  analysisTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 1,
+  },
+  analysisTitle: {
+    color: colors.ink900,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  riskBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  riskText: {
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  analysisSummary: {
+    color: colors.ink700,
+    fontSize: 13.5,
+    lineHeight: 19,
+  },
+  analysisSection: {
+    gap: 8,
+  },
+  analysisSectionTitle: {
+    color: colors.ink500,
+    fontFamily: "monospace",
+    fontSize: 10.5,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  findingRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  findingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 5,
+  },
+  findingTextBlock: {
+    flex: 1,
+    gap: 2,
+  },
+  findingTitle: {
+    color: colors.ink900,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  findingDetail: {
+    color: colors.ink500,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+  recommendationRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  recommendationText: {
+    flex: 1,
+    color: colors.ink600,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+  analysisMeta: {
+    color: colors.ink400,
+    fontFamily: "monospace",
+    fontSize: 10.5,
+  },
+  analysisError: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    backgroundColor: colors.warnSoft,
+    padding: 12,
+  },
+  analysisErrorText: {
+    flex: 1,
+    color: colors.warn,
+    fontSize: 12.5,
+    lineHeight: 18,
   },
   group: {
     gap: 2,

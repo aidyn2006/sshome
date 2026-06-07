@@ -6,10 +6,12 @@ from uuid import UUID
 from fastapi import HTTPException, status
 import httpx
 from pydantic import ValidationError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.enums import DeviceAction, DeviceStatus, DeviceType
+from app.models.security_event import SecurityEvent
 from app.schemas.ai import (
     AIAssistantActionExecutionResult,
     AIAssistantChatResponse,
@@ -19,10 +21,12 @@ from app.schemas.ai import (
     AIAssistantScenarioRunProposal,
     AIScenarioDraft,
     AIScenarioDraftAction,
+    AISecurityAnalysisResponse,
     AutomationSuggestion,
     AutomationSuggestionList,
     HomeStateRead,
     HomeStateSummary,
+    SecurityAnalysisWindow,
 )
 from app.schemas.device import DeviceRead
 from app.services import device_service, event_service, home_service, room_service, scenario_service
@@ -30,6 +34,8 @@ from app.services import device_service, event_service, home_service, room_servi
 MIN_REPEATED_ACTIONS = 3
 LOOKBACK_DAYS = 30
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+SECURITY_ACTIVITY_EVENT_LIMIT = 100
+SECURITY_EVENT_LIMIT = 80
 
 _SUPPORTED_ACTIONS_BY_TYPE: dict[DeviceType, list[DeviceAction]] = {
     DeviceType.LIGHT: [DeviceAction.TURN_ON, DeviceAction.TURN_OFF],
@@ -53,6 +59,17 @@ _ASSISTANT_SYSTEM_PROMPT = (
     "If the user asks to run an existing scenario, include a scenario_run proposal and tell them to confirm it. "
     "If the user asks to create a scene/scenario/routine, include a scenario draft. "
     "Never claim an action has been executed until a separate confirmation endpoint executes it."
+)
+
+_SECURITY_ANALYSIS_SYSTEM_PROMPT = (
+    "You are the SSHome security analyst. Return only JSON that matches the schema. "
+    "Analyze smart-home activity for safety and security risk using only the provided context. "
+    "Look for repeated rapid actions, doors left open, unusual control patterns, offline/erroring devices, "
+    "and security events such as brute force, spoofing, replay, or DDoS simulations. "
+    "Treat unblocked HIGH or CRITICAL security events as serious risk. "
+    "Do not invent events, secrets, users, IP addresses, or device capabilities. "
+    "If the data is quiet, use LOW risk and explain that no suspicious pattern was found. "
+    "Write concise findings and recommendations in the same language as the user's app context when possible."
 )
 
 
@@ -210,6 +227,38 @@ def _assistant_chat_schema(device_ids: list[str], scenario_ids: list[str]) -> di
             },
         },
         "required": ["answer", "scenario_draft", "control_proposal", "scenario_run"],
+    }
+
+
+def _security_analysis_schema() -> dict:
+    risk_levels = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "risk_level": {"type": "string", "enum": risk_levels},
+            "summary": {"type": "string"},
+            "findings": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "severity": {"type": "string", "enum": risk_levels},
+                        "title": {"type": "string"},
+                        "detail": {"type": "string"},
+                    },
+                    "required": ["severity", "title", "detail"],
+                },
+            },
+            "recommendations": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {"type": "string"},
+            },
+        },
+        "required": ["risk_level", "summary", "findings", "recommendations"],
     }
 
 
@@ -510,6 +559,112 @@ def _assistant_context(db: Session, *, owner_id: UUID, now: datetime | None = No
             for scenario in scenarios
         ],
     }
+
+
+def _analysis_window_start(*, window: SecurityAnalysisWindow, now: datetime) -> datetime:
+    if window == "today":
+        return now - timedelta(days=1)
+    if window == "week":
+        return now - timedelta(days=7)
+    return now - timedelta(days=30)
+
+
+def _list_security_events(
+    db: Session,
+    *,
+    date_from: datetime,
+    date_to: datetime,
+    limit: int = SECURITY_EVENT_LIMIT,
+) -> list[SecurityEvent]:
+    statement = (
+        select(SecurityEvent)
+        .where(SecurityEvent.created_at >= date_from, SecurityEvent.created_at <= date_to)
+        .order_by(SecurityEvent.created_at.desc(), SecurityEvent.id.desc())
+        .limit(limit)
+    )
+    return list(db.scalars(statement))
+
+
+def analyze_security_activity(
+    db: Session,
+    *,
+    owner_id: UUID,
+    window: SecurityAnalysisWindow,
+    include_security_events: bool = False,
+    now: datetime | None = None,
+) -> AISecurityAnalysisResponse:
+    generated_at = now or datetime.now(UTC)
+    date_from = _analysis_window_start(window=window, now=generated_at)
+    devices, device_context = _device_context(db, owner_id=owner_id)
+    device_name_by_id = {device.id: device.name for device in devices}
+    events = event_service.list_events(
+        db,
+        owner_id=owner_id,
+        date_from=date_from,
+        date_to=generated_at,
+    )[:SECURITY_ACTIVITY_EVENT_LIMIT]
+    security_events = (
+        _list_security_events(db, date_from=date_from, date_to=generated_at)
+        if include_security_events
+        else []
+    )
+
+    raw = _post_openai_structured(
+        system_prompt=_SECURITY_ANALYSIS_SYSTEM_PROMPT,
+        user_payload={
+            "generated_at": generated_at.isoformat(),
+            "analysis_window": window,
+            "security_events_included": include_security_events,
+            "devices": device_context,
+            "activity_events": [
+                {
+                    "event_id": str(event.id),
+                    "device_id": str(event.device_id),
+                    "device_name": device_name_by_id.get(event.device_id, "Unknown device"),
+                    "action": event.action.value,
+                    "timestamp": event.timestamp.isoformat(),
+                }
+                for event in events
+            ],
+            "security_events": [
+                {
+                    "event_id": str(event.id),
+                    "attack_type": event.attack_type.value,
+                    "severity": event.severity.value,
+                    "blocked": event.blocked,
+                    "target": event.target,
+                    "source_ip": event.source_ip,
+                    "message": event.message,
+                    "created_at": event.created_at.isoformat(),
+                }
+                for event in security_events
+            ],
+            "analysis_rules": [
+                "Raise risk if a door is open or was opened repeatedly.",
+                "Raise risk for unblocked HIGH/CRITICAL security events.",
+                "Mention repeated rapid actions or unusual device errors.",
+                "Keep recommendations actionable and short.",
+            ],
+        },
+        schema_name="sshome_security_activity_analysis",
+        schema=_security_analysis_schema(),
+    )
+
+    try:
+        return AISecurityAnalysisResponse.model_validate(
+            {
+                **raw,
+                "generated_at": generated_at,
+                "window": window,
+                "reviewed_events": len(events),
+                "reviewed_security_events": len(security_events),
+            }
+        )
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="OpenAI returned a security analysis that failed validation",
+        ) from exc
 
 
 def generate_scenario_draft(db: Session, *, owner_id: UUID, prompt: str) -> AIScenarioDraft:
