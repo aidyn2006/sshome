@@ -29,14 +29,18 @@ const DEVICE_TYPES: DeviceTypeOption[] = [
   { type: "MOTION", label: "Motion",  icon: "walk-outline" },
 ];
 
-export function AddDeviceModalScreen({ navigation }: Props) {
+export function AddDeviceModalScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { rooms, addDevice } = useSmartHome();
 
+  // When opened from a room, pre-select that room (fall back to the first one).
+  const presetRoomId = route.params?.roomId;
   const [name, setName] = useState("");
   const [hardwareId, setHardwareId] = useState("");
   const [selectedType, setSelectedType] = useState<DeviceType>("LIGHT");
-  const [selectedRoomId, setSelectedRoomId] = useState<string>(rooms[0]?.id ?? "");
+  const [selectedRoomId, setSelectedRoomId] = useState<string>(
+    (presetRoomId && rooms.some((r) => r.id === presetRoomId) ? presetRoomId : rooms[0]?.id) ?? ""
+  );
   const [nameFocused, setNameFocused] = useState(false);
   const [hardwareFocused, setHardwareFocused] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

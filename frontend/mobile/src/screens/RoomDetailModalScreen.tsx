@@ -52,9 +52,18 @@ export function RoomDetailModalScreen({ route, navigation }: Props) {
               </Text>
             </View>
           </View>
-          <AppPressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="close" size={18} color={colors.ink700} />
-          </AppPressable>
+          <View style={styles.headerActions}>
+            <AppPressable
+              style={styles.addBtn}
+              onPress={() => navigation.navigate("AddDeviceModal", { roomId })}
+              accessibilityLabel="Add a device to this room"
+            >
+              <Ionicons name="add" size={20} color={colors.ink700} />
+            </AppPressable>
+            <AppPressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
+              <Ionicons name="close" size={18} color={colors.ink700} />
+            </AppPressable>
+          </View>
         </View>
       </View>
 
@@ -68,6 +77,13 @@ export function RoomDetailModalScreen({ route, navigation }: Props) {
             <Text style={styles.emptyText}>
               Add a device and assign it to this room to control it from here.
             </Text>
+            <AppPressable
+              style={styles.emptyAddBtn}
+              onPress={() => navigation.navigate("AddDeviceModal", { roomId })}
+            >
+              <Ionicons name="add" size={18} color="#fff" />
+              <Text style={styles.emptyAddText}>Add device</Text>
+            </AppPressable>
           </View>
         ) : (
           <View style={styles.card}>
@@ -157,6 +173,23 @@ const styles = StyleSheet.create({
     color: colors.ink500,
     marginTop: 4,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+    flexShrink: 0,
+  },
+  addBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   closeBtn: {
     width: 36,
     height: 36,
@@ -166,8 +199,6 @@ const styles = StyleSheet.create({
     borderColor: colors.hairlineStrong,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 4,
-    flexShrink: 0,
   },
   body: {
     padding: 20,
@@ -210,5 +241,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     maxWidth: 260,
     lineHeight: 20,
+  },
+  emptyAddBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 46,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    backgroundColor: colors.ink900,
+    marginTop: 8,
+  },
+  emptyAddText: {
+    color: "#fff",
+    fontSize: 14.5,
+    fontWeight: "600",
   },
 });

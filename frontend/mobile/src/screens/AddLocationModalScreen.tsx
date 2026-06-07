@@ -29,6 +29,7 @@ export function AddLocationModalScreen({ navigation }: Props) {
   const { homes, addHome, renameHome, removeHome, addRoom, isAuthSubmitting, logout } = useSmartHome();
   const [mode, setMode] = useState<Mode>("room");
   const [name, setName] = useState("");
+  const [selectedHomeId, setSelectedHomeId] = useState<string>(homes[0]?.id ?? "");
   const [selectedIcon, setSelectedIcon] = useState<keyof typeof Ionicons.glyphMap>("tv-outline");
   const [nameFocused, setNameFocused] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -63,7 +64,7 @@ export function AddLocationModalScreen({ navigation }: Props) {
     if (mode === "home") {
       await addHome(name);
     } else {
-      await addRoom(name, homes[0]?.id);
+      await addRoom(name, selectedHomeId || homes[0]?.id);
     }
     setIsSaving(false);
     navigation.goBack();
@@ -121,6 +122,35 @@ export function AddLocationModalScreen({ navigation }: Props) {
                 />
               </AppPressable>
             ))}
+            </View>
+          </View>
+        )}
+
+        {/* Home picker — which home the new room belongs to */}
+        {mode === "room" && homes.length > 1 && (
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>ADD TO HOME</Text>
+            <View style={styles.homePicker}>
+              {homes.map((home) => {
+                const active = (selectedHomeId || homes[0]?.id) === home.id;
+                return (
+                  <AppPressable
+                    key={home.id}
+                    style={[styles.homePickerRow, active && styles.homePickerRowActive]}
+                    onPress={() => setSelectedHomeId(home.id)}
+                  >
+                    <Ionicons
+                      name="home-outline"
+                      size={18}
+                      color={active ? colors.accent : colors.ink500}
+                    />
+                    <Text style={[styles.homePickerName, active && styles.homePickerNameActive]}>
+                      {home.name}
+                    </Text>
+                    {active && <Ionicons name="checkmark" size={18} color={colors.accent} />}
+                  </AppPressable>
+                );
+              })}
             </View>
           </View>
         )}
@@ -420,6 +450,35 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "500",
+  },
+  homePicker: {
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    overflow: "hidden",
+  },
+  homePickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.hairline,
+  },
+  homePickerRowActive: {
+    backgroundColor: colors.accentTint,
+  },
+  homePickerName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "500",
+    color: colors.ink700,
+  },
+  homePickerNameActive: {
+    color: colors.accent,
+    fontWeight: "600",
   },
   homeList: {
     backgroundColor: colors.surface,
