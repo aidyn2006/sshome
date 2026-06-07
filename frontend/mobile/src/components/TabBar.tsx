@@ -6,6 +6,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors } from "../theme/colors";
 
+// Visual height of the floating pill + its top padding (everything above the
+// safe-area inset). Screens with their own floating UI (e.g. the Assistant
+// input bar) use `tabBarHeight(insets.bottom)` to sit clear of the nav bar
+// instead of guessing a magic offset.
+export const TAB_BAR_CONTENT_HEIGHT = 79;
+
+export function tabBarHeight(insetBottom: number): number {
+  return TAB_BAR_CONTENT_HEIGHT + Math.max(insetBottom, 8);
+}
+
 const iconMap: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
   Home:     { active: "home",        inactive: "home-outline" },
   Room3D:   { active: "cube",        inactive: "cube-outline" },

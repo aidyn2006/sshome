@@ -10,8 +10,11 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import { AppPressable } from "../components/AppPressable";
 import { ScreenHeader } from "../components/ScreenHeader";
+import { tabBarHeight } from "../components/TabBar";
 import type {
   AIAssistantControlProposal,
   AIAssistantScenarioRunProposal,
@@ -48,7 +51,17 @@ function actionLabel(action: DeviceAction): string {
   return "Close";
 }
 
+// Height of the floating input bar (its padding + the input's min height).
+const INPUT_BAR_HEIGHT = 58;
+
 export function AssistantScreen() {
+  const insets = useSafeAreaInsets();
+  const navBarHeight = tabBarHeight(insets.bottom);
+  // Park the input bar just above the floating nav bar, and pad the scroll
+  // content so the last message clears both.
+  const inputBarBottom = navBarHeight + 8;
+  const contentBottomPadding = inputBarBottom + INPUT_BAR_HEIGHT + 16;
+
   const {
     addScenario,
     confirmAssistantDeviceActions,
@@ -204,7 +217,7 @@ export function AssistantScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: contentBottomPadding }]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.promptRow}>
@@ -371,7 +384,7 @@ export function AssistantScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.inputBar}>
+      <View style={[styles.inputBar, { bottom: inputBarBottom }]}>
         <TextInput
           value={input}
           onChangeText={setInput}
@@ -399,7 +412,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-    paddingBottom: 146,
     gap: spacing.md,
   },
   promptRow: {
@@ -537,7 +549,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 12,
     right: 12,
-    bottom: 88,
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 8,
