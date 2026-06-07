@@ -1,8 +1,9 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
+from app.models.enums import DeviceAction
 from app.schemas.device import DeviceRead
 
 
@@ -45,3 +46,19 @@ class AICommandResult(BaseModel):
     understood: bool
     message: str
     devices: list[DeviceRead]
+
+
+class AIScenarioDraftRequest(BaseModel):
+    prompt: str = Field(min_length=3, max_length=1000)
+
+
+class AIScenarioDraftAction(BaseModel):
+    device_id: UUID
+    action: DeviceAction
+
+
+class AIScenarioDraft(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    description: str | None = Field(default=None, max_length=240)
+    actions: list[AIScenarioDraftAction] = Field(min_length=1, max_length=20)
+    explanation: str = Field(min_length=1, max_length=400)

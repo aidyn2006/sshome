@@ -15,6 +15,7 @@ type ApiRequestOptions = Omit<RequestInit, "body" | "headers"> & {
   body?: BodyInit | object | null;
   headers?: HeadersInit;
   token?: string;
+  timeoutMs?: number;
 };
 
 function buildErrorMessage(status: number, body: ApiErrorBody | null): string {
@@ -114,10 +115,10 @@ function joinApiUrl(baseUrl: string, path: string): string {
 
 export async function apiRequest<T>(
   path: string,
-  { body, headers, token, ...init }: ApiRequestOptions = {}
+  { body, headers, token, timeoutMs, ...init }: ApiRequestOptions = {}
 ): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs ?? REQUEST_TIMEOUT_MS);
 
   let response: Response;
   try {

@@ -1,7 +1,10 @@
 from datetime import UTC, datetime, timedelta
+import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
+
+from fastapi import HTTPException
 
 from app.models.enums import DeviceAction, DeviceStatus, DeviceType
 from app.schemas.scene import SceneActionRequest, SceneRunRequest
@@ -69,6 +72,116 @@ def test_home_state_counts_active_devices(monkeypatch) -> None:
     assert result.summary.total_devices == 2
     assert result.summary.active_devices == 2
     assert result.summary.open_doors == 1
+
+
+def test_generate_scenario_draft_uses_openai_structured_json(monkeypatch) -> None:
+    db = MagicMock()
+    owner_id = uuid4()
+    room_id = uuid4()
+    device_id = uuid4()
+    now = datetime(2026, 5, 8, 12, 0, tzinfo=UTC)
+    device = SimpleNamespace(
+        id=device_id,
+        name="Bedroom Light",
+        type=DeviceType.LIGHT,
+        status=DeviceStatus.ON,
+        room_id=room_id,
+        owner_id=owner_id,
+        created_at=now,
+        updated_at=now,
+    )
+    room = SimpleNamespace(id=room_id, name="Bedroom")
+    captured: dict = {}
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict:
+            return {
+                "output": [
+                    {
+                        "type": "message",
+                        "content": [
+                            {
+                                "type": "output_text",
+                                "text": json.dumps(
+                                    {
+                                        "name": "Night Mode",
+                                        "description": "Turn off the bedroom light.",
+                                        "actions": [
+                                            {
+                                                "device_id": str(device_id),
+                                                "action": "TURN_OFF",
+                                            }
+                                        ],
+                                        "explanation": "Matched the bedroom light to the requested night routine.",
+                                    }
+                                ),
+                            }
+                        ],
+                    }
+                ]
+            }
+
+    class FakeClient:
+        def __init__(self, timeout: float) -> None:
+            captured["timeout"] = timeout
+
+        def __enter__(self) -> "FakeClient":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def post(self, url: str, *, headers: dict, json: dict) -> FakeResponse:
+            captured["url"] = url
+            captured["headers"] = headers
+            captured["payload"] = json
+            return FakeResponse()
+
+    monkeypatch.setattr(ai_service.settings, "openai_api_key", "test-key")
+    monkeypatch.setattr(ai_service.settings, "openai_model", "test-model")
+    monkeypatch.setattr(ai_service.settings, "openai_timeout_seconds", 3.0)
+    monkeypatch.setattr("app.services.ai_service.device_service.list_devices", lambda *args, **kwargs: [device])
+    monkeypatch.setattr("app.services.ai_service.room_service.list_rooms", lambda *args, **kwargs: [room])
+    monkeypatch.setattr(ai_service.httpx, "Client", FakeClient)
+
+    result = ai_service.generate_scenario_draft(db, owner_id=owner_id, prompt="make night mode")
+
+    assert result.name == "Night Mode"
+    assert result.actions[0].device_id == device_id
+    assert result.actions[0].action == DeviceAction.TURN_OFF
+    assert captured["url"] == ai_service.OPENAI_RESPONSES_URL
+    assert captured["payload"]["model"] == "test-model"
+    assert captured["payload"]["text"]["format"]["type"] == "json_schema"
+    request_context = json.loads(captured["payload"]["input"][1]["content"])
+    assert request_context["available_devices"][0]["room"] == "Bedroom"
+    assert "hardware_id" not in request_context["available_devices"][0]
+
+
+def test_generate_scenario_draft_requires_openai_key(monkeypatch) -> None:
+    db = MagicMock()
+    owner_id = uuid4()
+    room_id = uuid4()
+    device = SimpleNamespace(
+        id=uuid4(),
+        name="Main Light",
+        type=DeviceType.LIGHT,
+        status=DeviceStatus.ON,
+        room_id=room_id,
+    )
+
+    monkeypatch.setattr(ai_service.settings, "openai_api_key", "")
+    monkeypatch.setattr("app.services.ai_service.device_service.list_devices", lambda *args, **kwargs: [device])
+    monkeypatch.setattr("app.services.ai_service.room_service.list_rooms", lambda *args, **kwargs: [])
+
+    try:
+        ai_service.generate_scenario_draft(db, owner_id=owner_id, prompt="turn off light")
+    except HTTPException as exc:
+        assert exc.status_code == 503
+    else:
+        raise AssertionError("Expected OPENAI_API_KEY validation error")
 
 
 def test_run_scene_resolves_boolean_light_action(monkeypatch) -> None:

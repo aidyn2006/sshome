@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
     smtp_use_ssl: bool = False
     smtp_timeout_seconds: float = 10.0
+    openai_api_key: str | None = None
+    openai_model: str = "gpt-4o-mini"
+    openai_timeout_seconds: float = 20.0
     mqtt_enabled: bool = False
     mqtt_host: str = "localhost"
     mqtt_port: int = 1883

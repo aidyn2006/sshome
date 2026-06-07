@@ -4,7 +4,14 @@ from uuid import UUID, uuid4
 
 from app.core.deps import get_current_owner_id
 from app.db.session import get_db
-from app.schemas.ai import AutomationSuggestionList, HomeStateRead, HomeStateSummary
+from app.models.enums import DeviceAction
+from app.schemas.ai import (
+    AIScenarioDraft,
+    AIScenarioDraftAction,
+    AutomationSuggestionList,
+    HomeStateRead,
+    HomeStateSummary,
+)
 from app.schemas.device import DeviceRead
 
 
@@ -46,7 +53,7 @@ def test_state_route_returns_current_home_state(client, monkeypatch) -> None:
         ),
     )
 
-    response = client.get("/state")
+    response = client.get("/api/v1/state")
 
     _clear_overrides(client)
 
@@ -66,12 +73,47 @@ def test_ai_suggestions_route_returns_rule_based_suggestions(client, monkeypatch
         lambda db, *, owner_id: AutomationSuggestionList(generated_at=generated_at, suggestions=[]),
     )
 
-    response = client.get("/ai/suggestions")
+    response = client.get("/api/v1/ai/suggestions")
 
     _clear_overrides(client)
 
     assert response.status_code == 200
     assert response.json()["suggestions"] == []
+
+
+def test_scenario_draft_route_returns_ai_draft(client, monkeypatch) -> None:
+    owner_id = UUID("550e8400-e29b-41d4-a716-446655440000")
+    fake_db = object()
+    device_id = uuid4()
+
+    _override_dependencies(client, owner_id, fake_db)
+    monkeypatch.setattr(
+        "app.routes.ai.ai_service.generate_scenario_draft",
+        lambda db, *, owner_id, prompt: AIScenarioDraft(
+            name="Night Mode",
+            description="Turn off the lights.",
+            actions=[
+                AIScenarioDraftAction(
+                    device_id=device_id,
+                    action=DeviceAction.TURN_OFF,
+                )
+            ],
+            explanation="Matched the requested routine to one controllable light.",
+        ),
+    )
+
+    response = client.post("/api/v1/ai/scenario-draft", json={"prompt": "make night mode"})
+
+    _clear_overrides(client)
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "Night Mode"
+    assert response.json()["actions"] == [
+        {
+            "device_id": str(device_id),
+            "action": "TURN_OFF",
+        }
+    ]
 
 
 def test_scene_run_accepts_tz_payload(client, monkeypatch) -> None:
@@ -110,7 +152,7 @@ def test_scene_run_accepts_tz_payload(client, monkeypatch) -> None:
     monkeypatch.setattr("app.routes.scenes.scene_service.run_scene", fake_run_scene)
 
     response = client.post(
-        "/scenes/run",
+        "/api/v1/scenes/run",
         json={"name": "night_mode", "actions": [{"device": "light", "value": False}]},
     )
 

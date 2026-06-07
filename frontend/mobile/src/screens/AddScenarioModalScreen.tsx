@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import {
-  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { AppPressable } from "../components/AppPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -44,7 +44,7 @@ const deviceIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 export function AddScenarioModalScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const { devices, rooms, scenarios, addScenario, editScenario } = useSmartHome();
+  const { devices, rooms, scenarios, addScenario, editScenario, generateScenarioDraft } = useSmartHome();
 
   const scenarioId = route.params?.scenarioId;
   const editing = scenarios.find((s) => s.id === scenarioId);
@@ -60,6 +60,10 @@ export function AddScenarioModalScreen({ navigation, route }: Props) {
   });
   const [nameFocused, setNameFocused] = useState(false);
   const [descFocused, setDescFocused] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiPromptFocused, setAiPromptFocused] = useState(false);
+  const [aiDraftMessage, setAiDraftMessage] = useState("");
+  const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const controllableDevices = useMemo(
@@ -70,6 +74,7 @@ export function AddScenarioModalScreen({ navigation, route }: Props) {
 
   const actionCount = Object.keys(selectedActions).length;
   const canSave = name.trim().length > 0 && actionCount > 0;
+  const canGenerateDraft = aiPrompt.trim().length > 0 && controllableDevices.length > 0 && !isGeneratingDraft;
 
   const toggleAction = (deviceId: string, action: DeviceAction) => {
     setSelectedActions((prev) => {
@@ -81,6 +86,43 @@ export function AddScenarioModalScreen({ navigation, route }: Props) {
       }
       return next;
     });
+  };
+
+  const showDraftError = (message: string) => {
+    if (Platform.OS === "web") {
+      window.alert(`AI draft failed\n\n${message}`);
+      return;
+    }
+
+    Alert.alert("AI draft failed", message);
+  };
+
+  const generateDraft = async () => {
+    const prompt = aiPrompt.trim();
+    if (!prompt || isGeneratingDraft) return;
+
+    setIsGeneratingDraft(true);
+    setAiDraftMessage("");
+
+    try {
+      const draft = await generateScenarioDraft(prompt);
+      const knownDeviceIds = new Set(controllableDevices.map((device) => device.id));
+      const nextActions: Record<string, DeviceAction> = {};
+      draft.actions.forEach((item) => {
+        if (knownDeviceIds.has(item.device_id)) {
+          nextActions[item.device_id] = item.action;
+        }
+      });
+
+      setName(draft.name);
+      setDescription(draft.description ?? "");
+      setSelectedActions(nextActions);
+      setAiDraftMessage(draft.explanation);
+    } catch (error) {
+      showDraftError(error instanceof Error ? error.message : "Unable to generate a scenario draft");
+    } finally {
+      setIsGeneratingDraft(false);
+    }
   };
 
   const save = async () => {
@@ -124,6 +166,42 @@ export function AddScenarioModalScreen({ navigation, route }: Props) {
           <AppPressable style={styles.closeBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={18} color={colors.ink700} />
           </AppPressable>
+        </View>
+
+        <View style={styles.aiPanel}>
+          <View style={styles.aiTitleRow}>
+            <View style={styles.aiIcon}>
+              <Ionicons name="color-wand-outline" size={16} color={colors.accent} />
+            </View>
+            <Text style={styles.fieldLabel}>AI DRAFT</Text>
+          </View>
+          <View style={[styles.aiInputWrap, aiPromptFocused && styles.inputWrapFocused]}>
+            <TextInput
+              value={aiPrompt}
+              onChangeText={setAiPrompt}
+              placeholder="e.g. Turn off all lights and close the front door"
+              placeholderTextColor={colors.ink400}
+              style={styles.aiInput}
+              onFocus={() => setAiPromptFocused(true)}
+              onBlur={() => setAiPromptFocused(false)}
+              multiline
+            />
+          </View>
+          <AppPressable
+            style={[styles.aiGenerateBtn, !canGenerateDraft && styles.aiGenerateBtnDisabled]}
+            onPress={() => void generateDraft()}
+            disabled={!canGenerateDraft}
+          >
+            {isGeneratingDraft ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Ionicons name="sparkles" size={15} color="#fff" />
+            )}
+            <Text style={styles.aiGenerateText}>
+              {isGeneratingDraft ? "Generating..." : "Generate Draft"}
+            </Text>
+          </AppPressable>
+          {aiDraftMessage ? <Text style={styles.aiResultText}>{aiDraftMessage}</Text> : null}
         </View>
 
         {/* Name */}
@@ -294,6 +372,65 @@ const styles = StyleSheet.create({
     borderColor: colors.hairlineStrong,
     alignItems: "center",
     justifyContent: "center",
+  },
+  aiPanel: {
+    gap: 10,
+    padding: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    borderRadius: 14,
+  },
+  aiTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  aiIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: colors.cream100,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  aiInputWrap: {
+    minHeight: 74,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: colors.cream50,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    borderRadius: 12,
+  },
+  aiInput: {
+    minHeight: 50,
+    color: colors.ink900,
+    fontSize: 14.5,
+    lineHeight: 20,
+    textAlignVertical: "top",
+  },
+  aiGenerateBtn: {
+    flexDirection: "row",
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: colors.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  aiGenerateBtnDisabled: {
+    opacity: 0.45,
+  },
+  aiGenerateText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  aiResultText: {
+    color: colors.ink600,
+    fontSize: 12.5,
+    lineHeight: 17,
   },
   fieldGroup: {
     gap: 8,

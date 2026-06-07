@@ -3,7 +3,12 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import CurrentOwnerId
 from app.db.session import get_db
-from app.schemas.ai import AutomationSuggestionList, HomeStateRead
+from app.schemas.ai import (
+    AIScenarioDraft,
+    AIScenarioDraftRequest,
+    AutomationSuggestionList,
+    HomeStateRead,
+)
 from app.services import ai_service
 
 router = APIRouter(tags=["ai"])
@@ -23,3 +28,12 @@ def get_ai_suggestions(
     db: Session = Depends(get_db),
 ) -> AutomationSuggestionList:
     return ai_service.get_automation_suggestions(db, owner_id=owner_id)
+
+
+@router.post("/ai/scenario-draft", response_model=AIScenarioDraft)
+def generate_scenario_draft(
+    payload: AIScenarioDraftRequest,
+    owner_id: CurrentOwnerId,
+    db: Session = Depends(get_db),
+) -> AIScenarioDraft:
+    return ai_service.generate_scenario_draft(db, owner_id=owner_id, prompt=payload.prompt)

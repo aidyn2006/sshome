@@ -20,6 +20,10 @@ import {
   type ManufacturedDevice
 } from "../api/admin";
 import {
+  generateScenarioDraft as generateScenarioDraftRequest,
+  type AIScenarioDraft
+} from "../api/ai";
+import {
   changePassword as changePasswordRequest,
   getAuthContext,
   getCurrentUser,
@@ -115,6 +119,7 @@ type SmartHomeContextValue = {
   addScenario: (payload: ScenarioPayload) => Promise<boolean>;
   editScenario: (scenarioId: string, payload: ScenarioPayload) => Promise<boolean>;
   removeScenario: (scenarioId: string) => Promise<boolean>;
+  generateScenarioDraft: (prompt: string) => Promise<AIScenarioDraft>;
   addHome: (name: string) => Promise<void>;
   renameHome: (homeId: string, name: string) => Promise<boolean>;
   removeHome: (homeId: string) => Promise<boolean>;
@@ -1251,6 +1256,8 @@ export function SmartHomeProvider({ children }: { children: React.ReactNode }) {
       addScenario,
       editScenario,
       removeScenario,
+      generateScenarioDraft: async (prompt: string) =>
+        runWithSession((accessToken) => generateScenarioDraftRequest(accessToken, prompt)),
       addHome,
       renameHome,
       removeHome,
