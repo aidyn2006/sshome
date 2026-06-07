@@ -26,7 +26,7 @@ const ROOM_ICONS: Array<{ name: string; icon: keyof typeof Ionicons.glyphMap }> 
 
 export function AddLocationModalScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { homes, addHome, renameHome, removeHome, addRoom, isAuthSubmitting, logout } = useSmartHome();
+  const { homes, rooms, addHome, renameHome, removeHome, addRoom, isAuthSubmitting, logout } = useSmartHome();
   const [mode, setMode] = useState<Mode>("room");
   const [name, setName] = useState("");
   const [selectedHomeId, setSelectedHomeId] = useState<string>(homes[0]?.id ?? "");
@@ -34,6 +34,12 @@ export function AddLocationModalScreen({ navigation }: Props) {
   const [nameFocused, setNameFocused] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [homeDrafts, setHomeDrafts] = useState<Record<string, string>>({});
+
+  const startAddRoomForHome = (homeId: string) => {
+    setMode("room");
+    setSelectedHomeId(homeId);
+    setName("");
+  };
 
   const saveHomeName = (homeId: string, currentName: string) => {
     const draft = homeDrafts[homeId];
@@ -198,26 +204,42 @@ export function AddLocationModalScreen({ navigation }: Props) {
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>YOUR HOMES</Text>
             <View style={styles.homeList}>
-              {homes.map((home) => (
-                <View key={home.id} style={styles.homeRow}>
-                  <Ionicons name="home-outline" size={18} color={colors.ink500} />
-                  <TextInput
-                    value={homeDrafts[home.id] ?? home.name}
-                    onChangeText={(text) => setHomeDrafts((prev) => ({ ...prev, [home.id]: text }))}
-                    onBlur={() => saveHomeName(home.id, home.name)}
-                    onSubmitEditing={() => saveHomeName(home.id, home.name)}
-                    style={styles.homeInput}
-                    returnKeyType="done"
-                    placeholderTextColor={colors.ink400}
-                  />
-                  <AppPressable
-                    style={styles.homeDeleteBtn}
-                    onPress={() => confirmDeleteHome(home.id, home.name)}
-                  >
-                    <Ionicons name="trash-outline" size={16} color={colors.danger} />
-                  </AppPressable>
-                </View>
-              ))}
+              {homes.map((home) => {
+                const roomCount = rooms.filter((r) => r.home_id === home.id).length;
+                return (
+                  <View key={home.id} style={styles.homeRow}>
+                    <Ionicons name="home-outline" size={18} color={colors.ink500} />
+                    <View style={styles.homeMain}>
+                      <TextInput
+                        value={homeDrafts[home.id] ?? home.name}
+                        onChangeText={(text) => setHomeDrafts((prev) => ({ ...prev, [home.id]: text }))}
+                        onBlur={() => saveHomeName(home.id, home.name)}
+                        onSubmitEditing={() => saveHomeName(home.id, home.name)}
+                        style={styles.homeInput}
+                        returnKeyType="done"
+                        placeholderTextColor={colors.ink400}
+                      />
+                      <Text style={styles.homeMeta}>
+                        {roomCount} room{roomCount === 1 ? "" : "s"}
+                      </Text>
+                    </View>
+                    <AppPressable
+                      style={styles.homeAddRoomBtn}
+                      onPress={() => startAddRoomForHome(home.id)}
+                      accessibilityLabel={`Add a room to ${home.name}`}
+                    >
+                      <Ionicons name="add" size={16} color={colors.accent} />
+                      <Text style={styles.homeAddRoomText}>Room</Text>
+                    </AppPressable>
+                    <AppPressable
+                      style={styles.homeDeleteBtn}
+                      onPress={() => confirmDeleteHome(home.id, home.name)}
+                    >
+                      <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                    </AppPressable>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
@@ -496,12 +518,35 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: colors.hairline,
   },
-  homeInput: {
+  homeMain: {
     flex: 1,
+  },
+  homeInput: {
     height: 40,
     fontSize: 15,
     fontWeight: "500",
     color: colors.ink900,
+  },
+  homeMeta: {
+    fontFamily: "monospace",
+    fontSize: 10.5,
+    color: colors.ink400,
+    marginTop: -4,
+    marginLeft: 2,
+  },
+  homeAddRoomBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    height: 32,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: colors.accentTint,
+  },
+  homeAddRoomText: {
+    color: colors.accent,
+    fontSize: 12.5,
+    fontWeight: "600",
   },
   homeDeleteBtn: {
     width: 34,

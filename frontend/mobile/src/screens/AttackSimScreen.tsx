@@ -362,14 +362,94 @@ export function AttackSimScreen() {
           </View>
         </View>
 
-        <View style={styles.telegramRow}>
-          <Ionicons
-            name={stats?.telegram_configured ? "paper-plane" : "paper-plane-outline"}
-            size={14}
-            color={stats?.telegram_configured ? colors.success : colors.ink400}
-          />
-          <Text style={styles.telegramText}>
-            Telegram alerts {stats?.telegram_configured ? "enabled" : "not configured"}
+        <View style={styles.telegramCard}>
+          <View style={styles.telegramHeader}>
+            <View style={styles.telegramTitleRow}>
+              <Ionicons
+                name={telegram?.configured ? "paper-plane" : "paper-plane-outline"}
+                size={16}
+                color={telegram?.configured ? colors.success : colors.ink400}
+              />
+              <Text style={styles.telegramTitle}>Telegram alerts</Text>
+            </View>
+            <View
+              style={[
+                styles.telegramStatusPill,
+                { backgroundColor: telegram?.configured ? colors.successSoft : colors.ink100 }
+              ]}
+            >
+              <Text
+                style={[
+                  styles.telegramStatusText,
+                  { color: telegram?.configured ? colors.success : colors.ink500 }
+                ]}
+              >
+                {telegram?.configured ? "ACTIVE" : "NOT CONFIGURED"}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.telegramField}>
+            <Text style={styles.telegramLabel}>CHAT ID</Text>
+            <TextInput
+              value={chatIdInput}
+              onChangeText={setChatIdInput}
+              placeholder="e.g. 955568348"
+              placeholderTextColor={colors.ink400}
+              style={styles.telegramInput}
+              keyboardType="numbers-and-punctuation"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={styles.telegramField}>
+            <Text style={styles.telegramLabel}>
+              BOT TOKEN {telegram?.has_token ? "(set — leave blank to keep)" : "(optional, else from env)"}
+            </Text>
+            <TextInput
+              value={tokenInput}
+              onChangeText={setTokenInput}
+              placeholder={telegram?.has_token ? "••••••••••••" : "123456:ABC-..."}
+              placeholderTextColor={colors.ink400}
+              style={styles.telegramInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+            />
+          </View>
+
+          <View style={styles.telegramToggleRow}>
+            <Text style={styles.telegramToggleLabel}>Enabled</Text>
+            <Switch
+              value={telegram?.enabled ?? true}
+              onValueChange={(value) => {
+                setTelegram((prev) => (prev ? { ...prev, enabled: value } : prev));
+                void saveTelegram({ enabled: value });
+              }}
+            />
+          </View>
+
+          <View style={styles.telegramActions}>
+            <AppPressable
+              style={[styles.telegramSaveBtn, savingTelegram && styles.telegramBtnDisabled]}
+              onPress={() => void saveTelegram()}
+              disabled={savingTelegram}
+            >
+              <Text style={styles.telegramSaveText}>{savingTelegram ? "Saving…" : "Save"}</Text>
+            </AppPressable>
+            <AppPressable
+              style={[styles.telegramTestBtn, (!telegram?.configured || testingTelegram) && styles.telegramBtnDisabled]}
+              onPress={() => void sendTelegramTest()}
+              disabled={!telegram?.configured || testingTelegram}
+            >
+              <Ionicons name="paper-plane-outline" size={14} color={colors.ink700} />
+              <Text style={styles.telegramTestText}>{testingTelegram ? "Sending…" : "Send test"}</Text>
+            </AppPressable>
+          </View>
+          <Text style={styles.telegramHint}>
+            Get your chat id by messaging the bot, then opening
+            {" "}api.telegram.org/bot&lt;token&gt;/getUpdates — or use @userinfobot.
           </Text>
         </View>
 
@@ -696,16 +776,111 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.3
   },
-  telegramRow: {
+  telegramCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    borderRadius: 8,
+    padding: 14,
+    gap: 10
+  },
+  telegramHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 2
+    justifyContent: "space-between"
   },
-  telegramText: {
+  telegramTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  telegramTitle: {
+    color: colors.ink900,
+    fontSize: 15,
+    fontWeight: "700"
+  },
+  telegramStatusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999
+  },
+  telegramStatusText: {
+    fontFamily: "monospace",
+    fontSize: 9.5,
+    fontWeight: "700",
+    letterSpacing: 0.6
+  },
+  telegramField: {
+    gap: 5
+  },
+  telegramLabel: {
     color: colors.ink500,
-    fontSize: 12,
+    fontFamily: "monospace",
+    fontSize: 9.5,
+    fontWeight: "700",
+    letterSpacing: 0.6
+  },
+  telegramInput: {
+    height: 44,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    backgroundColor: colors.cream100,
+    color: colors.ink900,
+    fontSize: 14
+  },
+  telegramToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  telegramToggleLabel: {
+    color: colors.ink700,
+    fontSize: 14,
     fontWeight: "600"
+  },
+  telegramActions: {
+    flexDirection: "row",
+    gap: 8
+  },
+  telegramSaveBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: colors.ink900,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  telegramSaveText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600"
+  },
+  telegramTestBtn: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 6,
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.hairlineStrong,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  telegramTestText: {
+    color: colors.ink700,
+    fontSize: 14,
+    fontWeight: "600"
+  },
+  telegramBtnDisabled: {
+    opacity: 0.45
+  },
+  telegramHint: {
+    color: colors.ink400,
+    fontSize: 11,
+    lineHeight: 16
   },
   controlHint: {
     color: colors.ink400,
