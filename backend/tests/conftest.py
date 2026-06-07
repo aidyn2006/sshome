@@ -11,6 +11,7 @@ from testcontainers.postgres import PostgresContainer
 import app.models  # noqa: F401
 from app.core.rate_limit import (
     device_action_limiter,
+    login_ip_limiter,
     login_limiter,
     password_reset_request_limiter,
     password_reset_verify_limiter,
@@ -32,6 +33,7 @@ def client() -> Generator[TestClient, None, None]:
 def reset_rate_limiters() -> Generator[None, None, None]:
     device_action_limiter.reset()
     login_limiter.reset()
+    login_ip_limiter.reset()
     password_reset_request_limiter.reset()
     password_reset_verify_limiter.reset()
     scenario_run_limiter.reset()
@@ -39,6 +41,7 @@ def reset_rate_limiters() -> Generator[None, None, None]:
     yield
     device_action_limiter.reset()
     login_limiter.reset()
+    login_ip_limiter.reset()
     password_reset_request_limiter.reset()
     password_reset_verify_limiter.reset()
     scenario_run_limiter.reset()

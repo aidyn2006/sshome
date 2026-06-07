@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     security_scenario_run_rate_limit: int = 10
     security_websocket_connect_rate_limit: int = 20
     security_login_rate_limit: int = 10
+    # Per-IP cap across ALL accounts within the window — catches credential
+    # spraying / stuffing where each email otherwise gets its own fresh bucket.
+    security_login_ip_rate_limit: int = 20
+    # Trust X-Forwarded-For for the client IP (needed behind the bundled nginx
+    # proxy, where the socket peer is always the proxy). Disable if the app is
+    # exposed directly to untrusted clients that could spoof the header.
+    security_trust_proxy_headers: bool = True
     security_password_reset_request_rate_limit: int = 5
     security_password_reset_verify_rate_limit: int = 10
     security_enable_hsts: bool = False
