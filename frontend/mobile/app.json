@@ -2,6 +2,7 @@
   "expo": {
     "name": "mobile",
     "slug": "mobile",
+    "scheme": "com.googleusercontent.apps.903732736095-bakjr8igmgfg9pueolc19a9vjfee3ort",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
